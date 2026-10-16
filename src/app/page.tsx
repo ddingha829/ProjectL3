@@ -53,6 +53,9 @@ export default function L2AppPage() {
   });
   const [restoreCodeInput, setRestoreCodeInput] = useState<string>('');
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  const [detectedPreviousCode, setDetectedPreviousCode] = useState<string | null>(
+    null
+  );
 
   // Data State (Starts empty for new testers)
   const [archives, setArchives] = useState<ArchiveItem[]>([]);
@@ -68,21 +71,19 @@ export default function L2AppPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>(['k1', 'a1', 'a3']);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [curationTitle, setCurationTitle] = useState('TOP PICKS.');
 
   // Active Card & Studio State
-  const [activeItemId, setActiveItemId] = useState<string>('k1');
+  const [activeItemId, setActiveItemId] = useState<string>('');
   const [activeSlotIdx, setActiveSlotIdx] = useState<number>(0);
   const [studioPrompt, setStudioPrompt] = useState('');
   const [isGeneratingSkin, setIsGeneratingSkin] = useState(false);
 
   // + LOG State (Full-screen canvas + translucent 1-row-per-option overlay)
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
-  const [logTitle, setLogTitle] = useState('작은부엌');
-  const [logBody, setLogBody] = useState(
-    '‘진짜’ 전라도 한식 한상차림을 먹을 수 있는 현지인 맛집. 수제 떡갈비 육즙과 계란찜이 일품이지만 주말 점심엔 웨이팅이 있으니 오픈런을 추천합니다.'
-  );
+  const [logTitle, setLogTitle] = useState('');
+  const [logBody, setLogBody] = useState('');
   const [logImg, setLogImg] = useState('/images/korean.jpg');
   const [logCropX, setLogCropX] = useState(50);
   const [logCropY, setLogCropY] = useState(50);
@@ -91,12 +92,8 @@ export default function L2AppPage() {
   const [logGood, setLogGood] = useState('');
   const [logBad, setLogBad] = useState('');
   const [logNote, setLogNote] = useState('');
-  const [logMapQuery, setLogMapQuery] = useState(
-    '전남 순천시 향교동 (전라남도 순천시 향교길 39)'
-  );
-  const [selectedPlace, setSelectedPlace] = useState<MapApiPlace | null>(
-    MAP_API_PLACES[0]
-  );
+  const [logMapQuery, setLogMapQuery] = useState('');
+  const [selectedPlace, setSelectedPlace] = useState<MapApiPlace | null>(null);
   const [placeResults, setPlaceResults] =
     useState<MapApiPlace[]>(MAP_API_PLACES);
   const [mapDropdownOpen, setMapDropdownOpen] = useState(false);
@@ -143,8 +140,19 @@ export default function L2AppPage() {
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
           if (mounted) {
-            if (sessionData.recoveryCode)
+            if (sessionData.recoveryCode) {
               setRecoveryCode(sessionData.recoveryCode);
+              const storedLastCode = localStorage.getItem('l2_last_recovery_code');
+              if (
+                storedLastCode &&
+                storedLastCode !== sessionData.recoveryCode &&
+                sessionData.isNewDevice
+              ) {
+                setDetectedPreviousCode(storedLastCode);
+              } else {
+                localStorage.setItem('l2_last_recovery_code', sessionData.recoveryCode);
+              }
+            }
             if (sessionData.authorName) setAuthorName(sessionData.authorName);
             if (sessionData.presetSlots) setPresetSlots(sessionData.presetSlots);
             if (sessionData.skins) setSkins(sessionData.skins);
@@ -190,8 +198,8 @@ export default function L2AppPage() {
   }, []);
 
   // Restore device session via Recovery Code
-  const handleRestoreDevice = async () => {
-    const raw = restoreCodeInput.trim();
+  const handleRestoreDevice = async (overrideCode?: string) => {
+    const raw = (overrideCode || restoreCodeInput).trim();
     if (!raw || isRestoring) return;
     setIsRestoring(true);
     try {
@@ -202,7 +210,10 @@ export default function L2AppPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        if (data.recoveryCode) setRecoveryCode(data.recoveryCode);
+        if (data.recoveryCode) {
+          setRecoveryCode(data.recoveryCode);
+          localStorage.setItem('l2_last_recovery_code', data.recoveryCode);
+        }
         if (data.authorName) setAuthorName(data.authorName);
         if (data.presetSlots) setPresetSlots(data.presetSlots);
         if (data.skins) setSkins(data.skins);
@@ -212,6 +223,7 @@ export default function L2AppPage() {
         }
         if (data.aiUsage) setAiUsage(data.aiUsage);
         setRestoreCodeInput('');
+        setDetectedPreviousCode(null);
         setSettingsOpen(false);
         showToast(
           'RESTORE SUCCESS',
@@ -498,19 +510,34 @@ export default function L2AppPage() {
         body: JSON.stringify(payload),
       });
 
+      let targetId = payload.id;
       if (res.ok) {
         const data = await res.json();
-        if (data.db?.archives) {
-          setArchives(data.db.archives);
+        const savedItem = data.item || payload;
+        targetId = savedItem.id;
+        if (Array.isArray(data.archives)) {
+          setArchives(data.archives);
         } else {
-          setArchives((prev) => [payload, ...prev]);
+          setArchives((prev) => [
+            savedItem,
+            ...prev.filter(
+              (a) => a.id !== savedItem.id && a.id !== editingLogId
+            ),
+          ]);
         }
       } else {
         setArchives((prev) => [payload, ...prev]);
       }
 
-      setActiveItemId(payload.id);
+      setActiveItemId(targetId);
       setEditingLogId(null);
+      setLogTitle('');
+      setLogBody('');
+      setLogGood('');
+      setLogBad('');
+      setLogNote('');
+      setLogMapQuery('');
+      setSelectedPlace(null);
       setOptionsModalOpen(false);
       setActiveTab('card');
       showToast(
@@ -551,19 +578,24 @@ export default function L2AppPage() {
 
   // Delete an Archive Item
   const handleDeleteItem = async (id: string) => {
-    if (archives.length <= 1) {
-      showToast('NOTICE', '최소 1개의 아카이브 로그는 유지되어야 합니다');
-      return;
-    }
     const nextList = archives.filter((a) => a.id !== id);
     setArchives(nextList);
     if (activeItemId === id) {
-      setActiveItemId(nextList[0].id);
+      setActiveItemId(nextList[0]?.id || '');
     }
     try {
-      await fetch(`/api/logs?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/logs?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.archives)) {
+          setArchives(data.archives);
+          if (activeItemId === id) {
+            setActiveItemId(data.archives[0]?.id || '');
+          }
+        }
+      }
     } catch {
       // Ignore network error
     }
@@ -917,6 +949,27 @@ export default function L2AppPage() {
                     </p>
                   </div>
 
+                  {/* DETECTED PREVIOUS DEVICE CODE */}
+                  {detectedPreviousCode && (
+                    <div className="p-2.5 rounded-xl border border-[var(--accent)] bg-[var(--surface-2)] flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
+                          이전 기기 발견
+                        </div>
+                        <div className="text-xs font-black mono-num truncate">
+                          {detectedPreviousCode}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRestoreDevice(detectedPreviousCode)}
+                        disabled={isRestoring}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-[var(--accent)] text-white hover:opacity-90 shrink-0 cursor-pointer"
+                      >
+                        {isRestoring ? '...' : '복구하기'}
+                      </button>
+                    </div>
+                  )}
+
                   {/* RESTORE FROM CODE */}
                   <div className="space-y-1.5">
                     <div className="text-[11px] font-black tracking-widest uppercase text-[var(--muted)]">
@@ -931,7 +984,7 @@ export default function L2AppPage() {
                         className="flex-1 min-w-0 px-3 py-1.5 rounded-xl text-xs mono-num uppercase font-bold border border-[var(--line)] bg-transparent focus:outline-none focus:border-[var(--accent)]"
                       />
                       <button
-                        onClick={handleRestoreDevice}
+                        onClick={() => handleRestoreDevice()}
                         disabled={isRestoring}
                         className="px-3 py-1.5 rounded-xl text-xs font-black bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50 shrink-0 cursor-pointer"
                       >
@@ -1336,6 +1389,27 @@ export default function L2AppPage() {
                   기억하고 싶은 장소와 순간의 인상적인 한 줄을 남기면<br className="hidden sm:inline" />
                   나만의 감각적인 에디토리얼 카드가 완성됩니다.
                 </p>
+
+                {detectedPreviousCode && (
+                  <div className="mb-6 p-3.5 sm:p-4 rounded-2xl border border-[var(--accent)] bg-[var(--surface-2)] flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left max-w-md shadow-lg">
+                    <div className="flex-1">
+                      <div className="text-[11px] font-black text-[var(--accent)] uppercase tracking-wider">
+                        이전 기기 아카이브 복구 가능
+                      </div>
+                      <div className="text-xs font-bold opacity-80 mt-0.5">
+                        기존 코드 <span className="mono-num text-[var(--fg)] font-black">{detectedPreviousCode}</span>의 기록을 바로 불러올 수 있습니다.
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRestoreDevice(detectedPreviousCode)}
+                      disabled={isRestoring}
+                      className="px-4 py-1.5 rounded-full text-xs font-black bg-[var(--accent)] text-white hover:opacity-90 shrink-0 cursor-pointer shadow-md"
+                    >
+                      {isRestoring ? '복구 중...' : '기록 복구하기'}
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setActiveTab('log')}
                   className="px-7 py-3.5 rounded-full display-type text-base text-white bg-[var(--accent)] hover:opacity-90 transition-all cursor-pointer shadow-xl hover:scale-105"
@@ -1689,6 +1763,27 @@ export default function L2AppPage() {
                   + LOG에서 첫 번째 경험을 기록하면 인스타그램과 카카오톡에<br className="hidden sm:inline" />
                   공유할 수 있는 감각적인 카드가 바로 생성됩니다.
                 </p>
+
+                {detectedPreviousCode && (
+                  <div className="mb-6 p-3.5 sm:p-4 rounded-2xl border border-[var(--accent)] bg-[var(--surface-2)] flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left max-w-md shadow-lg">
+                    <div className="flex-1">
+                      <div className="text-[11px] font-black text-[var(--accent)] uppercase tracking-wider">
+                        이전 기기 아카이브 복구 가능
+                      </div>
+                      <div className="text-xs font-bold opacity-80 mt-0.5">
+                        기존 코드 <span className="mono-num text-[var(--fg)] font-black">{detectedPreviousCode}</span>의 기록을 바로 불러올 수 있습니다.
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRestoreDevice(detectedPreviousCode)}
+                      disabled={isRestoring}
+                      className="px-4 py-1.5 rounded-full text-xs font-black bg-[var(--accent)] text-white hover:opacity-90 shrink-0 cursor-pointer shadow-md"
+                    >
+                      {isRestoring ? '복구 중...' : '기록 복구하기'}
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setActiveTab('log')}
                   className="px-7 py-3.5 rounded-full display-type text-base text-white bg-[var(--accent)] hover:opacity-90 transition-all cursor-pointer shadow-xl hover:scale-105"

@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { isUuid } from '@/lib/store';
+import { isUuid, newId } from '@/lib/store';
 
 export const DEVICE_COOKIE = 'l2_device';
 // Chrome caps cookie lifetime at 400 days.
@@ -24,18 +24,14 @@ export async function writeDeviceId(id: string): Promise<void> {
   });
 }
 
-/** Returns the device id or a 401 response to return directly from a route. */
-export async function requireDevice(): Promise<
-  { deviceId: string; error?: undefined } | { deviceId?: undefined; error: NextResponse }
-> {
-  const deviceId = await readDeviceId();
-  if (!deviceId) {
-    return {
-      error: NextResponse.json(
-        { error: 'NO_SESSION', detail: 'Call GET /api/session first' },
-        { status: 401 }
-      ),
-    };
-  }
-  return { deviceId };
+/** Returns the device id, auto-provisioning a secure UUID cookie if absent. */
+export async function requireDevice(): Promise<{
+  deviceId: string;
+  error?: undefined;
+}> {
+  const existing = await readDeviceId();
+  if (existing) return { deviceId: existing };
+  const fresh = newId();
+  await writeDeviceId(fresh);
+  return { deviceId: fresh };
 }

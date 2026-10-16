@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRuntimeEnvKey } from '@/lib/env';
+import { callGemini } from '@/lib/gemini';
 import { MAP_API_PLACES } from '@/data/initialData';
 import { MapApiPlace } from '@/types/l2';
 
@@ -127,42 +128,30 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3. Gemini AI Place Resolver (Uses the user's GEMINI_API_KEY to resolve Korean restaurant/place names into exact 시/구/동 + Google Maps URL)
-  const geminiKey = getRuntimeEnvKey('GEMINI_API_KEY');
-  if (q && geminiKey && results.length === 0) {
+  // 3. Gemini AI Place Resolver (Uses multi-model fallback to resolve Korean restaurant/place names into exact 시/구/동 + Google Maps URL)
+  if (q && results.length === 0) {
     try {
-      const gemRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
+      const gemRes = await callGemini({
+        contents: [
+          {
+            parts: [
               {
-                parts: [
-                  {
-                    text: `사용자가 한국 장소/맛집/전시/영화를 검색했습니다: "${q}".
+                text: `사용자가 한국 장소/맛집/전시/영화를 검색했습니다: "${q}".
 가장 관련성 높은 실제 장소 3곳을 JSON 배열로 반환해줘.
 각 항목의 키:
 - "name": 상호명/장소명
 - "short": 시/구/동 단위 짧은 주소 (예: "서울 성동구 성수동", "전남 순천시 향교동", "서울 강남구 서초동")
 - "fullAddress": 상세 도로명 주소
 - "loc": 영문 대문자 지역명 (예: "SEONGSU", "SUNCHEON", "HANNAM")`,
-                  },
-                ],
               },
             ],
-            generationConfig: {
-              responseMimeType: 'application/json',
-            },
-          }),
-        }
-      );
-      if (gemRes.ok) {
-        const gemData = await gemRes.json();
-        const rawText =
-          gemData?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-        const parsed = JSON.parse(rawText);
+          },
+        ],
+        responseMimeType: 'application/json',
+      });
+
+      if (gemRes) {
+        const parsed = JSON.parse(gemRes.text);
         if (Array.isArray(parsed)) {
           for (const p of parsed.slice(0, 3)) {
             if (p.name && p.short) {
