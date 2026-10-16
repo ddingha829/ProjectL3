@@ -76,6 +76,7 @@ export interface MapApiPlace {
   x: number;
   y: number;
   source?: 'KAKAO' | 'NAVER' | 'TMDB' | 'LOCAL';
+  posterImg?: string;
 }
 
 export interface L2DatabaseSchema {

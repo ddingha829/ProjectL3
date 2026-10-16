@@ -269,7 +269,7 @@ export default function L2AppPage() {
       const q = logMapQuery.split('(')[0].trim();
       try {
         const res = await fetch(
-          `/api/places/search?q=${encodeURIComponent(q)}`
+          `/api/places/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(logCat)}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -282,7 +282,7 @@ export default function L2AppPage() {
       }
     }, 180);
     return () => clearTimeout(timer);
-  }, [logMapQuery]);
+  }, [logMapQuery, logCat]);
 
   // Sticky-to-inline IntersectionObserver for CARD share bar
   useEffect(() => {
@@ -1234,11 +1234,18 @@ export default function L2AppPage() {
                                     `${p.short} (${p.fullAddress || p.short})`
                                   );
                                   if (p.category) setLogCat(p.category);
+                                  if (p.posterImg) {
+                                    setLogImg(p.posterImg);
+                                    showToast(
+                                      'POSTER LOADED',
+                                      `${p.name} 공식 포스터가 카드 사진으로 적용되었습니다`
+                                    );
+                                  }
                                   setMapDropdownOpen(false);
                                 }}
                                 className="p-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-left text-xs font-bold hover:border-[#FF3B00] cursor-pointer truncate"
                               >
-                                {p.name} · {p.short}
+                                {p.source === 'TMDB' ? '🎬 ' : ''}{p.name} · {p.short}
                               </button>
                             ))}
                           </div>

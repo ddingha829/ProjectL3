@@ -3,6 +3,7 @@ import { getRuntimeEnvKey } from '@/lib/env';
 import { callGemini } from '@/lib/gemini';
 import { MAP_API_PLACES } from '@/data/initialData';
 import { MapApiPlace } from '@/types/l2';
+import { searchTmdbMovies, getTmdbImageUrl } from '@/lib/tmdb';
 
 function toShortDistrictAddress(fullAddr: string): string {
   const cleaned = fullAddr
@@ -25,7 +26,57 @@ function buildGoogleMapsUrl(query: string): string {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get('q') || '').trim();
+  const cat = (
+    searchParams.get('category') ||
+    searchParams.get('cat') ||
+    ''
+  ).toUpperCase();
   const results: MapApiPlace[] = [];
+
+  // 0. TMDB Movie Search (High priority if category is CINEMA, or when query matches movies)
+  const tmdbResults: MapApiPlace[] = [];
+  if (q) {
+    try {
+      const tmdbMovies = await searchTmdbMovies(q);
+      for (const m of tmdbMovies.slice(0, 4)) {
+        const year = m.release_date ? m.release_date.slice(0, 4) : '';
+        const titleWithYear = year ? `${m.title} (${year})` : m.title;
+        const short = `개봉 ${m.release_date || '미정'} · 평점 ★${(m.vote_average || 0).toFixed(1)}`;
+        const fullAddress = m.overview
+          ? `평점 ★${(m.vote_average || 0).toFixed(1)}/10 — ${m.overview}`
+          : short;
+        const posterUrl = getTmdbImageUrl(m.poster_path, 'w780');
+
+        tmdbResults.push({
+          id: `tmdb_${m.id}`,
+          name: titleWithYear,
+          short,
+          fullAddress,
+          loc: 'CINEMA · FILM',
+          category: 'CINEMA',
+          link: `https://www.themoviedb.org/movie/${m.id}`,
+          posterImg: posterUrl || undefined,
+          source: 'TMDB',
+          x: Math.floor(30 + Math.random() * 45),
+          y: Math.floor(30 + Math.random() * 45),
+        });
+      }
+    } catch {
+      // Fall through to places API
+    }
+  }
+
+  if (cat === 'CINEMA' && tmdbResults.length > 0) {
+    return NextResponse.json({
+      results: tmdbResults,
+      mapEngine: 'TMDB',
+    });
+  }
+
+  // Prepend TMDB movie results if query matches a real movie title
+  if (tmdbResults.length > 0) {
+    results.push(...tmdbResults);
+  }
 
   // 1. Google Places API (New v1) if GOOGLE_MAPS_API_KEY is configured
   const googleKey =
