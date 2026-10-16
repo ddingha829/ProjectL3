@@ -102,6 +102,7 @@ export default function L2AppPage() {
   // Overlay Modal State
   const [optionsModalOpen, setOptionsModalOpen] = useState(false);
   const [, setFocusedOptionRow] = useState<OptionRowKey | null>(null);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   // Toast State
   const [toast, setToast] = useState<{ title: string; sub: string } | null>(
@@ -436,18 +437,22 @@ export default function L2AppPage() {
   };
 
   // Save or Update Log -> Calls /api/ai/extract (if needed) + /api/logs
-  const handleSaveLog = async () => {
+  const handleSaveLogWithCat = async (selectedCat?: ArchiveCategory) => {
     if (isSaving) return;
     setIsSaving(true);
 
     try {
-      const title = logTitle.trim() || '작은부엌';
+      const cat: ArchiveCategory = selectedCat || logCat || 'DINING';
+      setLogCat(cat);
+
+      const title = logTitle.trim() || (cat === 'CINEMA' ? 'THE SUBSTANCE' : '작은부엌');
       const quote =
         logBody.trim() ||
-        '‘진짜’ 전라도 한식 한상차림을 먹을 수 있는 현지인 맛집. 수제 떡갈비 육즙과 계란찜이 일품이지만 주말 점심엔 웨이팅이 있으니 오픈런을 추천합니다.';
-      const cat: ArchiveCategory = logCat || 'DINING';
+        (cat === 'CINEMA'
+          ? '강렬한 대비와 사운드가 압도적인 올해의 시네마 경험.'
+          : '‘진짜’ 전라도 한식 한상차림을 먹을 수 있는 현지인 맛집.');
       const score = logScore.toFixed(1);
-      const loc = selectedPlace?.loc || 'SUNCHEON';
+      const loc = selectedPlace?.loc || (cat === 'CINEMA' ? 'FILM' : 'SUNCHEON');
 
       let good = logGood.trim();
       let bad = logBad.trim();
@@ -547,6 +552,7 @@ export default function L2AppPage() {
       setLogMapQuery('');
       setSelectedPlace(null);
       setOptionsModalOpen(false);
+      setCategoryModalOpen(false);
       setActiveTab('card');
       haptic.success();
       showToast(
@@ -556,6 +562,12 @@ export default function L2AppPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Open Mandatory Category Selection Modal Before Saving
+  const handleInitiateSave = () => {
+    haptic.snap();
+    setCategoryModalOpen(true);
   };
 
   // Load an existing Archive Item into + LOG for Editing
@@ -796,6 +808,44 @@ export default function L2AppPage() {
     } finally {
       setIsGeneratingSkin(false);
     }
+  };
+
+  // Delete Custom / AI Skin
+  const handleDeleteSkin = (skinId: string) => {
+    haptic.warning();
+    const targetName = skins[skinId]?.name || '스킨';
+    const nextSkins = { ...skins };
+    delete nextSkins[skinId];
+
+    // Fallback skin for any slots that were using this skin
+    const fallbackSkinId = Object.keys(nextSkins)[0] || 'paper';
+    const nextSlots = presetSlots.map((slot) =>
+      slot.skinId === skinId ? { ...slot, skinId: fallbackSkinId } : slot
+    );
+
+    setSkins(nextSkins);
+    setPresetSlots(nextSlots);
+    syncPresetsToServer(nextSlots, nextSkins);
+    showToast('SKIN DELETED', `${targetName} 스킨이 삭제되었습니다`);
+  };
+
+  // Cycle to Previous / Next Skin for the active slot
+  const handleCycleSkin = (direction: 'next' | 'prev') => {
+    haptic.snap();
+    const skinList = Object.values(skins);
+    if (skinList.length <= 1) return;
+    const currentIdx = skinList.findIndex((s) => s.id === activeSlot.skinId);
+    let nextIdx = direction === 'next' ? currentIdx + 1 : currentIdx - 1;
+    if (nextIdx >= skinList.length) nextIdx = 0;
+    if (nextIdx < 0) nextIdx = skinList.length - 1;
+    const targetSkin = skinList[nextIdx];
+
+    const nextSlots = presetSlots.map((slot, idx) =>
+      idx === activeSlotIdx ? { ...slot, skinId: targetSkin.id } : slot
+    );
+    setPresetSlots(nextSlots);
+    syncPresetsToServer(nextSlots, skins);
+    showToast('SKIN', `${targetSkin.name}`);
   };
 
   // Toggle Card Element Visibility in STUDIO
@@ -1149,7 +1199,7 @@ export default function L2AppPage() {
 
                 <button
                   type="button"
-                  onClick={handleSaveLog}
+                  onClick={handleInitiateSave}
                   disabled={isSaving}
                   className="flex-1 py-3.5 sm:py-4 px-6 rounded-2xl display-type text-lg sm:text-xl md:text-2xl tracking-tight text-white bg-[var(--accent)] transition-all hover:opacity-90 text-center whitespace-nowrap cursor-pointer"
                 >
@@ -1350,36 +1400,6 @@ export default function L2AppPage() {
                         />
                       </div>
                     </div>
-
-                    {/* ROW 06: 카테고리 */}
-                    <div className="py-2.5 sm:py-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-baseline gap-3 md:w-56 shrink-0">
-                        <span className="display-type text-lg sm:text-2xl opacity-40">
-                          06
-                        </span>
-                        <span className="kor-heavy text-xl sm:text-2xl md:text-3xl">
-                          카테고리
-                        </span>
-                      </div>
-                      <div className="flex-1 flex items-center justify-end md:justify-start gap-2">
-                        {(
-                          ['DINING', 'CINEMA', 'ART'] as ArchiveCategory[]
-                        ).map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setLogCat(c)}
-                            className={`px-4 py-2 rounded-full text-xs font-black uppercase border cursor-pointer ${
-                              logCat === c
-                                ? 'bg-[var(--fg)] text-[var(--bg)] border-[var(--fg)]'
-                                : 'border-[var(--line)] text-[var(--muted)]'
-                            }`}
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
 
                   {/* Overlay Footer */}
@@ -1394,6 +1414,116 @@ export default function L2AppPage() {
                     >
                       APPLY OPTIONS ✓
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================================
+                  MANDATORY CATEGORY SELECTION MODAL BEFORE SAVE LOG
+                 ======================================================== */}
+              {categoryModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                  <div className="w-full max-w-[480px] bg-[var(--surface)] border border-[var(--line)] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+                      <div>
+                        <span className="mono-num text-[11px] font-black tracking-widest uppercase text-[var(--accent)]">
+                          CATEGORY · MANDATORY
+                        </span>
+                        <h2 className="display-type text-2xl sm:text-3xl mt-0.5">
+                          SELECT CATEGORY
+                        </h2>
+                        <p className="text-xs font-bold text-[var(--muted)] mt-1">
+                          기록의 카테고리를 선택하면 즉시 카드가 완성됩니다
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCategoryModalOpen(false)}
+                        className="w-8 h-8 rounded-full border border-[var(--line)] flex items-center justify-center text-sm font-black hover:border-[var(--fg)] cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {(
+                        [
+                          {
+                            id: 'DINING' as ArchiveCategory,
+                            icon: '🍽️',
+                            title: 'DINING',
+                            sub: '미식 · 맛집 · 카페 · 와인바',
+                            desc: '식사, 음료, 디저트의 미식 기록',
+                          },
+                          {
+                            id: 'CINEMA' as ArchiveCategory,
+                            icon: '🎬',
+                            title: 'CINEMA',
+                            sub: '영화 · 상영작 · 극장',
+                            desc: '영화 관람 및 시네마틱 감상 기록',
+                          },
+                          {
+                            id: 'ART' as ArchiveCategory,
+                            icon: '🏛️',
+                            title: 'ART',
+                            sub: '전시 · 미술관 · 복합공간',
+                            desc: '현대미술, 갤러리, 건축 공간 기록',
+                          },
+                        ] as const
+                      ).map((item) => {
+                        const isSelected = logCat === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSaveLogWithCat(item.id)}
+                            disabled={isSaving}
+                            className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between group active:scale-[0.98] ${
+                              isSelected
+                                ? 'border-[var(--accent)] bg-[var(--bg)] shadow-md ring-2 ring-[var(--accent)]/40'
+                                : 'border-[var(--line)] bg-[var(--surface)] hover:border-[var(--fg)] hover:bg-[var(--bg)]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <span className="text-3xl sm:text-4xl shrink-0">
+                                {item.icon}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="display-type text-lg sm:text-xl">
+                                    {item.title}
+                                  </span>
+                                  {isSelected && (
+                                    <span className="mono-num text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[var(--accent)] text-white">
+                                      CURRENT
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs font-bold text-[var(--fg)] opacity-90 truncate">
+                                  {item.sub}
+                                </div>
+                                <div className="text-[11px] text-[var(--muted)] font-medium mt-0.5 truncate">
+                                  {item.desc}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="mono-num text-xs font-black text-[var(--accent)] group-hover:translate-x-1 transition-transform shrink-0 pl-2">
+                              {isSaving ? '저장 중...' : '저장 →'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setCategoryModalOpen(false)}
+                        className="text-xs font-bold text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
+                      >
+                        돌아가서 계속 수정하기
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1847,32 +1977,81 @@ export default function L2AppPage() {
                       })}
                     </div>
 
-                {/* Live Interactive Card Stage */}
-                <CardStage
-                  item={activeItem}
-                  slot={activeSlot}
-                  skin={activeSkin}
-                  authorName={authorName}
-                  selectedItems={selectedArchiveItems}
-                  curationTitle={curationTitle}
-                  cardCaptureRef={cardCaptureRef}
-                  onUpdateCrop={(cropX, cropY) => {
-                    setArchives((prev) =>
-                      prev.map((a) =>
-                        a.id === activeItem.id ? { ...a, cropX, cropY } : a
-                      )
-                    );
-                    fetch('/api/logs', {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        id: activeItem.id,
-                        cropX,
-                        cropY,
-                      }),
-                    }).catch(() => {});
-                  }}
-                />
+                {/* Live Interactive Card Stage with Carousel Arrows */}
+                <div className="relative w-full max-w-[440px] flex flex-col items-center">
+                  <div className="relative w-full flex items-center justify-center">
+                    {/* Left Carousel Arrow */}
+                    <button
+                      type="button"
+                      onClick={() => handleCycleSkin('prev')}
+                      aria-label="이전 스킨 (Previous Skin)"
+                      title="이전 스킨"
+                      className="absolute -left-3 sm:-left-5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[var(--surface)]/90 backdrop-blur-md border border-[var(--line)] shadow-xl text-[var(--fg)] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
+                    >
+                      <svg
+                        className="w-5 h-5 transition-transform group-hover:-translate-x-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    <CardStage
+                      item={activeItem}
+                      slot={activeSlot}
+                      skin={activeSkin}
+                      authorName={authorName}
+                      selectedItems={selectedArchiveItems}
+                      curationTitle={curationTitle}
+                      cardCaptureRef={cardCaptureRef}
+                      onUpdateCrop={(cropX, cropY) => {
+                        setArchives((prev) =>
+                          prev.map((a) =>
+                            a.id === activeItem.id ? { ...a, cropX, cropY } : a
+                          )
+                        );
+                        fetch('/api/logs', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            id: activeItem.id,
+                            cropX,
+                            cropY,
+                          }),
+                        }).catch(() => {});
+                      }}
+                    />
+
+                    {/* Right Carousel Arrow */}
+                    <button
+                      type="button"
+                      onClick={() => handleCycleSkin('next')}
+                      aria-label="다음 스킨 (Next Skin)"
+                      title="다음 스킨"
+                      className="absolute -right-3 sm:-right-5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[var(--surface)]/90 backdrop-blur-md border border-[var(--line)] shadow-xl text-[var(--fg)] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
+                    >
+                      <svg
+                        className="w-5 h-5 transition-transform group-hover:translate-x-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Active Palette Indicator Badge */}
+                  <div className="mt-3.5 flex items-center gap-2">
+                    <span className="text-[10px] mono-num tracking-wider uppercase px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--muted)]">
+                      PALETTE : <span className="text-[var(--fg)] font-bold">{activeSkin.name}</span> ({Object.keys(skins).indexOf(activeSkin.id) + 1}/{Object.keys(skins).length})
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="lg:col-span-6 space-y-5 pt-1">
@@ -2081,29 +2260,50 @@ export default function L2AppPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                     {Object.values(skins).map((sk) => {
                       const active = activeSlot.skinId === sk.id;
+                      const isCustom = !INITIAL_SKINS[sk.id];
                       return (
-                        <button
+                        <div
                           key={sk.id}
-                          onClick={() => {
-                            const nextSlots = presetSlots.map((slot, idx) =>
-                              idx === activeSlotIdx
-                                ? { ...slot, skinId: sk.id }
-                                : slot
-                            );
-                            setPresetSlots(nextSlots);
-                            syncPresetsToServer(nextSlots, skins);
-                          }}
                           style={{
                             background: sk.bg,
-                            color: sk.text,
                             borderColor: active ? '#FF3B00' : sk.border,
                           }}
-                          className={`p-2.5 rounded-xl border text-left font-black text-[11px] cursor-pointer truncate ${
+                          className={`p-2 rounded-xl border flex items-center justify-between gap-1 transition-all ${
                             active ? 'ring-2 ring-[#FF3B00]' : ''
                           }`}
                         >
-                          {sk.name}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              haptic.snap();
+                              const nextSlots = presetSlots.map((slot, idx) =>
+                                idx === activeSlotIdx
+                                  ? { ...slot, skinId: sk.id }
+                                  : slot
+                              );
+                              setPresetSlots(nextSlots);
+                              syncPresetsToServer(nextSlots, skins);
+                            }}
+                            style={{ color: sk.text }}
+                            className="flex-1 min-w-0 text-left font-black text-[11px] truncate cursor-pointer active:scale-95"
+                          >
+                            {sk.name}
+                          </button>
+                          {isCustom && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSkin(sk.id);
+                              }}
+                              title={`${sk.name} 스킨 삭제`}
+                              style={{ color: sk.text }}
+                              className="w-4 h-4 rounded-full flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-black/25 text-[10px] font-black cursor-pointer shrink-0 transition-opacity active:scale-75"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -2212,14 +2412,61 @@ export default function L2AppPage() {
               </div>
 
               <div className="lg:col-span-5 flex flex-col items-center">
-                <CardStage
-                  item={activeItem}
-                  slot={activeSlot}
-                  skin={activeSkin}
-                  authorName={authorName}
-                  selectedItems={selectedArchiveItems}
-                  curationTitle={curationTitle}
-                />
+                <div className="relative w-full max-w-[440px] flex items-center justify-center">
+                  {/* Left Carousel Arrow */}
+                  <button
+                    type="button"
+                    onClick={() => handleCycleSkin('prev')}
+                    aria-label="이전 스킨 (Previous Skin)"
+                    title="이전 스킨"
+                    className="absolute -left-3 sm:-left-5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[var(--surface)]/90 backdrop-blur-md border border-[var(--line)] shadow-xl text-[var(--fg)] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
+                  >
+                    <svg
+                      className="w-5 h-5 transition-transform group-hover:-translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <CardStage
+                    item={activeItem}
+                    slot={activeSlot}
+                    skin={activeSkin}
+                    authorName={authorName}
+                    selectedItems={selectedArchiveItems}
+                    curationTitle={curationTitle}
+                  />
+
+                  {/* Right Carousel Arrow */}
+                  <button
+                    type="button"
+                    onClick={() => handleCycleSkin('next')}
+                    aria-label="다음 스킨 (Next Skin)"
+                    title="다음 스킨"
+                    className="absolute -right-3 sm:-right-5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[var(--surface)]/90 backdrop-blur-md border border-[var(--line)] shadow-xl text-[var(--fg)] hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
+                  >
+                    <svg
+                      className="w-5 h-5 transition-transform group-hover:translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Active Palette Indicator Badge */}
+                <div className="mt-3.5 flex items-center gap-2">
+                  <span className="text-[10px] mono-num tracking-wider uppercase px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--muted)]">
+                    PALETTE : <span className="text-[var(--fg)] font-bold">{activeSkin.name}</span> ({Object.keys(skins).indexOf(activeSkin.id) + 1}/{Object.keys(skins).length})
+                  </span>
+                </div>
               </div>
             </div>
           </main>
