@@ -78,6 +78,7 @@ export default function CardStage({
   const showProsCons = slot.showProsCons !== false;
   const showLocation = slot.showLocation !== false;
   const showSignature = slot.showSignature !== false;
+  const showGrain = slot.showGrain !== false;
   const displayAuthor = authorName || item.author || '여수피카츄';
 
   // 04: LIST (Multi-item Curation Card — no 3:4 text at top, no bottom API labels)
@@ -91,8 +92,11 @@ export default function CardStage({
           color: skin.text,
           borderColor: skin.border,
         }}
-        className="w-full max-w-[420px] rounded-[24px] overflow-hidden shadow-2xl border flex flex-col justify-between transition-all duration-300"
+        className="w-full max-w-[420px] rounded-[24px] relative overflow-hidden shadow-2xl border flex flex-col justify-between transition-all duration-300"
       >
+        {showGrain && (
+          <div className="absolute inset-0 pointer-events-none z-20 texture-grain mix-blend-overlay" />
+        )}
         <div
           style={{
             background: skin.headerBg || skin.accent,
@@ -198,6 +202,9 @@ export default function CardStage({
         style={{ borderColor: skin.border }}
         className={`w-full max-w-[420px] ${heightClass} rounded-[24px] relative overflow-hidden shadow-2xl border flex flex-col justify-between text-white transition-all duration-300`}
       >
+        {showGrain && (
+          <div className="absolute inset-0 pointer-events-none z-20 texture-grain mix-blend-overlay" />
+        )}
         <div
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -278,6 +285,9 @@ export default function CardStage({
         }}
         className="w-full max-w-[400px] rounded-[24px] overflow-hidden shadow-2xl border relative flex flex-col justify-between transition-all duration-300"
       >
+        {showGrain && (
+          <div className="absolute inset-0 pointer-events-none z-20 texture-grain mix-blend-overlay" />
+        )}
         <div className="ticket-notch-l" />
         <div className="ticket-notch-r" />
 
@@ -400,8 +410,11 @@ export default function CardStage({
         color: skin.text,
         borderColor: skin.border,
       }}
-      className="w-full max-w-[420px] rounded-[24px] overflow-hidden shadow-2xl border flex flex-col justify-between transition-all duration-300"
+      className="w-full max-w-[420px] rounded-[24px] relative overflow-hidden shadow-2xl border flex flex-col justify-between transition-all duration-300"
     >
+      {showGrain && (
+        <div className="absolute inset-0 pointer-events-none z-20 texture-grain mix-blend-overlay" />
+      )}
       <div
         style={{
           background: skin.headerBg || skin.accent,

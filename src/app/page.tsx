@@ -24,6 +24,7 @@ import {
   PRESET_SLOTS,
 } from '@/data/initialData';
 import { compressUploadedImage, dataUrlToFile } from '@/lib/imageUtils';
+import { haptic } from '@/lib/haptics';
 import CardStage from '@/components/CardStage';
 import InstallHint from '@/components/InstallHint';
 
@@ -225,6 +226,7 @@ export default function L2AppPage() {
         setRestoreCodeInput('');
         setDetectedPreviousCode(null);
         setSettingsOpen(false);
+        haptic.success();
         showToast(
           'RESTORE SUCCESS',
           '기존 기기의 모든 기록과 스킨이 복구되었습니다'
@@ -417,14 +419,20 @@ export default function L2AppPage() {
     }
   };
 
-  // Draggable 0.1-unit Score Gauge Handler
+  // Draggable 0.1-unit Score Gauge Handler with Haptic Tick
   const updateScoreFromClientX = (clientX: number) => {
     const track = scoreTrackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     const ratio = Math.max(0.02, Math.min(1, (clientX - rect.left) / rect.width));
     const stepped = Math.max(0.1, Math.round(ratio * 50) / 10);
-    setLogScore(Number(stepped.toFixed(1)));
+    const newScore = Number(stepped.toFixed(1));
+    setLogScore((prev) => {
+      if (prev !== newScore) {
+        haptic.tick();
+      }
+      return newScore;
+    });
   };
 
   // Save or Update Log -> Calls /api/ai/extract (if needed) + /api/logs
@@ -540,6 +548,7 @@ export default function L2AppPage() {
       setSelectedPlace(null);
       setOptionsModalOpen(false);
       setActiveTab('card');
+      haptic.success();
       showToast(
         'LOG SAVED TO CARD',
         '로그가 저장되어 공유 카드가 생성되었습니다'
@@ -578,6 +587,7 @@ export default function L2AppPage() {
 
   // Delete an Archive Item
   const handleDeleteItem = async (id: string) => {
+    haptic.warning();
     const nextList = archives.filter((a) => a.id !== id);
     setArchives(nextList);
     if (activeItemId === id) {
@@ -790,8 +800,14 @@ export default function L2AppPage() {
 
   // Toggle Card Element Visibility in STUDIO
   const toggleSlotElement = (
-    key: 'showScore' | 'showProsCons' | 'showLocation' | 'showSignature'
+    key:
+      | 'showScore'
+      | 'showProsCons'
+      | 'showLocation'
+      | 'showSignature'
+      | 'showGrain'
   ) => {
+    haptic.snap();
     const nextSlots = presetSlots.map((slot, idx) =>
       idx === activeSlotIdx
         ? { ...slot, [key]: slot[key] === false ? true : false }
@@ -809,8 +825,11 @@ export default function L2AppPage() {
            ========================================== */}
         <header className="relative flex items-center justify-between pb-3 mb-3.5 border-b border-[var(--line)] shrink-0">
           <button
-            onClick={() => setActiveTab('log')}
-            className="cursor-pointer display-type text-3xl sm:text-4xl md:text-5xl tracking-tighter text-left"
+            onClick={() => {
+              haptic.snap();
+              setActiveTab('log');
+            }}
+            className="cursor-pointer display-type text-3xl sm:text-4xl md:text-5xl tracking-tighter text-left active:scale-95 transition-transform"
           >
             L2<span className="text-[var(--accent)]">.</span>
           </button>
@@ -828,8 +847,11 @@ export default function L2AppPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-2.5 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs md:text-sm font-black tracking-tight transition-all border whitespace-nowrap cursor-pointer ${
+                  onClick={() => {
+                    haptic.snap();
+                    setActiveTab(tab.id);
+                  }}
+                  className={`px-2.5 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs md:text-sm font-black tracking-tight transition-all border whitespace-nowrap cursor-pointer active:scale-95 ${
                     isActive
                       ? 'bg-[var(--fg)] text-[var(--bg)] border-[var(--fg)]'
                       : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--fg)]'
@@ -1802,8 +1824,11 @@ export default function L2AppPage() {
                         return (
                           <button
                             key={slot.id}
-                            onClick={() => setActiveSlotIdx(idx)}
-                            className={`py-2.5 px-2 rounded-full text-xs font-black tracking-wider uppercase border text-center truncate transition-all cursor-pointer ${
+                            onClick={() => {
+                              haptic.snap();
+                              setActiveSlotIdx(idx);
+                            }}
+                            className={`py-2.5 px-2 rounded-full text-xs font-black tracking-wider uppercase border text-center truncate transition-all cursor-pointer active:scale-95 ${
                               active
                                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                                 : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--fg)]'
@@ -2015,8 +2040,11 @@ export default function L2AppPage() {
                       return (
                         <button
                           key={slot.id}
-                          onClick={() => setActiveSlotIdx(idx)}
-                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                          onClick={() => {
+                            haptic.snap();
+                            setActiveSlotIdx(idx);
+                          }}
+                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer active:scale-95 ${
                             active
                               ? 'border-[var(--accent)] bg-[var(--surface)]'
                               : 'border-[var(--line)] opacity-75 hover:opacity-100'
@@ -2154,6 +2182,7 @@ export default function L2AppPage() {
                         { key: 'showProsCons', label: 'GOOD / NOTE' },
                         { key: 'showLocation', label: 'LOCATION' },
                         { key: 'showSignature', label: 'SIGNATURE' },
+                        { key: 'showGrain', label: '35MM GRAIN' },
                       ] as const
                     ).map((el) => {
                       const on = activeSlot[el.key] !== false;
@@ -2161,7 +2190,7 @@ export default function L2AppPage() {
                         <button
                           key={el.key}
                           onClick={() => toggleSlotElement(el.key)}
-                          className={`px-3.5 py-2 rounded-full text-xs font-black uppercase border transition-all cursor-pointer ${
+                          className={`px-3.5 py-2 rounded-full text-xs font-black uppercase border transition-all cursor-pointer active:scale-95 ${
                             on
                               ? 'bg-[var(--fg)] text-[var(--bg)] border-[var(--fg)]'
                               : 'border-[var(--line)] text-[var(--muted)]'

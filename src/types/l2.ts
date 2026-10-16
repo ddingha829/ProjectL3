@@ -49,6 +49,7 @@ export interface PresetSlot {
   showProsCons?: boolean;
   showLocation?: boolean;
   showSignature?: boolean;
+  showGrain?: boolean;
 }
 
 export interface SkinTheme {

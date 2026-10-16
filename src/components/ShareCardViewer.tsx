@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toPng } from 'html-to-image';
 import { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import CardStage from '@/components/CardStage';
+import { haptic } from '@/lib/haptics';
 
 interface ShareCardViewerProps {
   item: ArchiveItem;
@@ -37,6 +38,7 @@ export default function ShareCardViewer({
       a.download = `L2_${activeSlot.name}_${item.title}.png`;
       a.href = dataUrl;
       a.click();
+      haptic.success();
     } catch {
       // Fallback
     }
@@ -47,6 +49,7 @@ export default function ShareCardViewer({
       await navigator.clipboard.writeText(
         `[L2] ${item.title} (★${item.score}) — ${item.link}`
       );
+      haptic.success();
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {
@@ -77,8 +80,11 @@ export default function ShareCardViewer({
           {presetSlots.slice(0, 3).map((slot, idx) => (
             <button
               key={slot.id}
-              onClick={() => setSlotIdx(idx)}
-              className={`py-2.5 px-3 rounded-full mono-num text-xs font-extrabold border transition-all cursor-pointer ${
+              onClick={() => {
+                haptic.snap();
+                setSlotIdx(idx);
+              }}
+              className={`py-2.5 px-3 rounded-full mono-num text-xs font-extrabold border transition-all cursor-pointer active:scale-95 ${
                 slotIdx === idx
                   ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                   : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
