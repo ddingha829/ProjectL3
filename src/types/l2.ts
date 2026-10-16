@@ -4,7 +4,18 @@ export type ArchiveViewMode = 'poster' | 'index' | 'map';
 
 export type SortOrder = 'desc' | 'asc';
 
-export type CardLayoutType = 'spec' | 'cover' | 'ticket' | 'curation';
+export type CardLayoutType =
+  | 'spec' // 01 KAKAO Editorial Review (Photo)
+  | 'cover' // 02 INSTA Full Bleed (Photo)
+  | 'ticket' // 03 TICKET Admission Stub (Photo)
+  | 'curation' // 04 LIST Curated Picks (Photo)
+  | 'receipt' // 05 BISTRO Thermal Receipt (Photo)
+  | 'polaroid' // 06 35MM Contact Sheet (Photo)
+  | 'magazine' // 07 MONOCLE Editorial Spread (Photo)
+  | 'passport' // 08 TRAVEL Passport & Visa (NO-PHOTO)
+  | 'vinyl' // 09 VINYL LP Sleeve & Liner (NO-PHOTO)
+  | 'library' // 10 LIBRARY Index Catalog Card (NO-PHOTO)
+  | 'broadside'; // 11 SWISS Typographic Poster (NO-PHOTO)
 
 export type OptionRowKey =
   | 'address'
@@ -32,6 +43,7 @@ export interface ArchiveItem {
   note: string;
   link: string;
   img: string;
+  hasPhoto?: boolean;
   cropX: number;
   cropY: number;
   mapX: number;
@@ -41,7 +53,7 @@ export interface ArchiveItem {
 
 export interface PresetSlot {
   id: string;
-  name: 'KAKAO' | 'INSTA' | 'TICKET' | 'LIST';
+  name: string;
   ratio: '3:4' | '1:1' | '9:16';
   skinId: string;
   layout: CardLayoutType;

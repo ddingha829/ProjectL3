@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
           title
         )}`,
       img: imageUrl,
+      hasPhoto: typeof body.hasPhoto === 'boolean' ? body.hasPhoto : Boolean(imageUrl),
       cropX: typeof body.cropX === 'number' ? body.cropX : 50,
       cropY: typeof body.cropY === 'number' ? body.cropY : 50,
       mapX:

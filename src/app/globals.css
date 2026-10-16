@@ -231,3 +231,33 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.18'/%3E%3C/svg%3E");
 }
 
+/* Guilloche Passport Security Texture */
+.guilloche-pattern {
+  background-image: radial-gradient(rgba(212, 175, 55, 0.15) 1px, transparent 1px),
+                    repeating-radial-gradient(rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 2px, transparent 2px, transparent 14px);
+  background-size: 24px 24px, 48px 48px;
+}
+
+/* Vinyl Record Sound Grooves */
+.vinyl-grooves {
+  background: repeating-radial-gradient(circle at center, #1A1A1C, #1A1A1C 2px, #0E0E10 3px, #0E0E10 4px);
+}
+
+/* Library Card Faint Ruled Lines */
+.library-ruled {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(0, 70, 150, 0.12) 28px);
+}
+
+/* Receipt Sawtooth Cuts */
+.receipt-sawtooth-t {
+  background: linear-gradient(135deg, transparent 8px, currentColor 8px), linear-gradient(-135deg, transparent 8px, currentColor 8px);
+  background-size: 16px 16px;
+  background-repeat: repeat-x;
+}
+.receipt-sawtooth-b {
+  background: linear-gradient(45deg, transparent 8px, currentColor 8px), linear-gradient(-45deg, transparent 8px, currentColor 8px);
+  background-size: 16px 16px;
+  background-repeat: repeat-x;
+}
+
+

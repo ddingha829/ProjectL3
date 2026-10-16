@@ -37,6 +37,29 @@ const SAMPLE_PHOTOS = [
   { key: 'museum', label: '전시 공간', url: '/images/museum.jpg' },
 ];
 
+const ALL_LAYOUTS: {
+  id: CardLayoutType;
+  name: string;
+  sub: string;
+  ratio: '3:4' | '1:1' | '9:16';
+  isNoPhoto: boolean;
+}[] = [
+  // Photo Layouts (7)
+  { id: 'spec', name: 'KAKAO', sub: '에디토리얼 리뷰', ratio: '3:4', isNoPhoto: false },
+  { id: 'cover', name: 'INSTA', sub: '풀블리드 포스터', ratio: '1:1', isNoPhoto: false },
+  { id: 'ticket', name: 'TICKET', sub: '입장권 티켓 스텁', ratio: '9:16', isNoPhoto: false },
+  { id: 'curation', name: 'LIST', sub: '멀티 큐레이션', ratio: '3:4', isNoPhoto: false },
+  { id: 'receipt', name: 'RECEIPT', sub: '비스트로 감열 영수증', ratio: '3:4', isNoPhoto: false },
+  { id: 'polaroid', name: 'POLAROID', sub: '35mm 필름 콘택트', ratio: '3:4', isNoPhoto: false },
+  { id: 'magazine', name: 'MAGAZINE', sub: '모노클 매거진 커버', ratio: '3:4', isNoPhoto: false },
+
+  // No-Photo Layouts (4)
+  { id: 'passport', name: 'PASSPORT', sub: '여권 비자 스탬프', ratio: '3:4', isNoPhoto: true },
+  { id: 'vinyl', name: 'VINYL LP', sub: '33⅓ RPM 자켓·트랙', ratio: '1:1', isNoPhoto: true },
+  { id: 'library', name: 'LIBRARY', sub: '도서관 대출 카드', ratio: '3:4', isNoPhoto: true },
+  { id: 'broadside', name: 'BROADSIDE', sub: '스위스 타이포 포스터', ratio: '3:4', isNoPhoto: true },
+];
+
 const STORAGE_KEY = 'l2_production_state_v1';
 
 export default function L2AppPage() {
@@ -85,8 +108,10 @@ export default function L2AppPage() {
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [logTitle, setLogTitle] = useState('');
   const [logBody, setLogBody] = useState('');
+  const [logHasPhoto, setLogHasPhoto] = useState<boolean>(true);
   const [logImg, setLogImg] = useState('/images/korean.jpg');
   const [logCropX, setLogCropX] = useState(50);
+  const [layoutFilter, setLayoutFilter] = useState<'ALL' | 'PHOTO' | 'NO_PHOTO'>('ALL');
   const [logCropY, setLogCropY] = useState(50);
   const [logCat, setLogCat] = useState<ArchiveCategory>('DINING');
   const [logScore, setLogScore] = useState<number>(4.5);
@@ -371,6 +396,34 @@ export default function L2AppPage() {
     [archives, selectedIds]
   );
 
+  const itemHasNoPhoto = Boolean(
+    activeItem && (activeItem.hasPhoto === false || !activeItem.img)
+  );
+
+  // When viewing a photo-less archive, automatically ensure the layout is a No-Photo layout
+  useEffect(() => {
+    if (itemHasNoPhoto) {
+      const PHOTO_LAYOUTS: CardLayoutType[] = [
+        'spec',
+        'cover',
+        'ticket',
+        'curation',
+        'receipt',
+        'polaroid',
+        'magazine',
+      ];
+      if (PHOTO_LAYOUTS.includes(activeSlot.layout)) {
+        setPresetSlots((prev) =>
+          prev.map((s, idx) =>
+            idx === activeSlotIdx
+              ? { ...s, layout: 'passport' as CardLayoutType, ratio: '3:4' as const }
+              : s
+          )
+        );
+      }
+    }
+  }, [itemHasNoPhoto, activeSlot.layout, activeSlotIdx]);
+
   // Handlers for + LOG Photo Panning & File Upload
   const handleLogPhotoPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button, label, input')) return;
@@ -509,7 +562,8 @@ export default function L2AppPage() {
           `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
             title
           )}`,
-        img: logImg,
+        img: logHasPhoto ? logImg : '',
+        hasPhoto: logHasPhoto,
         cropX: logCropX,
         cropY: logCropY,
         mapX: selectedPlace?.x || 48,
@@ -542,10 +596,21 @@ export default function L2AppPage() {
         setArchives((prev) => [payload, ...prev]);
       }
 
+      if (!logHasPhoto) {
+        const nextSlots = presetSlots.map((slot, idx) =>
+          idx === activeSlotIdx
+            ? { ...slot, layout: 'passport' as CardLayoutType, ratio: '3:4' as const }
+            : slot
+        );
+        setPresetSlots(nextSlots);
+        syncPresetsToServer(nextSlots, skins);
+      }
+
       setActiveItemId(targetId);
       setEditingLogId(null);
       setLogTitle('');
       setLogBody('');
+      setLogHasPhoto(true);
       setLogGood('');
       setLogBad('');
       setLogNote('');
@@ -575,7 +640,8 @@ export default function L2AppPage() {
     setEditingLogId(item.id);
     setLogTitle(item.title);
     setLogBody(item.quote);
-    setLogImg(item.img);
+    setLogHasPhoto(item.hasPhoto !== false && Boolean(item.img));
+    setLogImg(item.img || '/images/korean.jpg');
     setLogCropX(item.cropX ?? 50);
     setLogCropY(item.cropY ?? 50);
     setLogCat(item.cat);
@@ -1119,61 +1185,126 @@ export default function L2AppPage() {
 
               {/* 2. FULL-SCREEN PROPORTION PHOTO + CONTENT AREA */}
               <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-6 min-h-[420px]">
-                {/* Left / Top 7 Cols: Generous Photo Frame */}
+                {/* Left / Top 7 Cols: Generous Photo Frame or No-Photo Canvas */}
                 <div
-                  onPointerDown={handleLogPhotoPointerDown}
-                  onPointerMove={handleLogPhotoPointerMove}
-                  onPointerUp={handleLogPhotoPointerUp}
-                  onPointerCancel={handleLogPhotoPointerUp}
-                  className="lg:col-span-7 relative rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--bg)] group min-h-[345px] sm:min-h-[350px] lg:min-h-full cursor-ns-resize select-none"
+                  onPointerDown={logHasPhoto ? handleLogPhotoPointerDown : undefined}
+                  onPointerMove={logHasPhoto ? handleLogPhotoPointerMove : undefined}
+                  onPointerUp={logHasPhoto ? handleLogPhotoPointerUp : undefined}
+                  onPointerCancel={logHasPhoto ? handleLogPhotoPointerUp : undefined}
+                  className={`lg:col-span-7 relative rounded-2xl overflow-hidden border border-[var(--line)] bg-[var(--bg)] group min-h-[345px] sm:min-h-[350px] lg:min-h-full select-none ${
+                    logHasPhoto ? 'cursor-ns-resize' : ''
+                  }`}
                 >
-                  <img
-                    src={logImg}
-                    alt="Uploaded preview"
-                    draggable={false}
-                    style={{ objectPosition: `${logCropX}% ${logCropY}%` }}
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/25 pointer-events-none" />
+                  {/* Photo / No-Photo Mode Pill Switcher (Top Left) */}
+                  <div className="absolute top-3.5 left-3.5 z-20 flex items-center bg-black/70 backdrop-blur-md p-1 rounded-full border border-white/15 shadow-xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic.snap();
+                        setLogHasPhoto(true);
+                      }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-black tracking-wider transition-all cursor-pointer ${
+                        logHasPhoto
+                          ? 'bg-[#FF3B00] text-white shadow-sm'
+                          : 'text-white/70 hover:text-white'
+                      }`}
+                    >
+                      📷 사진 첨부
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic.snap();
+                        setLogHasPhoto(false);
+                      }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-black tracking-wider transition-all cursor-pointer ${
+                        !logHasPhoto
+                          ? 'bg-[#FF3B00] text-white shadow-sm'
+                          : 'text-white/70 hover:text-white'
+                      }`}
+                    >
+                      ✍️ 사진 없음
+                    </button>
+                  </div>
 
-                  <div className="absolute top-3.5 right-3.5 flex items-center gap-2 z-10">
-                    <div className="hidden sm:flex items-center gap-1 bg-black/60 backdrop-blur px-2 py-1 rounded-full border border-white/15">
-                      {SAMPLE_PHOTOS.map((sp) => (
-                        <button
-                          key={sp.key}
-                          type="button"
-                          onClick={() => {
-                            setLogImg(sp.url);
-                            setLogCropX(50);
-                            setLogCropY(50);
-                          }}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-black cursor-pointer ${
-                            logImg === sp.url
-                              ? 'bg-[#FF3B00] text-white'
-                              : 'text-white/75 hover:text-white'
-                          }`}
-                        >
-                          {sp.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <label className="px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-black/75 text-white backdrop-blur hover:bg-[#FF3B00] transition-colors cursor-pointer">
-                      + PHOTO UPLOAD
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
+                  {logHasPhoto ? (
+                    <>
+                      <img
+                        src={logImg}
+                        alt="Uploaded preview"
+                        draggable={false}
+                        style={{ objectPosition: `${logCropX}% ${logCropY}%` }}
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-transform duration-300"
                       />
-                    </label>
-                  </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/25 pointer-events-none" />
 
-                  <div className="absolute bottom-3 left-3.5 pointer-events-none">
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/55 text-white/85 backdrop-blur">
-                      ↕ DRAG PHOTO TO ADJUST FOCUS
-                    </span>
-                  </div>
+                      <div className="absolute top-3.5 right-3.5 flex items-center gap-2 z-10">
+                        <div className="hidden sm:flex items-center gap-1 bg-black/60 backdrop-blur px-2 py-1 rounded-full border border-white/15">
+                          {SAMPLE_PHOTOS.map((sp) => (
+                            <button
+                              key={sp.key}
+                              type="button"
+                              onClick={() => {
+                                setLogImg(sp.url);
+                                setLogCropX(50);
+                                setLogCropY(50);
+                              }}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black cursor-pointer ${
+                                logImg === sp.url
+                                  ? 'bg-[#FF3B00] text-white'
+                                  : 'text-white/75 hover:text-white'
+                              }`}
+                            >
+                              {sp.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <label className="px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-black/75 text-white backdrop-blur hover:bg-[#FF3B00] transition-colors cursor-pointer">
+                          + PHOTO UPLOAD
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="absolute bottom-3 left-3.5 pointer-events-none">
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/55 text-white/85 backdrop-blur">
+                          ↕ DRAG PHOTO TO ADJUST FOCUS
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    /* Elegant Graphic Layout Canvas for No-Photo Mode */
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none guilloche-pattern">
+                      <div className="w-16 h-16 rounded-2xl bg-black/40 border border-white/15 flex items-center justify-center mb-3 shadow-xl backdrop-blur-md">
+                        <span className="display-type text-2xl text-[#FF3B00]">✍️</span>
+                      </div>
+                      <h4 className="apple-wave-text kor-heavy text-2xl sm:text-3xl mb-1.5 tracking-tight">
+                        사진 무첨부 텍스트 모드
+                      </h4>
+                      <p className="text-xs sm:text-sm font-semibold text-[var(--muted)] max-w-sm leading-relaxed mb-4">
+                        사진이 없어도 여권 비자 스탬프, 33⅓ 바이닐 LP, 도서관 대출 카드, 스위스 타이포그래피 등 특화 디자인으로 완벽한 카드가 생성됩니다.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] mono-num font-black">
+                        <span className="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-amber-400">
+                          ✈️ PASSPORT
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-[#FF3B00]">
+                          🎵 VINYL LP
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-cyan-400">
+                          📚 LIBRARY INDEX
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-emerald-400">
+                          🇨🇭 SWISS BROADSIDE
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right / Bottom 5 Cols: Tactile Memo Content Area filling the height */}
@@ -1963,6 +2094,29 @@ export default function L2AppPage() {
                             key={slot.id}
                             onClick={() => {
                               haptic.snap();
+                              if (itemHasNoPhoto) {
+                                const PHOTO_LAYOUTS: CardLayoutType[] = [
+                                  'spec',
+                                  'cover',
+                                  'ticket',
+                                  'curation',
+                                  'receipt',
+                                  'polaroid',
+                                  'magazine',
+                                ];
+                                if (PHOTO_LAYOUTS.includes(slot.layout)) {
+                                  showToast(
+                                    'NO-PHOTO ARCHIVE',
+                                    '사진이 없는 기록으로, 무첨부 전용 양식으로 표시됩니다'
+                                  );
+                                  const nextSlots = presetSlots.map((s, i) =>
+                                    i === idx
+                                      ? { ...s, layout: 'passport' as CardLayoutType }
+                                      : s
+                                  );
+                                  setPresetSlots(nextSlots);
+                                }
+                              }
                               setActiveSlotIdx(idx);
                             }}
                             className={`py-2.5 px-2 rounded-full text-xs font-black tracking-wider uppercase border text-center truncate transition-all cursor-pointer active:scale-95 ${
@@ -2331,29 +2485,74 @@ export default function L2AppPage() {
                   </div>
                 </div>
 
-                {/* 3. CARD LAYOUT STRUCTURE */}
-                <div>
-                  <div className="text-[11px] font-black tracking-widest uppercase mb-1.5 text-[var(--muted)]">
-                    CARD STRUCTURE
+                {/* 3. CARD LAYOUT STRUCTURE (PHOTO & NO-PHOTO SEGREGATION) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="text-[11px] font-black tracking-widest uppercase text-[var(--muted)]">
+                      CARD STRUCTURE ({ALL_LAYOUTS.length})
+                    </div>
+                    {/* Category Filter Pills: All / Photo / No-Photo */}
+                    <div className="flex items-center gap-1 bg-[var(--surface-2)] p-1 rounded-full border border-[var(--line)]">
+                      {(
+                        [
+                          { id: 'ALL', label: '전체 (11)' },
+                          { id: 'PHOTO', label: '📷 사진형 (7)' },
+                          { id: 'NO_PHOTO', label: '✍️ 무첨부형 (4)' },
+                        ] as const
+                      ).map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => {
+                            haptic.snap();
+                            setLayoutFilter(f.id);
+                          }}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all cursor-pointer ${
+                            layoutFilter === f.id
+                              ? 'bg-[var(--accent)] text-white shadow-sm'
+                              : 'text-[var(--muted)] hover:text-[var(--fg)]'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(
-                      [
-                        { id: 'spec', name: 'KAKAO', ratio: '3:4' },
-                        { id: 'cover', name: 'INSTA', ratio: '1:1' },
-                        { id: 'ticket', name: 'TICKET', ratio: '9:16' },
-                        { id: 'curation', name: 'LIST', ratio: '3:4' },
-                      ] as {
-                        id: CardLayoutType;
-                        name: string;
-                        ratio: '3:4' | '1:1' | '9:16';
-                      }[]
-                    ).map((ly) => {
+
+                  {/* Warning banner when active item has no photo */}
+                  {itemHasNoPhoto && (
+                    <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold flex items-center gap-2">
+                      <span className="text-base">✍️</span>
+                      <span>
+                        선택된 기록은 사진이 없어 <strong>무첨부 전용 양식</strong>(여권, LP, 도서관, 스위스)만 선택 가능합니다.
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {ALL_LAYOUTS.filter((ly) => {
+                      if (layoutFilter === 'PHOTO') return !ly.isNoPhoto;
+                      if (layoutFilter === 'NO_PHOTO') return ly.isNoPhoto;
+                      return true;
+                    }).map((ly) => {
                       const active = activeSlot.layout === ly.id;
+                      const disabled = itemHasNoPhoto && !ly.isNoPhoto;
+
                       return (
                         <button
                           key={ly.id}
+                          type="button"
+                          disabled={disabled}
                           onClick={() => {
+                            if (disabled) {
+                              haptic.warning();
+                              showToast(
+                                'PHOTO REQUIRED',
+                                '이 기록은 사진이 없어 사진 첨부형 양식을 사용할 수 없습니다'
+                              );
+                              return;
+                            }
+                            haptic.snap();
                             const nextSlots = presetSlots.map((slot, idx) =>
                               idx === activeSlotIdx
                                 ? { ...slot, layout: ly.id, ratio: ly.ratio }
@@ -2362,15 +2561,42 @@ export default function L2AppPage() {
                             setPresetSlots(nextSlots);
                             syncPresetsToServer(nextSlots, skins);
                           }}
-                          className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
-                            active
-                              ? 'bg-[var(--fg)] text-[var(--bg)] border-[var(--fg)]'
-                              : 'border-[var(--line)] text-[var(--muted)]'
+                          className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between min-h-[78px] ${
+                            disabled
+                              ? 'opacity-40 cursor-not-allowed bg-[var(--surface-2)] border-[var(--line)]'
+                              : active
+                              ? 'bg-[var(--fg)] text-[var(--bg)] border-[var(--fg)] shadow-lg ring-2 ring-[var(--accent)]/50'
+                              : 'border-[var(--line)] bg-[var(--surface)] hover:border-[var(--fg)] text-[var(--fg)] cursor-pointer'
                           }`}
                         >
-                          <span className="display-type text-xs sm:text-sm">
-                            {ly.name}
-                          </span>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="display-type text-sm sm:text-base tracking-tight truncate">
+                              {ly.name}
+                            </span>
+                            <span
+                              className={`mono-num text-[9px] font-black px-1.5 py-0.5 rounded ${
+                                active
+                                  ? 'bg-[var(--bg)] text-[var(--fg)]'
+                                  : 'bg-[var(--line)] text-[var(--muted)]'
+                              }`}
+                            >
+                              {ly.ratio}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex items-center justify-between gap-1">
+                            <span
+                              className={`text-[10px] font-semibold truncate ${
+                                active ? 'opacity-90' : 'text-[var(--muted)]'
+                              }`}
+                            >
+                              {ly.sub}
+                            </span>
+                            {disabled && (
+                              <span className="mono-num text-[8px] font-black uppercase text-amber-500 shrink-0">
+                                사진 필요
+                              </span>
+                            )}
+                          </div>
                         </button>
                       );
                     })}
