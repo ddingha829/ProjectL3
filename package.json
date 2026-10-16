@@ -1,0 +1,29 @@
+{
+  "name": "l2-archive-card-engine",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "html-to-image": "^1.11.11",
+    "lucide-react": "^1.16.0",
+    "next": "16.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "postcss": "^8.5.0",
+    "puppeteer-core": "^24.4.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #08080A;
+  --surface: #111115;
+  --surface-2: #18181E;
+  --fg: #F5F4F0;
+  --muted: #7C7B76;
+  --line: rgba(245, 244, 240, 0.12);
+  --accent: #FF3B1D;
+  --accent-fg: #FFFFFF;
+
+  /* UI_GUIDE.md Spacing Tokens */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+}
+
+html.light {
+  --bg: #F3F1EC;
+  --surface: #FFFFFF;
+  --surface-2: #EAE6DF;
+  --fg: #0B0B0C;
+  --muted: #74726D;
+  --line: rgba(11, 11, 12, 0.11);
+  --accent: #FF3314;
+  --accent-fg: #FFFFFF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  margin: 0;
+  padding: 0;
+}
+
+/* Sculptural Typography */
+.display-type {
+  font-family: 'Inter', 'Pretendard Variable', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+}
+
+.kor-heavy {
+  font-family: 'Pretendard Variable', 'Inter', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+.mono-num {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.03em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 99px;
+}
+
+/* Card Surface Noise */
+.noise-overlay {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+/* Ticket Perforation */
+.ticket-notch-l {
+  position: absolute;
+  left: -14px;
+  top: 66%;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+}
+.ticket-notch-r {
+  position: absolute;
+  right: -14px;
+  top: 66%;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+}
+
+/* Architectural Map Grid Background */
+.map-grid-bg {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Floating-to-Docked Share Action Bar */
+.share-dock-sticky {
+  position: sticky;
+  bottom: 18px;
+  z-index: 45;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.share-dock-sticky.is-floating .share-dock-inner {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 10px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  box-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.65);
+}
+.share-dock-sticky.is-docked .share-dock-inner {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+/* Interactive Minimalist Log Canvas */
+.memo-title-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  font-family: 'Pretendard Variable', 'Inter', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  color: var(--fg);
+}
+.memo-title-input::placeholder {
+  color: color-mix(in srgb, var(--muted) 42%, transparent);
+}
+.memo-body-textarea {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: none;
+  line-height: 1.72;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+}
+.memo-body-textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+/* Frosted Overlay Option Rows */
+.option-overlay-backdrop {
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.option-row-card {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid var(--line);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.option-row-card:hover {
+  border-color: rgba(245, 244, 240, 0.32);
+}
+
+/* Apple-style Luminous Shimmer Wave Typography */
+@keyframes appleWaveShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gentleWaveFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.apple-wave-text {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fg) 45%, transparent) 0%,
+    color-mix(in srgb, var(--fg) 85%, transparent) 25%,
+    var(--fg) 50%,
+    color-mix(in srgb, var(--fg) 85%, transparent) 75%,
+    color-mix(in srgb, var(--fg) 45%, transparent) 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: appleWaveShimmer 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite,
+             gentleWaveFloat 6s ease-in-out infinite;
+  display: inline-block;
+}
+
