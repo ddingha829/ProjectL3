@@ -1,4 +1,4 @@
-const CACHE = 'l2-test-shell-v3';
+const CACHE = 'l2-test-shell-v4';
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['/', '/icons/icon-192.png', '/icons/icon-512.png'])).then(() => self.skipWaiting()));
 });

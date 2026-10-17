@@ -1,9 +1,33 @@
-.test-shell.view-card,.test-shell.view-studio{height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}.view-card .test-main,.view-studio .test-main{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 0 0}.view-card .record-card,.view-studio .preset-studio{flex:1;width:100%;min-height:0}.view-studio .test-toast{bottom:90px}.record-editor .quick-composer{max-width:none}.record-editor .quick-composer>.mb-3{display:none}.record-editor .quick-form{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}.record-editor .quick-form::before,.record-editor .quick-form::after{display:none}.record-editor .quick-title input{font-size:32px;min-height:60px}.record-editor .quick-memory{font-size:17px;min-height:100px;max-height:none}.record-editor .quick-memory::placeholder{font-size:24px}.record-editor .quick-save{bottom:0}.group-editor{display:grid;gap:14px}.group-editor>label{font-size:12px;color:var(--muted)}.group-editor>input{width:100%;min-width:0;font-size:25px;font-weight:800;background:transparent;min-height:44px;border-bottom:1px solid var(--line);letter-spacing:-.035em}.group-editor-members{max-height:40dvh;overflow:auto;display:grid}.group-editor-members label{display:flex;align-items:center;gap:12px;min-height:50px;border-bottom:1px solid var(--line);font-size:14px}.group-editor-members input{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}.group-editor>p{color:var(--accent);font-size:12px}.group-editor>.test-button{position:sticky;bottom:0}.test-shell :is(.preset-studio,.record-card) button{cursor:pointer}.test-shell button:active:not(:disabled){transition:transform 100ms ease;}.quick-action:active,.quick-save-button:active,.record-card-actions button:active{transform:scale(.975)}
+.test-shell.view-card,.test-shell.view-studio{height:100dvh;min-height:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}.view-card .test-main,.view-studio .test-main{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 0 0}.view-card .record-card,.view-studio .preset-studio{flex:1;width:100%;min-height:0}.view-studio .test-toast{bottom:90px}.record-editor .quick-composer{max-width:none}.record-editor .quick-composer>.mb-3{display:none}.record-editor .quick-form{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}.record-editor .quick-form::before,.record-editor .quick-form::after{display:none}.record-editor .quick-title input{font-size:32px;min-height:60px}.record-editor .quick-memory{font-size:17px;min-height:100px;max-height:none}.record-editor .quick-memory::placeholder{font-size:24px}.record-editor .quick-save{bottom:0}.group-editor{display:grid;gap:14px}.group-editor>label{font-size:12px;color:var(--muted)}.group-editor>input{width:100%;min-width:0;font-size:25px;font-weight:800;background:transparent;min-height:44px;border-bottom:1px solid var(--line);letter-spacing:-.035em}.group-editor-members{max-height:40dvh;overflow:auto;display:grid}.group-editor-members label{display:flex;align-items:center;gap:12px;min-height:50px;border-bottom:1px solid var(--line);font-size:14px}.group-editor-members input{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}.group-editor>p{color:var(--accent);font-size:12px}.group-editor>.test-button{position:sticky;bottom:0}.test-shell :is(.preset-studio,.record-card) button{cursor:pointer}.test-shell button:active:not(:disabled){transition:transform 100ms ease;}.quick-action:active,.quick-save-button:active,.record-card-actions button:active{transform:scale(.975)}
 @media(max-height:500px) and (min-width:641px){.test-shell.view-card,.test-shell.view-studio{height:auto;min-height:100dvh}.view-card .record-card{height:380px}.view-studio .preset-studio{height:420px}}
 @media(prefers-reduced-motion:reduce){html:not([data-motion=on]) :is(.quick-action:active,.quick-save-button:active,.record-card-actions button:active){transform:none}}
 .record-editor .quick-input-surface{padding:0;border:0;border-radius:0;background:transparent}
 .record-editor .quick-input-surface::before,.record-editor .quick-input-surface::after{display:none}
-.view-card .test-toast,.view-studio .test-toast{bottom:auto;top:80px}
+.view-card .test-toast,.view-studio .test-toast{bottom:auto;top:max(80px, calc(env(safe-area-inset-top, 0px) + 64px))}
+
+/* Ensure header never collides with iOS Dynamic Island / status bar blur in standalone PWA */
+@media (max-width: 640px) {
+  .test-shell {
+    padding-top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  }
+  .test-shell.is-composing {
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
+}
+
+@media (display-mode: standalone) {
+  .test-shell {
+    padding-top: max(60px, calc(env(safe-area-inset-top, 48px) + 14px)) !important;
+  }
+}
+
+html[data-standalone="true"] .test-shell {
+  padding-top: max(60px, calc(env(safe-area-inset-top, 48px) + 14px)) !important;
+}
 
 @keyframes pwaPopupSlideDown {
   0% {
@@ -29,7 +53,7 @@
 
 .pwa-top-popup {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top));
+  top: max(12px, calc(env(safe-area-inset-top, 0px) + 8px));
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
   z-index: 95;

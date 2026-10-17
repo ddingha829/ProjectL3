@@ -55,7 +55,7 @@ export default function RootLayout({
           async
         ></script>
       </head>
-      <body className="min-h-screen flex flex-col justify-between selection:bg-[#FF3B1D] selection:text-white pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+      <body className="min-h-screen flex flex-col justify-between selection:bg-[#FF3B1D] selection:text-white">
         {children}
       </body>
     </html>

@@ -40,6 +40,11 @@ export function usePwaInstall(): PwaState {
         Boolean((window.navigator as unknown as { standalone?: boolean }).standalone) ||
         window.matchMedia('(display-mode: standalone)').matches;
       setIsStandalone(standalone);
+      if (standalone) {
+        document.documentElement.dataset.standalone = 'true';
+      } else {
+        delete document.documentElement.dataset.standalone;
+      }
     };
 
     checkStandalone();
