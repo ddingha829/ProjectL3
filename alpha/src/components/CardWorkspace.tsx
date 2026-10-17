@@ -1,6 +1,6 @@
 'use client';
-import { useState, type RefObject } from 'react';
-import { Check, Share2, PencilLine, LoaderCircle, Layers } from 'lucide-react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ArchiveItem, CardLayoutType, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_SKINS } from '@/data/initialData';
 import { CARD_LAYOUTS, getCardLayout } from '@/lib/cardLayouts';
@@ -36,48 +36,90 @@ const NO_PHOTO_LAYOUTS = CARD_LAYOUTS.filter(entry => entry.isNoPhoto);
 
 export default function CardWorkspace(p: Props) {
   const [membersOpen, setMembersOpen] = useState(false);
+  const [direction, setDirection] = useState(1);
+  const railRef = useRef<HTMLDivElement>(null);
   const shareReady = p.exportState === 'ready' && !p.applying;
   const isNoPhoto = (p.item.hasPhoto === false || !p.item.img) && !isLogGroup(p.item);
   const allSkins = { ...INITIAL_SKINS, ...(p.skins || {}) };
 
+  const activeIndex = Math.max(
+    0,
+    p.presets.findIndex(
+      preset =>
+        p.slot.id === preset.id &&
+        p.slot.skinId === preset.skinId &&
+        (!!p.item.img ? p.slot.layout === preset.layout : true)
+    )
+  );
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const activeBtn = rail.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [p.slot.id, p.slot.skinId, p.slot.layout]);
+
+  const selectPresetAt = (nextIdx: number, stepDir?: number) => {
+    if (!p.presets.length || p.applying) return;
+    const wrapped = (nextIdx + p.presets.length) % p.presets.length;
+    const dir = stepDir ?? (wrapped < activeIndex ? -1 : 1);
+    setDirection(dir);
+    p.onApplyPreset(p.presets[wrapped]);
+  };
+
   return (
     <section className="record-card" aria-label="로그 카드">
-      <div className="record-card-split">
-        <div className="record-card-stage">
-          <FitCard
-            ratio={p.slot.ratio}
-            animationKey={`${p.item.id}-${p.slot.layout}-${p.slot.skinId}-${p.slot.ratio}`}
+      <div className="record-card-stage">
+        <FitCard
+          ratio={p.slot.ratio}
+          transition="slide"
+          direction={direction}
+          animationKey={`${p.item.id}-${p.slot.id}-${p.slot.layout}-${p.slot.skinId}-${p.slot.ratio}`}
+        >
+          <CardStage
+            item={p.item}
+            slot={p.slot}
+            skin={p.skin}
+            authorName={p.authorName}
+            selectedItems={p.members}
+            curationTitle={p.item.title}
+            cardCaptureRef={p.captureRef}
+          />
+        </FitCard>
+        {isLogGroup(p.item) && (
+          <button
+            type="button"
+            className="record-group-members"
+            onClick={() => setMembersOpen(true)}
           >
-            <CardStage
-              item={p.item}
-              slot={p.slot}
-              skin={p.skin}
-              authorName={p.authorName}
-              selectedItems={p.members}
-              curationTitle={p.item.title}
-              cardCaptureRef={p.captureRef}
-            />
-          </FitCard>
-          {isLogGroup(p.item) && (
-            <button
-              type="button"
-              className="record-group-members"
-              onClick={() => setMembersOpen(true)}
-            >
-              <Layers size={13} />
-              담긴 로그 {p.members.length}개
-            </button>
-          )}
-        </div>
+            <Layers size={13} />
+            담긴 로그 {p.members.length}개
+          </button>
+        )}
+      </div>
 
-        <aside className="record-preset-picker" aria-label="카드 스타일 선택">
-          <div className="record-preset-head">
-            <div className="record-preset-title-row">
-              <span>프리셋</span>
-              {p.hasPendingChange && <em className="record-pending-badge">미저장</em>}
-            </div>
+      {p.exportState === 'error' && (
+        <div className="record-card-error" role="alert">
+          <span>{p.exportError}</span>
+          <button type="button" onClick={p.onRetryExport}>
+            다시 준비
+          </button>
+        </div>
+      )}
+
+      <div className="record-preset-controls" aria-label="카드 스타일 선택">
+        <div className="record-preset-bar-head">
+          <div className="record-preset-title-group">
+            <span>프리셋</span>
+            <small>{activeIndex + 1} / {p.presets.length}</small>
+            {p.hasPendingChange && <em className="record-pending-badge">미저장</em>}
+          </div>
+
+          <div className="record-preset-head-right">
             {isNoPhoto && p.onApplyLayout && (
-              <div className="record-nophoto-layouts" role="group" aria-label="글 전용 카드 도안">
+              <div className="record-nophoto-tabs" role="group" aria-label="글 전용 카드 도안">
                 {NO_PHOTO_LAYOUTS.map(layout => (
                   <button
                     type="button"
@@ -91,53 +133,67 @@ export default function CardWorkspace(p: Props) {
                 ))}
               </div>
             )}
+            <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동">
+              <button
+                type="button"
+                aria-label="이전 프리셋"
+                disabled={p.applying || p.presets.length <= 1}
+                onClick={() => selectPresetAt(activeIndex - 1, -1)}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label="다음 프리셋"
+                disabled={p.applying || p.presets.length <= 1}
+                onClick={() => selectPresetAt(activeIndex + 1, 1)}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
-
-          <div className="record-preset-scroll" role="group" aria-label="로그에 적용할 프리셋">
-            {p.presets.map(preset => {
-              const isSelected =
-                p.slot.id === preset.id &&
-                p.slot.skinId === preset.skinId &&
-                (!!p.item.img ? p.slot.layout === preset.layout : true);
-              const presetSkin = allSkins[preset.skinId] || INITIAL_SKINS.paper;
-              const presetLayout = getCardLayout(preset.layout);
-
-              return (
-                <button
-                  type="button"
-                  key={preset.id}
-                  aria-pressed={isSelected}
-                  disabled={p.applying}
-                  onClick={() => p.onApplyPreset(preset)}
-                  className="record-preset-item"
-                >
-                  <div className="record-preset-item-top">
-                    <span className="record-preset-swatches" aria-hidden="true">
-                      <i style={{ background: presetSkin.bg }} />
-                      <i style={{ background: presetSkin.text }} />
-                      <i style={{ background: presetSkin.accent }} />
-                    </span>
-                    <small>{presetLayout.sub.replace('형', '')}</small>
-                  </div>
-                  <div className="record-preset-item-bottom">
-                    <strong>{preset.name}</strong>
-                    {isSelected && <Check size={12} className="record-preset-check" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-      </div>
-
-      {p.exportState === 'error' && (
-        <div className="record-card-error" role="alert">
-          <span>{p.exportError}</span>
-          <button type="button" onClick={p.onRetryExport}>
-            다시 준비
-          </button>
         </div>
-      )}
+
+        <div
+          ref={railRef}
+          className="preset-rail record-preset-rail"
+          role="group"
+          aria-label="옆으로 스와이프하여 프리셋 선택"
+        >
+          {p.presets.map((preset, index) => {
+            const isSelected =
+              p.slot.id === preset.id &&
+              p.slot.skinId === preset.skinId &&
+              (!!p.item.img ? p.slot.layout === preset.layout : true);
+            const presetSkin = allSkins[preset.skinId] || INITIAL_SKINS.paper;
+            const presetLayout = getCardLayout(preset.layout);
+
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                aria-pressed={isSelected}
+                disabled={p.applying}
+                onClick={() => selectPresetAt(index)}
+                className={`record-preset-chip ${isSelected ? 'selected' : ''}`}
+              >
+                <div className="record-preset-chip-top">
+                  <span className="record-preset-swatches" aria-hidden="true">
+                    <i style={{ background: presetSkin.bg }} />
+                    <i style={{ background: presetSkin.text }} />
+                    <i style={{ background: presetSkin.accent }} />
+                  </span>
+                  <small>{presetLayout.sub.replace('형', '')}</small>
+                </div>
+                <div className="record-preset-chip-bottom">
+                  <strong>{preset.name}</strong>
+                  {isSelected && <Check size={12} className="record-preset-check" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="record-card-actions" role="group" aria-label="카드 작업">
         <button type="button" onClick={p.onEdit}>
