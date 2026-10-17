@@ -38,4 +38,13 @@ export interface L2Store {
   /** Increments today's counter and returns the new count. */
   bumpUsage(ownerId: string, kind: AiUsageKind): Promise<number>;
   getUsage(ownerId: string, kind: AiUsageKind): Promise<number>;
+
+  /** Returns the username if this deviceId belongs to a registered ID/Password account. */
+  getAccountUsername?(deviceId: string): Promise<string | null>;
+  /** Logs in or registers an ID/Password account and migrates any anonymous device logs. */
+  loginOrRegister?(
+    username: string,
+    password: string,
+    previousDeviceId?: string | null
+  ): Promise<{ accountId: string; username: string; isNewAccount: boolean }>;
 }

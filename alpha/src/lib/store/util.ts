@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'crypto';
+import { createHash, randomInt, randomUUID } from 'crypto';
 import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { Profile } from './types';
 
@@ -11,6 +11,24 @@ export function isUuid(v: unknown): v is string {
 
 export function newId(): string {
   return randomUUID();
+}
+
+export function normalizeUsername(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+export function accountUuidFromUsername(username: string): string {
+  const norm = normalizeUsername(username);
+  const hex = createHash('sha256').update(`l2-account-v1:${norm}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+export function hashAccountPassword(username: string, password: string): string {
+  const norm = normalizeUsername(username);
+  return createHash('sha256')
+    .update(`l2-pwd-v1:${norm}:${password}`)
+    .digest('hex')
+    .slice(0, 32);
 }
 
 // No 0/O/1/I/L to avoid misreading when typed by hand.

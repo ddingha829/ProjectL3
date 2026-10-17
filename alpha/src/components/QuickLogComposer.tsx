@@ -96,7 +96,7 @@ async function preparePhoto(file: File): Promise<string> {
     image.src = url;
     await image.decode();
     if (!image.naturalWidth || !image.naturalHeight) throw new Error('사진 크기를 확인하지 못했어요.');
-    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+    const scale = Math.min(1, 1080 / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -105,7 +105,7 @@ async function preparePhoto(file: File): Promise<string> {
     context.fillStyle = '#f5f4f0';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.86);
+    return canvas.toDataURL('image/jpeg', 0.8);
   } catch (error) {
     if (error instanceof Error && /사진|15MB/.test(error.message)) throw error;
     throw new Error('사진을 읽지 못했어요. JPG, PNG 또는 WebP 사진으로 다시 선택해 주세요.');

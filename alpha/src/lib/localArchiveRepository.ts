@@ -3,6 +3,8 @@ import { cloneCardAppearance } from '@/lib/cardAppearance';
 
 export interface ArchiveServerSnapshot {
   deviceId?: string;
+  username?: string | null;
+  storeKind?: 'supabase' | 'file';
   recoveryCode?: string;
   authorName?: string;
   presetSlots?: PresetSlot[];

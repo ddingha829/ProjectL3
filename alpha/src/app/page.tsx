@@ -185,7 +185,7 @@ export default function L2TestApp(){
         }
         if (canceled) return;
         if (!node) throw new Error('카드가 아직 준비되지 않았어요.');
-        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.png`, pixelRatio: 3 });
+        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.png`, pixelRatio: 2 });
         if (!canceled) { exportFile.current = prepared.file; setExportState('ready'); }
       } catch (error) {
         if (!canceled) { setExportState('error'); setExportError(error instanceof Error ? error.message : '이미지를 준비하지 못했어요.'); }
@@ -199,7 +199,7 @@ export default function L2TestApp(){
     if(!captureRef.current)return null;
     try{
       setExportState('preparing');
-      const prepared=await prepareCardExport(captureRef.current,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`,pixelRatio:3});
+      const prepared=await prepareCardExport(captureRef.current,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`,pixelRatio:2});
       exportFile.current=prepared.file;
       setExportState('ready');
       return prepared.file;
@@ -287,7 +287,7 @@ export default function L2TestApp(){
       {tab==='studio'&&preferences.ready&&<StudioPanel presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
     </main>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} onSuggest={suggestSummary} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:30}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa}/>}
+    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:30}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     {toast&&<div className={`test-toast ${toast.tone}`} role={toast.tone==='error'?'alert':'status'}><span className="test-toast-check" aria-hidden="true">{toast.tone==='error'?'!':toast.tone==='success'?'✓':'·'}</span><span>{toast.title}</span>{toast.action&&<button onClick={()=>{toast.action?.();setToast(null);}}>{toast.actionLabel}</button>}<button className="test-toast-close" aria-label="알림 닫기" onClick={()=>setToast(null)}>×</button></div>}
   </div>;

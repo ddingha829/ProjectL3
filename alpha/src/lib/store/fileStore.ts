@@ -5,9 +5,12 @@ import { ArchiveItem } from '@/types/l2';
 import { AiUsageKind, L2Store, Profile, ProfilePrefs } from './types';
 import { cloneCardAppearance, normalizeDefaultPresetId } from '@/lib/cardAppearance';
 import {
+  accountUuidFromUsername,
   defaultProfile,
   generateRecoveryCode,
+  hashAccountPassword,
   MAX_PHOTO_BYTES,
+  normalizeUsername,
   parseDataUrl,
   todayKST,
 } from './util';
@@ -179,5 +182,47 @@ export const fileStore: L2Store = {
 
   async getUsage(ownerId, kind: AiUsageKind) {
     return load().usage[`${ownerId}:${kind}:${todayKST()}`] || 0;
+  },
+
+  async getAccountUsername(deviceId) {
+    const db = load();
+    const prefix = `${deviceId}:pwd:`;
+    const hit = Object.keys(db.usage).find((k) => k.startsWith(prefix));
+    if (!hit) return null;
+    const parts = hit.slice(prefix.length).split(':');
+    return parts.slice(1).join(':') || null;
+  },
+
+  async loginOrRegister(username, password, previousDeviceId) {
+    const norm = normalizeUsername(username);
+    const accountId = accountUuidFromUsername(norm);
+    const pwdHash = hashAccountPassword(norm, password);
+    const db = load();
+    const prefix = `${accountId}:pwd:`;
+    const existingKey = Object.keys(db.usage).find((k) => k.startsWith(prefix));
+
+    let isNewAccount = false;
+    if (existingKey) {
+      const expectedPrefix = `${accountId}:pwd:${pwdHash}:`;
+      if (!existingKey.startsWith(expectedPrefix)) {
+        throw new Error('INVALID_PASSWORD');
+      }
+    } else {
+      isNewAccount = true;
+      await this.ensureProfile(accountId);
+      db.usage[`${accountId}:pwd:${pwdHash}:${norm}`] = 1;
+      persist(db);
+    }
+
+    if (previousDeviceId && previousDeviceId !== accountId) {
+      const prevItems = await this.listArchives(previousDeviceId);
+      for (const item of prevItems) {
+        if (!db.archives[item.id]) {
+          await this.saveArchive(accountId, item);
+        }
+      }
+    }
+
+    return { accountId, username: norm, isNewAccount };
   },
 };

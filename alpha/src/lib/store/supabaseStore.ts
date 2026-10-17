@@ -5,10 +5,13 @@ import { AiUsageKind, L2Store, Profile, ProfilePrefs } from './types';
 import { fileStore } from './fileStore';
 import { normalizeDefaultPresetId } from '@/lib/cardAppearance';
 import {
+  accountUuidFromUsername,
   defaultProfile,
   generateRecoveryCode,
+  hashAccountPassword,
   MAX_PHOTO_BYTES,
   newId,
+  normalizeUsername,
   parseDataUrl,
   todayKST,
 } from './util';
@@ -364,6 +367,82 @@ export const supabaseStore: L2Store = {
       return row?.count || 0;
     } catch (err) {
       if (isSchemaMissingError(err)) return fileStore.getUsage(ownerId, kind);
+      throw err;
+    }
+  },
+
+  async getAccountUsername(deviceId) {
+    try {
+      const rows = must(
+        await db()
+          .from('l2_ai_usage')
+          .select('kind')
+          .eq('owner_id', deviceId)
+          .eq('day', '2000-01-01')
+          .limit(5)
+      ) as { kind: string }[];
+      const hit = rows.find((r) => r.kind.startsWith('pwd:'));
+      if (!hit) return null;
+      const parts = hit.kind.slice(4).split(':');
+      return parts.slice(1).join(':') || null;
+    } catch (err) {
+      if (isSchemaMissingError(err)) return fileStore.getAccountUsername?.(deviceId) ?? null;
+      return null;
+    }
+  },
+
+  async loginOrRegister(username, password, previousDeviceId) {
+    try {
+      const norm = normalizeUsername(username);
+      const accountId = accountUuidFromUsername(norm);
+      const pwdHash = hashAccountPassword(norm, password);
+
+      const rows = must(
+        await db()
+          .from('l2_ai_usage')
+          .select('kind')
+          .eq('owner_id', accountId)
+          .eq('day', '2000-01-01')
+          .limit(5)
+      ) as { kind: string }[];
+
+      const existing = rows.find((r) => r.kind.startsWith('pwd:'));
+      let isNewAccount = false;
+
+      if (existing) {
+        const expectedPrefix = `pwd:${pwdHash}:`;
+        if (!existing.kind.startsWith(expectedPrefix)) {
+          throw new Error('INVALID_PASSWORD');
+        }
+      } else {
+        isNewAccount = true;
+        await this.ensureProfile(accountId);
+        must(
+          await db().from('l2_ai_usage').insert({
+            owner_id: accountId,
+            kind: `pwd:${pwdHash}:${norm}`,
+            day: '2000-01-01',
+            count: 1,
+          })
+        );
+      }
+
+      if (previousDeviceId && previousDeviceId !== accountId) {
+        const prevItems = await this.listArchives(previousDeviceId);
+        for (const item of prevItems) {
+          const already = await this.getOwnedArchive(accountId, item.id);
+          if (!already) {
+            await this.saveArchive(accountId, item);
+          }
+        }
+      }
+
+      return { accountId, username: norm, isNewAccount };
+    } catch (err) {
+      if (err instanceof Error && err.message === 'INVALID_PASSWORD') throw err;
+      if (isSchemaMissingError(err) && fileStore.loginOrRegister) {
+        return fileStore.loginOrRegister(username, password, previousDeviceId);
+      }
       throw err;
     }
   },

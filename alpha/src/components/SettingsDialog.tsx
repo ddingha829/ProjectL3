@@ -31,10 +31,14 @@ interface Props {
   inboxCount?: number;
   onImportPlaces?: (places: PlaceInboxItem[]) => void;
   pwa?: PwaState;
+  username?: string | null;
 }
 
 export default function SettingsDialog(p: Props) {
   const [code, setCode] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [loginPw, setLoginPw] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -42,6 +46,40 @@ export default function SettingsDialog(p: Props) {
     try { return typeof window === 'undefined' || localStorage.getItem('l2_test_haptics') !== 'off'; }
     catch { return false; }
   });
+
+  const handleLogin = async () => {
+    if (!loginId.trim() || !loginPw.trim()) return;
+    setAuthBusy(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginId.trim(), password: loginPw.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '로그인하지 못했어요.');
+      window.location.reload();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '아이디/비밀번호를 확인해 주세요.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthBusy(true);
+    try {
+      await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+      window.location.reload();
+    } finally {
+      setAuthBusy(false);
+    }
+  };
 
   const restore = async () => {
     if (!code.trim()) return;
@@ -75,6 +113,59 @@ export default function SettingsDialog(p: Props) {
           <span className="test-version-badge">ALPHA VERSION</span>
           <div><span role="status">{p.storageStatus}</span><button className="test-text-button" onClick={p.onRetrySync}>다시 연결</button></div>
           {p.storageError && <p className="test-panel-note">{p.storageError}</p>}
+        </div>
+        <div className="test-recovery">
+          <span className="test-field-label">계정 로그인 · 기기 간 동기화 (Supabase)</span>
+          {p.username ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <code>● {p.username} 계정 연동 중</code>
+                <button
+                  type="button"
+                  className="test-text-button"
+                  disabled={authBusy}
+                  onClick={() => void handleLogout()}
+                >
+                  로그아웃
+                </button>
+              </div>
+              <p className="test-panel-note">
+                다른 기기나 홈 화면 앱(PWA)에서도 <b>{p.username}</b> 아이디로 로그인하면 사진과 기록이 똑같이 연동됩니다.
+              </p>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                <input
+                  value={loginId}
+                  onChange={e => setLoginId(e.target.value)}
+                  placeholder="아이디 (2자 이상)"
+                  autoComplete="username"
+                  style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--bg)' }}
+                />
+                <input
+                  type="password"
+                  value={loginPw}
+                  onChange={e => setLoginPw(e.target.value)}
+                  placeholder="비밀번호 (4자 이상)"
+                  autoComplete="current-password"
+                  onKeyDown={e => { if (e.key === 'Enter') void handleLogin(); }}
+                  style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--bg)' }}
+                />
+              </div>
+              <button
+                type="button"
+                className="test-button"
+                disabled={authBusy || loginId.trim().length < 2 || loginPw.trim().length < 4}
+                onClick={() => void handleLogin()}
+              >
+                {authBusy ? '연결 중…' : '로그인 / 새 계정으로 연동'}
+              </button>
+              <p className="test-panel-note">
+                처음 입력하는 아이디면 즉시 새 계정으로 생성되며, 지금 기기에 작성해 둔 기록도 함께 계정으로 묶입니다.
+              </p>
+            </>
+          )}
         </div>
         {p.pwa && (
           <div className="test-recovery">

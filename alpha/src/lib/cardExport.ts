@@ -170,7 +170,7 @@ export function prepareCardExport(node: HTMLElement, options: CardExportOptions 
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const width = Number(node.dataset.cardWidth) || node.offsetWidth;
       const height = Number(node.dataset.cardHeight) || node.offsetHeight;
-      const blob = await withTimeout(toBlob(node, { width, height, pixelRatio: options.pixelRatio ?? 3, fontEmbedCSS, preferredFontFormat: 'woff2', cacheBust: false, style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' } }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
+      const blob = await withTimeout(toBlob(node, { width, height, pixelRatio: options.pixelRatio ?? 2, fontEmbedCSS, preferredFontFormat: 'woff2', cacheBust: false, style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' } }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
       if (!blob || !blob.size) throw new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.');
       const filename = (options.filename || 'L2_card.png').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_');
       return { blob, file: new File([blob], filename.endsWith('.png') ? filename : `${filename}.png`, { type: 'image/png' }) };
