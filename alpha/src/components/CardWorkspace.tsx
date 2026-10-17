@@ -8,6 +8,7 @@ import { isLogGroup } from '@/lib/logGroups';
 import CardStage from './CardStage';
 import FitCard from './FitCard';
 import AccessibleDialog from './AccessibleDialog';
+import SaveFeedback from './SaveFeedback';
 import './CardWorkspace.css';
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
   exportState: 'idle' | 'preparing' | 'ready' | 'error';
   exportError: string;
   applying: boolean;
+  saved?: boolean;
   hasPendingChange?: boolean;
   onApplyPreset: (preset: PresetSlot) => void;
   onApplyLayout?: (layout: CardLayoutType) => void;
@@ -203,11 +205,11 @@ export default function CardWorkspace(p: Props) {
         <button
           type="button"
           className={`record-card-save ${p.hasPendingChange ? 'is-dirty' : ''}`}
-          disabled={p.applying}
+          data-save-state={p.saved ? 'saved' : p.applying ? 'saving' : 'idle'}
+          disabled={p.applying || !p.hasPendingChange}
           onClick={p.onSaveCard}
         >
-          {p.applying ? <LoaderCircle size={17} className="preset-spinner" /> : <Check size={17} />}
-          <span>{p.hasPendingChange ? '카드 저장' : '카드 확정'}</span>
+          <SaveFeedback state={p.saved ? 'saved' : p.applying ? 'saving' : 'idle'} label="카드 저장" idleIcon={<Check size={17} />} />
         </button>
         <button type="button" disabled={!shareReady} onClick={p.onShare}>
           {!shareReady ? <LoaderCircle size={17} className="preset-spinner" /> : <Share2 size={17} />}

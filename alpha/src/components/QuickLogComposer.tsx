@@ -7,6 +7,8 @@ import { ARCHIVE_CATEGORIES, getArchiveCategory } from '@/lib/archiveCategories'
 import { useLogDraft } from '@/hooks/useLogDraft';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import PhotoMemoCanvas from '@/components/PhotoMemoCanvas';
+import SaveFeedback from '@/components/SaveFeedback';
+import { allowsMotion } from '@/lib/motion';
 import './QuickLogComposer.css';
 
 export interface LogDraft {
@@ -28,7 +30,7 @@ export type SuggestedSummary = Pick<LogDraft, 'good' | 'bad' | 'note'>;
 
 interface QuickLogComposerProps {
   editingItem: ArchiveItem | null;
-  onSave: (draft: LogDraft) => Promise<void>;
+  onSave: (draft: LogDraft, acknowledge?: () => Promise<void>) => Promise<void>;
   onCancelEdit: () => void;
   isReady: boolean;
   recordCount: number;
@@ -126,7 +128,7 @@ export default function QuickLogComposer({
 }: QuickLogComposerProps) {
   const initialDraft = useMemo(() => draftFromItem(editingItem), [editingItem]);
   const storageKey = `l2:quick-log:v1:${editingItem?.id || 'new'}`;
-  const { draft, setDraft, isRestored, restored, error: draftError, clearDraft } = useLogDraft(storageKey, initialDraft);
+  const { draft: storedDraft, setDraft, isRestored, restored, error: draftError, clearDraft } = useLogDraft(storageKey, initialDraft);
   const [manualCategory, setManualCategory] = useState(Boolean(editingItem));
   const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | null>(null);
   const [titleFocused, setTitleFocused] = useState(false);
@@ -139,6 +141,10 @@ export default function QuickLogComposer({
   const [photoError, setPhotoError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [saved, setSaved] = useState(false);
+  const completedDraft = useRef<LogDraft | null>(null);
+  const [committingCategory, setCommittingCategory] = useState<ArchiveCategory | null>(null);
+  // Clear durable draft recovery immediately, but keep the just-saved text visible until navigation.
+  const draft = saved && completedDraft.current ? completedDraft.current : storedDraft;
   const [cropOpen, setCropOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<SuggestedSummary | null>(null);
   const [suggesting, setSuggesting] = useState(false);
@@ -225,7 +231,8 @@ export default function QuickLogComposer({
     setSuggestion(null);
     setSuggesting(false);
     setSuggestionError('');
-  }, [storageKey, editingItem]);
+    // A sync update changes the item object, but must not reset an active editing session.
+  }, [storageKey]);
 
   useEffect(() => {
     if (isRestored && restored) setManualCategory(true);
@@ -319,18 +326,24 @@ export default function QuickLogComposer({
       return;
     }
     savingRef.current = true;
+    setSaved(false);
+    setCommittingCategory(category);
     setIsSaving(true);
     setSubmitError('');
     try {
-      await onSave({ ...draft, category, title: draft.title.trim(), body: draft.body.trim(), good: draft.good.trim(), bad: draft.bad.trim(), note: draft.note.trim() });
-      clearDraft(emptyLogDraft());
-      if (mountedRef.current) {
+      let acknowledged = false;
+      const acknowledge = async () => {
+        if (acknowledged) return;
+        acknowledged = true;
+        completedDraft.current = { ...draft, category };
+        clearDraft(emptyLogDraft());
+        if (!mountedRef.current) return;
         setSaved(true);
-        setManualCategory(false);
-        setSearchQuery('');
-        setCropOpen(false);
-        timerRef.current = setTimeout(() => setSaved(false), 2200);
-      }
+        await new Promise<void>(resolve => window.setTimeout(resolve, allowsMotion() ? 220 : 120));
+      };
+      await onSave({ ...draft, category, title: draft.title.trim(), body: draft.body.trim(), good: draft.good.trim(), bad: draft.bad.trim(), note: draft.note.trim() }, acknowledge);
+      if (!acknowledged) await acknowledge();
+      if (mountedRef.current) { setDialog(null); setManualCategory(false); setSearchQuery(''); setCropOpen(false); timerRef.current = setTimeout(() => setSaved(false), 1400); }
     } catch (error) {
       if (mountedRef.current) setSubmitError(error instanceof Error ? error.message : '저장하지 못했어요. 작성한 내용은 그대로 있으니 다시 시도해 주세요.');
     } finally {
@@ -491,13 +504,13 @@ export default function QuickLogComposer({
           {draftError && <p role="alert" className="mb-4 text-sm leading-relaxed text-[var(--accent)]">{draftError}</p>}
           <p aria-live="polite" role="status" className="sr-only">{isSaving ? '기록 저장 중' : saved ? '기록을 저장했습니다.' : ''}</p>
           <div className="flex justify-end">
-            <button type="submit" disabled={!isReady || !isRestored || !meaningfulInput || isSaving || photoBusy} className="quick-control quick-save-button">{isSaving ? '저장 중…' : editingItem ? '수정 저장' : '로그 저장'}</button>
+            <button type="submit" data-save-state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} disabled={!isReady || !isRestored || !meaningfulInput || isSaving || photoBusy} className="quick-control quick-save-button"><SaveFeedback state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} label={editingItem ? '수정 저장' : '로그 저장'} /></button>
           </div>
         </div>
       </form>
 
       <AccessibleDialog open={dialog === 'category'} onClose={() => { if (!isSaving) setDialog(null); }} title="어떤 로그인가요?">
-        <div className="quick-category-sheet" role="group" aria-label="로그 분류 선택">{ARCHIVE_CATEGORIES.map((category) => { const Icon = CATEGORY_ICONS[category.icon]; return <button type="button" key={category.id} className={draft.category === category.id ? 'suggested' : ''} disabled={isSaving} onClick={() => { setManualCategory(true); update('category', category.id); void commit(category.id); }}><Icon size={28} /><strong>{category.label}</strong>{draft.category === category.id && <small>{isSaving ? '저장 중…' : '추천'}</small>}</button>; })}</div>
+        <div className="quick-category-sheet" role="group" aria-label="로그 분류 선택" aria-busy={isSaving}>{ARCHIVE_CATEGORIES.map((category) => { const Icon = CATEGORY_ICONS[category.icon]; const selected = committingCategory === category.id; return <button type="button" key={category.id} data-save-state={selected && isSaving ? saved ? 'saved' : 'saving' : 'idle'} className={(isSaving ? selected : draft.category === category.id) ? 'suggested' : ''} disabled={isSaving} onClick={() => { setManualCategory(true); update('category', category.id); void commit(category.id); }}><Icon size={28} /><strong>{category.label}</strong>{selected && isSaving ? <small role="status"><SaveFeedback state={saved ? 'saved' : 'saving'} label={category.label} /></small> : !isSaving && draft.category === category.id ? <small>추천</small> : null}</button>; })}</div>
         {submitError && <p role="alert" className="test-inline-error">{submitError}</p>}
       </AccessibleDialog>
 

@@ -278,6 +278,8 @@
   box-shadow: 0 6px 20px -8px rgba(255, 255, 255, 0.35);
 }
 
+.record-card-actions .record-card-save[data-save-state='saved'] { opacity: 1; }
+
 html.light .record-card-actions .record-card-save.is-dirty {
   background: #111115;
   color: #ffffff;

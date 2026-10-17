@@ -1,0 +1,8 @@
+.save-feedback{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+.save-feedback>svg{flex-shrink:0}.save-feedback-spinner{animation:save-feedback-spin .8s linear infinite}
+.save-feedback-check{color:var(--accent);animation:save-feedback-confirm 180ms cubic-bezier(.22,1,.36,1) both}
+.save-feedback-check polyline{stroke-dasharray:24;stroke-dashoffset:0;animation:save-feedback-draw 180ms ease-out both}
+@keyframes save-feedback-spin{to{transform:rotate(360deg)}}
+@keyframes save-feedback-confirm{from{opacity:.4;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+@keyframes save-feedback-draw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .save-feedback *{animation:none!important}}

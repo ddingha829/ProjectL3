@@ -2,14 +2,14 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 
-export default function SwipeLogRow({ title, children, onDelete, disabled }: { title: string; children: ReactNode; onDelete: () => Promise<void>; disabled: boolean }) {
+export default function SwipeLogRow({ title, children, onDelete, disabled, entering = false }: { title: string; children: ReactNode; onDelete: () => Promise<void>; disabled: boolean; entering?: boolean }) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const gesture = useRef<{ x:number;y:number;offset:number;horizontal:boolean } | null>(null);
   const suppress = useRef(false);
   const remove = async () => { if (busy) return; setBusy(true); try { await onDelete(); } catch { /* Parent retains the log and explains the failure. */ } finally { setBusy(false); setOffset(0); } };
-  return <div className={`swipe-log ${dragging ? 'is-dragging' : ''}`} onPointerDown={event => {
+  return <div className={`swipe-log ${dragging ? 'is-dragging' : ''} ${entering ? 'is-arriving' : ''}`} onPointerDown={event => {
     if (disabled || busy || event.button !== 0 || (event.target as HTMLElement).closest('.swipe-log-delete,.swipe-log-more')) return;
     gesture.current = { x:event.clientX,y:event.clientY,offset,horizontal:false };
   }} onPointerMove={event => {

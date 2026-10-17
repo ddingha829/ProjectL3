@@ -39,11 +39,11 @@ export const haptic = {
     }
   },
 
-  /** Tactile double-pulse [15, 50, 22] when a card or log is saved successfully */
+  /** One brief confirmation after a card or log has been durably saved. */
   success() {
     if (canVibrate()) {
       try {
-        navigator.vibrate([15, 50, 22]);
+        navigator.vibrate(22);
       } catch {
         // Safe ignore
       }

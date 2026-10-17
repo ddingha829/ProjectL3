@@ -66,7 +66,17 @@ export default function ArchiveBrowser(p:Props){
   const unlinkedMapItems=useMemo(()=>p.archives.filter(item=>!isLogGroup(item)&&!hasLinkedPlace(item)&&(category==='ALL'||item.cat===category)&&item.title.trim().length>=2),[p.archives,category]);
   const spotlightItem=useMemo(()=>p.archives.find(item=>item.id===spotlightId)||null,[p.archives,spotlightId]);
 
-  useEffect(()=>{if(p.newId){setCategory('ALL');setQuery('');setOldest(false);}},[p.newId]);
+  useEffect(()=>{
+    if(!p.newId)return;
+    setCategory('ALL');setQuery('');setOldest(false);setView('list');
+    let secondFrame=0;
+    const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>{
+      // The saved log becomes the next keyboard target without scrolling the page.
+      if(document.activeElement instanceof HTMLInputElement||document.activeElement instanceof HTMLTextAreaElement)return;
+      document.getElementById(`record-${p.newId}`)?.focus({preventScroll:true});
+    });});
+    return()=>{cancelAnimationFrame(firstFrame);cancelAnimationFrame(secondFrame);};
+  },[p.newId]);
   useEffect(()=>setSelected(ids=>ids.filter(id=>p.archives.some(item=>item.id===id))),[p.archives]);
   useEffect(()=>()=>{if(pressTimer.current)clearTimeout(pressTimer.current);},[]);
 
@@ -158,7 +168,7 @@ export default function ArchiveBrowser(p:Props){
       const picked=selected.includes(item.id),group=isLogGroup(item),place=view==='map'?item.fullAddress||item.addressShort||item.loc:item.addressShort||item.loc;
       const catLabel=group?'그룹':getArchiveCategory(item.cat).label;
       const logNumber=group?'그룹':(chronologicalNumbers.get(item.id)||item.num||String(filtered.length-index).padStart(2,'0'));
-      return <SwipeLogRow key={item.id} title={item.title} disabled={selecting} onDelete={()=>p.onDelete(item)}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{logNumber}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{item.date}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
+      return <SwipeLogRow key={item.id} title={item.title} entering={p.newId===item.id} disabled={selecting} onDelete={()=>p.onDelete(item)}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{logNumber}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{item.date}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
     })}</div>}
     </div>
     {spotlightItem&&(()=>{
