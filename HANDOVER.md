@@ -1,7 +1,7 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
 ## 2026-10-18 update
-- Stability/security follow-up is implemented and locally verified; see `alpha/DOCS/STABILITY_REVIEW.md`. Production anon DB access is confirmed open. Vercel currently lacks `SUPABASE_SERVICE_ROLE_KEY`; register it before deploying the stricter server store, then apply `alpha/supabase/security-hardening.sql`. These external changes require completion and verification; do not claim the live database is secured yet.
+- Stability/security follow-up `524cd51` is deployed and verified; see `alpha/DOCS/STABILITY_REVIEW.md`. With user approval, a server-only Supabase Secret key was registered as `SUPABASE_SERVICE_ROLE_KEY` in Vercel Production/Preview, then `alpha/supabase/security-hardening.sql` was applied. Anonymous access to all three L3 tables and the usage RPC now returns 401; server access and live CRUD/photo/undo/cross-device login checks pass. Only newly created QA fixtures were used and cleaned up. Keep these DB restrictions in future schema updates.
 - Follow-up includes signed session cookies (one-time reconnection with local diary preservation), salted password migration, account isolation, complete archive pagination, strict persistence errors, atomic AI allowance reservation, and the first-preset ring clipping fix.
 - First-visit guidance uses live leader lines, once per screen/browser for new installations; Settings can replay it. Existing cached installations are not interrupted.
 - Studio separates its preset library and name field, includes coherent fictional photo/text samples and four soft bundled palettes. Palette deletion persists as `SkinTheme.hidden` without changing saved card snapshots.
