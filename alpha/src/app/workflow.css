@@ -78,6 +78,8 @@
   }
   html[data-keyboard="open"] .test-shell.is-composing .quick-actions {
     gap: 6px !important;
+    margin-top: auto !important;
+    padding-top: 6px !important;
     flex-shrink: 0 !important;
   }
   html[data-keyboard="open"] .test-shell.is-composing .quick-action {

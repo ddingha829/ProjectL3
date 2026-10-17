@@ -475,15 +475,15 @@ export default function QuickLogComposer({
 
             <PhotoMemoCanvas id={`${id}-body`} body={draft.body} img={draft.img} cropX={draft.cropX} cropY={draft.cropY} cropOpen={cropOpen} disabled={disabled} onBody={(body) => update('body', body)} onToggleCrop={() => setCropOpen((current) => !current)} onRemovePhoto={() => { photoToken.current += 1; setPhotoBusy(false); update('img', ''); setCropOpen(false); }} />
             {draft.img && cropOpen && <div className="grid gap-3 rounded-2xl border border-[var(--line)] p-4 sm:grid-cols-2">{(['cropX', 'cropY'] as const).map((axis) => <label key={axis} className="text-xs font-medium text-[var(--muted)]">{axis === 'cropX' ? '가로 위치' : '세로 위치'}<input type="range" min="0" max="100" step="1" value={draft[axis]} disabled={disabled} onChange={(event) => update(axis, Number(event.target.value))} className="mt-2 block h-8 w-full" /></label>)}</div>}
-          </div>
 
-          <div className="quick-actions" role="group" aria-label="기록 첨부">
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action prominent ${draft.img ? 'selected' : ''}`}><Camera size={18} aria-hidden="true" /><span>사진</span></button>
-            <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; void uploadPhoto(file); }} />
-            <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action prominent ${draft.place ? 'selected' : ''}`}><MapPin size={18} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
-            <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
+            <div className="quick-actions" role="group" aria-label="기록 첨부">
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
+              <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; void uploadPhoto(file); }} />
+              <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
+              <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
+            </div>
+            {photoError && <p role="alert" className="text-sm leading-relaxed text-[var(--accent)]">{photoError}</p>}
           </div>
-          {photoError && <p role="alert" className="text-sm leading-relaxed text-[var(--accent)]">{photoError}</p>}
         </div>
 
         <div className="quick-save">
