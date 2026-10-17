@@ -18,7 +18,7 @@ interface Props {
 }
 
 const PROMPT = '무슨 일상을 로그할까요?';
-const photoMemoMinimum = () => Math.max(200, Math.min(300, window.innerHeight * .3));
+const photoMemoMinimum = () => 136;
 
 function sizeToContent(textarea: HTMLTextAreaElement, minimum: number) {
   // Measure intrinsic content without retaining a previous viewport's flex height.
@@ -29,32 +29,75 @@ function sizeToContent(textarea: HTMLTextAreaElement, minimum: number) {
   textarea.style.flex = previousFlex;
 }
 
-/** The same textarea moves from the photograph to its normal place below it. */
+/** Inline photo preview above the body memo panel, with smooth slide-down & scroll when a photo is attached. */
 export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen, disabled = false, onBody, onRemovePhoto, onToggleCrop }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousImage = useRef(img);
 
   useLayoutEffect(() => {
     const photo = photoRef.current;
+    const panel = panelRef.current;
+    const textarea = textareaRef.current;
     const inserting = Boolean(img) && !previousImage.current;
     const replacing = Boolean(img) && Boolean(previousImage.current) && img !== previousImage.current;
     previousImage.current = img;
-    if (!photo || !allowsMotion() || !inserting && !replacing) return;
+    if (!photo || (!inserting && !replacing)) return;
+
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    if (inserting) {
+      scrollTimer = setTimeout(() => {
+        textarea?.focus({ preventScroll: true });
+        panel?.scrollIntoView({ behavior: allowsMotion() ? 'smooth' : 'instant', block: 'center' });
+      }, 120);
+    }
+
+    if (!allowsMotion()) {
+      return () => {
+        if (scrollTimer) clearTimeout(scrollTimer);
+      };
+    }
+
     const height = photo.getBoundingClientRect().height;
-    const animation = photo.animate(inserting ? [{ height: '0px', opacity: 0 }, { height: `${height}px`, opacity: 1 }] : [{ opacity: .35 }, { opacity: 1 }], { duration: inserting ? 720 : 320, easing: 'cubic-bezier(.16,1,.3,1)' });
+    const animation = photo.animate(
+      inserting ? [{ height: '0px', opacity: 0 }, { height: `${height}px`, opacity: 1 }] : [{ opacity: 0.35 }, { opacity: 1 }],
+      { duration: inserting ? 520 : 280, easing: 'cubic-bezier(.16,1,.3,1)' }
+    );
     animation.id = 'photo-insert';
-    const imageAnimation = photo.querySelector('img')?.animate([{ transform: 'translateY(14px)', opacity: .45 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 720, easing: 'cubic-bezier(.16,1,.3,1)' });
-    const stop = () => { if (!allowsMotion()) { animation.cancel(); imageAnimation?.cancel(); } };
+    const imageAnimation = photo.querySelector('img')?.animate(
+      [{ transform: 'scale(1.03)', opacity: 0.45 }, { transform: 'scale(1)', opacity: 1 }],
+      { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }
+    );
+    const panelAnimation = inserting
+      ? panel?.animate(
+          [{ transform: 'translateY(-14px)', opacity: 0.4 }, { transform: 'translateY(0)', opacity: 1 }],
+          { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }
+        )
+      : undefined;
+
+    const stop = () => {
+      if (!allowsMotion()) {
+        animation.cancel();
+        imageAnimation?.cancel();
+        panelAnimation?.cancel();
+      }
+    };
     window.addEventListener(MOTION_EVENT, stop);
-    return () => { window.removeEventListener(MOTION_EVENT, stop); animation.cancel(); imageAnimation?.cancel(); };
+    return () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      window.removeEventListener(MOTION_EVENT, stop);
+      animation.cancel();
+      imageAnimation?.cancel();
+      panelAnimation?.cancel();
+    };
   }, [img]);
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    sizeToContent(textarea, img ? photoMemoMinimum() : 76);
+    sizeToContent(textarea, img ? photoMemoMinimum() : 96);
   }, [body, img]);
 
   useLayoutEffect(() => {
@@ -74,7 +117,7 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
       const size = Math.min(48, available * 32 / widthAt32);
       textarea.style.setProperty('--memo-prompt-size', `${size.toFixed(2)}px`);
       rootRef.current?.style.setProperty('--memo-prompt-size', `${size.toFixed(2)}px`);
-      sizeToContent(textarea, rootRef.current?.dataset.hasPhoto === 'true' ? photoMemoMinimum() : 76);
+      sizeToContent(textarea, rootRef.current?.dataset.hasPhoto === 'true' ? photoMemoMinimum() : 96);
     };
     const observer = new ResizeObserver(() => {
       if (Math.abs(textarea.clientWidth - previousWidth) < 1) return;
@@ -88,57 +131,8 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
     return () => { disposed = true; observer.disconnect(); window.removeEventListener('resize', measure); };
   }, []);
 
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    const photo = photoRef.current;
-    if (!root || !photo) return;
-    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-    const scroller = root.closest<HTMLElement>('.quick-dialog-panel');
-    const scrollTarget = scroller || window;
-    const scrollPosition = () => scroller ? scroller.scrollTop : window.scrollY;
-    const origin = scrollPosition();
-    let frame = 0;
-    let scrolledToBottom = false;
-    const checkBottom = (pos: number) => scroller
-      ? pos > 0 && scroller.clientHeight + Math.ceil(pos) >= scroller.scrollHeight - 4
-      : pos > 0 && window.innerHeight + Math.ceil(pos) >= document.documentElement.scrollHeight - 4;
-    const update = () => {
-      frame = 0;
-      const pos = scrollPosition();
-      if (pos <= origin + 1) scrolledToBottom = false;
-      else if (checkBottom(pos)) scrolledToBottom = true;
-      const offset = img && allowsMotion() ? photo.getBoundingClientRect().height * 0.62 : 0;
-      const progress = !offset || scrolledToBottom ? 1 : Math.max(0, Math.min(1, (pos - origin) / offset));
-      root.style.setProperty('--memo-shift', `${(-offset * (1 - progress)).toFixed(2)}px`);
-      root.style.setProperty('--memo-background', `${80 + progress * 20}%`);
-      root.dataset.memoDock = progress >= 0.999 ? 'settled' : progress <= 0.001 ? 'floating' : 'settling';
-      root.dataset.memoProgress = progress.toFixed(3);
-    };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
-    const onScroll = () => {
-      const pos = scrollPosition();
-      scrolledToBottom = checkBottom(pos);
-      schedule();
-    };
-    update();
-    scrollTarget.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', schedule);
-    reducedMotion.addEventListener('change', schedule);
-    window.addEventListener(MOTION_EVENT, schedule);
-    const observer = new ResizeObserver(schedule);
-    observer.observe(photo);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      scrollTarget.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', schedule);
-      reducedMotion.removeEventListener('change', schedule);
-      window.removeEventListener(MOTION_EVENT, schedule);
-      observer.disconnect();
-    };
-  }, [img]);
-
   return (
-    <div ref={rootRef} className={`photo-memo ${img ? 'has-photo' : ''}`} data-has-photo={Boolean(img)} data-memo-dock="settled" data-memo-progress="1">
+    <div ref={rootRef} className={`photo-memo ${img ? 'has-photo' : ''}`} data-has-photo={Boolean(img)}>
       <div ref={photoRef} className="photo-memo-image" hidden={!img}>
         {img && <img src={img} alt="첨부한 기록 사진" style={{ objectPosition: `${cropX}% ${cropY}%` }} />}
         <div className="photo-memo-tools">
@@ -146,9 +140,9 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
           <button type="button" className="quick-control" disabled={disabled} onClick={onRemovePhoto} aria-label="사진 제거"><X size={18} aria-hidden="true" /></button>
         </div>
       </div>
-      <div className="photo-memo-panel">
+      <div ref={panelRef} className="photo-memo-panel">
         <label htmlFor={id} className="sr-only">기억하고 싶은 순간</label>
-        <textarea ref={textareaRef} id={id} name="body" value={body} disabled={disabled} onChange={(event) => onBody(event.target.value)} placeholder={PROMPT} rows={2} maxLength={5000} className="quick-memory" />
+        <textarea ref={textareaRef} id={id} name="body" value={body} disabled={disabled} onChange={(event) => onBody(event.target.value)} placeholder={PROMPT} rows={3} maxLength={5000} className="quick-memory" />
         {!body && <span className="memo-prompt" aria-hidden="true">{Array.from(PROMPT).map((character, index) => <span key={index} style={{ '--wave-index': index } as CSSProperties}>{character === ' ' ? '\u00a0' : character}</span>)}</span>}
       </div>
     </div>

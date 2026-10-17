@@ -67,6 +67,10 @@ html, body { overflow-x: clip; }
 }
 @media(max-width:350px){.test-shell.is-composing {padding-left:12px;padding-right:12px;}}
 .test-shell.is-composing{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.test-swipe-viewport{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
+.test-outgoing-host{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.test-outgoing-host>.test-main{width:100%;height:100%}
+.test-swipe-viewport>.test-main{position:relative;z-index:2;will-change:transform}
 .is-composing .test-main{display:flex;flex-direction:column;flex:1;padding:12px 0 0}
 .is-composing .quick-composer{display:flex;flex-direction:column;flex:1;width:100%}
 .test-header nav button{font-size:17px;font-weight:800;letter-spacing:-.035em}
@@ -74,7 +78,4 @@ html, body { overflow-x: clip; }
 @media(max-width:350px){.test-header nav button{font-size:14px;padding:8px}.test-header{gap:3px}}
 html[data-motion=off] *,html[data-motion=off] *::before,html[data-motion=off] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(prefers-reduced-motion:reduce){html:not([data-motion=on]) *,html:not([data-motion=on]) *::before,html:not([data-motion=on]) *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
-.test-main.slide-next { animation: test-slide-next 240ms cubic-bezier(.2,.85,.25,1) both; }
-.test-main.slide-prev { animation: test-slide-prev 240ms cubic-bezier(.2,.85,.25,1) both; }
-@keyframes test-slide-next { from { opacity: .35; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-@keyframes test-slide-prev { from { opacity: .35; transform: translate3d(-28px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, Download, Copy, MapPin, Smartphone, HelpCircle } from 'lucide-react';
+import { Upload, Download, Copy, MapPin, Smartphone, HelpCircle, ChevronDown, UserCheck, LogOut, RefreshCw } from 'lucide-react';
 import AccessibleDialog from './AccessibleDialog';
 import type { ArchiveItem, PlaceInboxItem } from '@/types/l2';
 import type { MotionPreference } from '@/lib/motion';
@@ -40,6 +40,7 @@ export default function SettingsDialog(p: Props) {
   const [loginPw, setLoginPw] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
   const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [haptics, setHaptics] = useState(() => {
@@ -106,42 +107,56 @@ export default function SettingsDialog(p: Props) {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
+  const motionAndHapticsOn = p.motion !== 'off' && haptics;
+  const toggleMotionAndHaptics = (next: boolean) => {
+    p.onMotion(next ? 'auto' : 'off');
+    setHaptics(next);
+    try { localStorage.setItem('l2_test_haptics', next ? 'on' : 'off'); } catch {}
+  };
+
   return (
-    <AccessibleDialog open={p.open} onClose={p.onClose} title="나의 기록 설정">
-      <div className="test-settings">
-        <div className="test-settings-status">
-          <span className="test-version-badge">ALPHA VERSION</span>
-          <div><span role="status">{p.storageStatus}</span><button className="test-text-button" onClick={p.onRetrySync}>다시 연결</button></div>
-          {p.storageError && <p className="test-panel-note">{p.storageError}</p>}
-        </div>
-        <div className="test-recovery">
-          <span className="test-field-label">계정 로그인 · 기기 간 동기화 (Supabase)</span>
+    <AccessibleDialog open={p.open} onClose={p.onClose} title="설정">
+      <div className="modern-settings">
+        {/* 1. 계정 & 클라우드 동기화 카드 */}
+        <section className="settings-card">
+          <div className="settings-card-header">
+            <span className="settings-section-title">계정 · 클라우드 동기화</span>
+            <button type="button" className="settings-sync-pill" onClick={p.onRetrySync} title="동기화 다시 시도">
+              <span className={`settings-sync-dot ${p.storageError ? 'is-error' : 'is-ok'}`} />
+              <span>{p.storageStatus}</span>
+              <RefreshCw size={11} />
+            </button>
+          </div>
+
+          {p.storageError && <p className="settings-alert">{p.storageError}</p>}
+
           {p.username ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <code>● {p.username} 계정 연동 중</code>
-                <button
-                  type="button"
-                  className="test-text-button"
-                  disabled={authBusy}
-                  onClick={() => void handleLogout()}
-                >
-                  로그아웃
-                </button>
+            <div className="settings-account-connected">
+              <div className="settings-account-badge">
+                <UserCheck size={16} />
+                <div>
+                  <strong>{p.username}</strong>
+                  <span>모든 기기에서 실시간 연동 중</span>
+                </div>
               </div>
-              <p className="test-panel-note">
-                다른 기기나 홈 화면 앱(PWA)에서도 <b>{p.username}</b> 아이디로 로그인하면 사진과 기록이 똑같이 연동됩니다.
-              </p>
-            </>
+              <button
+                type="button"
+                className="settings-ghost-btn"
+                disabled={authBusy}
+                onClick={() => void handleLogout()}
+              >
+                <LogOut size={14} />
+                <span>로그아웃</span>
+              </button>
+            </div>
           ) : (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+            <div className="settings-auth-box">
+              <div className="settings-auth-inputs">
                 <input
                   value={loginId}
                   onChange={e => setLoginId(e.target.value)}
                   placeholder="아이디 (2자 이상)"
                   autoComplete="username"
-                  style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--bg)' }}
                 />
                 <input
                   type="password"
@@ -150,159 +165,258 @@ export default function SettingsDialog(p: Props) {
                   placeholder="비밀번호 (4자 이상)"
                   autoComplete="current-password"
                   onKeyDown={e => { if (e.key === 'Enter') void handleLogin(); }}
-                  style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--bg)' }}
                 />
               </div>
               <button
                 type="button"
-                className="test-button"
+                className="settings-primary-btn"
                 disabled={authBusy || loginId.trim().length < 2 || loginPw.trim().length < 4}
                 onClick={() => void handleLogin()}
               >
                 {authBusy ? '연결 중…' : '로그인 / 새 계정으로 연동'}
               </button>
-              <p className="test-panel-note">
-                처음 입력하는 아이디면 즉시 새 계정으로 생성되며, 지금 기기에 작성해 둔 기록도 함께 계정으로 묶입니다.
+              <p className="settings-hint">
+                처음 입력하는 아이디면 바로 계정이 만들어지고 현재 기기 기록이 함께 연동됩니다.
               </p>
-            </>
+            </div>
           )}
-        </div>
+        </section>
+
+        {/* 2. 화면 · 프로필 */}
+        <section className="settings-card">
+          <span className="settings-section-title">화면 · 프로필</span>
+
+          <div className="settings-row">
+            <div className="settings-row-copy">
+              <strong>테마 모드</strong>
+              <span>화면 배경 톤을 선택합니다</span>
+            </div>
+            <div className="settings-segmented" role="group" aria-label="테마 선택">
+              <button
+                type="button"
+                className={!p.light ? 'active' : ''}
+                aria-pressed={!p.light}
+                onClick={() => p.onTheme(false)}
+              >
+                다크
+              </button>
+              <button
+                type="button"
+                className={p.light ? 'active' : ''}
+                aria-pressed={p.light}
+                onClick={() => p.onTheme(true)}
+              >
+                페이퍼
+              </button>
+            </div>
+          </div>
+
+          <label className="settings-row settings-row-input">
+            <div className="settings-row-copy">
+              <strong>카드 서명</strong>
+              <span>카드 하단에 표시될 작성자 이름</span>
+            </div>
+            <input
+              maxLength={32}
+              value={p.authorName}
+              onChange={e => p.onAuthor(e.target.value)}
+              placeholder="나의 이름"
+              className="settings-inline-input"
+            />
+          </label>
+        </section>
+
+        {/* 3. 환경 설정 (모던 토글 스위치) */}
+        <section className="settings-card">
+          <span className="settings-section-title">환경 설정</span>
+
+          <label className="settings-toggle-row">
+            <div className="settings-row-copy">
+              <strong>목록 상세 미리보기</strong>
+              <span>로그북 목록에서 별점·카테고리·한줄평 표시</span>
+            </div>
+            <input
+              type="checkbox"
+              className="settings-switch"
+              checked={p.listDetailsOn}
+              onChange={e => p.onListDetailsChange(e.target.checked)}
+            />
+          </label>
+
+          <label className="settings-toggle-row">
+            <div className="settings-row-copy">
+              <strong>자동 장소 연결 추천</strong>
+              <span>제목을 바탕으로 원탭 위치 연결 칩 표시</span>
+            </div>
+            <input
+              type="checkbox"
+              className="settings-switch"
+              checked={p.autoPlaceLinkOn}
+              onChange={e => p.onAutoPlaceLinkChange(e.target.checked)}
+            />
+          </label>
+
+          <label className="settings-toggle-row">
+            <div className="settings-row-copy">
+              <strong>부드러운 모션 · 진동 피드백</strong>
+              <span>화면 전환 애니메이션 및 터치 진동 효과</span>
+            </div>
+            <input
+              type="checkbox"
+              className="settings-switch"
+              checked={motionAndHapticsOn}
+              onChange={e => toggleMotionAndHaptics(e.target.checked)}
+            />
+          </label>
+        </section>
+
+        {/* 4. 홈 화면 앱(PWA) 설치 */}
         {p.pwa && (
-          <div className="test-recovery">
-            <span className="test-field-label">홈 화면 앱 설치 (PWA)</span>
-            <div className="test-chips" style={{ marginBottom: 6 }}>
+          <section className="settings-card">
+            <span className="settings-section-title">홈 화면 앱 (PWA)</span>
+            <div className="settings-pwa-actions">
               {p.pwa.isStandalone ? (
-                <span className="test-chip selected" style={{ cursor: 'default' }}>
-                  <Smartphone size={14} />홈 화면 앱 실행 중
-                </span>
+                <div className="settings-pwa-active">
+                  <Smartphone size={15} />
+                  <span>현재 홈 화면 앱으로 실행 중</span>
+                </div>
               ) : (
                 <button
                   type="button"
-                  className="test-chip selected"
+                  className="settings-primary-btn"
                   onClick={() => {
                     p.onClose();
                     void p.pwa?.triggerInstall();
                   }}
                 >
-                  <Smartphone size={14} />
-                  {p.pwa.canPromptNative ? '홈 화면에 바로 설치' : '홈 화면에 앱 추가'}
+                  <Smartphone size={15} />
+                  <span>{p.pwa.canPromptNative ? '홈 화면에 바로 설치' : '홈 화면에 앱 추가하기'}</span>
                 </button>
               )}
               <button
                 type="button"
-                className="test-chip"
+                className="settings-secondary-btn"
                 onClick={() => {
                   p.onClose();
                   p.pwa?.openGuide();
                 }}
               >
-                <HelpCircle size={14} />설치 및 연동 가이드
+                <HelpCircle size={14} />
+                <span>설치 가이드</span>
               </button>
             </div>
-            <p className="test-panel-note">
-              {p.pwa.isStandalone
-                ? '현재 주소창 없는 전체화면 앱(PWA) 모드로 작동하고 있어요.'
-                : '모바일 홈 화면에 추가하면 실제 앱처럼 전체화면과 오프라인 보관을 지원해요.'}
-            </p>
-          </div>
+          </section>
         )}
-        <div>
-          <span className="test-field-label">화면</span>
-          <div className="test-chips">
-            <button className={`test-chip ${!p.light ? 'selected' : ''}`} aria-pressed={!p.light} onClick={() => p.onTheme(false)}>다크</button>
-            <button className={`test-chip ${p.light ? 'selected' : ''}`} aria-pressed={p.light} onClick={() => p.onTheme(true)}>페이퍼</button>
-          </div>
-        </div>
-        <div><span className="test-field-label">움직임</span><div className="test-chips" role="group" aria-label="애니메이션 설정">{([{value:'auto',label:'기기 설정'},{value:'on',label:'켜기'},{value:'off',label:'끄기'}] as const).map(option=><button type="button" key={option.value} className={`test-chip ${p.motion===option.value?'selected':''}`} aria-pressed={p.motion===option.value} onClick={()=>p.onMotion(option.value)}>{option.label}</button>)}</div></div>
-        <label className="test-settings-field">카드에 남길 이름<input maxLength={32} value={p.authorName} onChange={e => p.onAuthor(e.target.value)} placeholder="나의 이름" /></label>
-        <label className="test-settings-switch">
-          <span>로그북 목록 상세 정보 표시<small>목록 뷰에서 별점(★)·카테고리·한 줄 평 프리뷰를 함께 표시해요.</small></span>
-          <input type="checkbox" checked={p.listDetailsOn} onChange={e => p.onListDetailsChange(e.target.checked)} />
-        </label>
-        <label className="test-settings-switch">
-          <span>지도 미연결 기록 원탭 연결<small>제목을 바탕으로 좌표를 바로 찾아 연결하는 배너와 칩을 표시해요.</small></span>
-          <input type="checkbox" checked={p.autoPlaceLinkOn} onChange={e => p.onAutoPlaceLinkChange(e.target.checked)} />
-        </label>
-        <label className="test-settings-switch">
-          <span>작은 진동 피드백<small>지원하는 기기에서만 작동해요.</small></span>
-          <input type="checkbox" checked={haptics} onChange={e => {
-            setHaptics(e.target.checked);
-            try { localStorage.setItem('l2_test_haptics', e.target.checked ? 'on' : 'off'); } catch { /* Optional preference. */ }
-          }} />
-        </label>
-        <div className="test-recovery">
-          <span className="test-field-label">구글 지도 장소 가져오기 · 외부 내보내기</span>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json,application/geo+json"
-            hidden
-            onChange={async e => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (!file) return;
-              try {
-                const raw = await file.text();
-                const places = parseGoogleTakeoutPlaces(raw);
-                if (!places.length) {
-                  setMessage('가져올 수 있는 구글 지도 장소가 없어요.');
-                  return;
-                }
-                p.onImportPlaces?.(places);
-                setMessage(`구글 지도 장소 ${places.length}곳을 대기열에 담았어요. + 로그 화면에서 바로 꺼내 쓸 수 있어요.`);
-              } catch {
-                setMessage('Saved Places.json 파일을 읽지 못했어요.');
-              }
-            }}
-          />
-          <div className="test-chips" style={{ marginBottom: 8 }}>
-            <button type="button" className="test-chip" onClick={() => fileRef.current?.click()}>
-              <Upload size={14} />구글 지도 JSON 업로드{p.inboxCount ? ` (${p.inboxCount})` : ''}
-            </button>
-            <button type="button" className="test-chip" onClick={() => {
-              const csv = buildGoogleMapsCsv(p.archives || []);
-              triggerDownload(csv, 'L2_GoogleMyMaps.csv', 'text/csv;charset=utf-8');
-              setMessage('구글 내 지도용 CSV를 내려받았어요.');
-            }}>
-              <MapPin size={14} />구글 지도 CSV
-            </button>
-            <button type="button" className="test-chip" onClick={async () => {
-              const md = buildNotionMarkdown(p.archives || []);
-              try {
-                await navigator.clipboard.writeText(md);
-                setMessage('노션용 마크다운을 클립보드에 복사했어요.');
-              } catch {
-                triggerDownload(md, 'L2_Notion_Archive.md', 'text/markdown;charset=utf-8');
-                setMessage('노션용 마크다운 파일을 내려받았어요.');
-              }
-            }}>
-              <Copy size={14} />노션 마크다운
-            </button>
-            <button type="button" className="test-chip" onClick={() => {
-              const json = JSON.stringify(p.archives || [], null, 2);
-              triggerDownload(json, 'L2_Archive_Backup.json', 'application/json;charset=utf-8');
-              setMessage('전체 JSON 백업 파일을 내려받았어요.');
-            }}>
-              <Download size={14} />JSON 백업
-            </button>
-          </div>
-          <p className="test-panel-note">구글 테이크아웃의 Saved Places.json을 올리면 로그 작성 시 제목·좌표·주소가 자동으로 채워집니다.</p>
-        </div>
-        <div className="test-recovery">
-          <span className="test-field-label">기기 복원 코드</span>
-          <div>
-            <code>{p.recoveryCode || '연결 후 확인할 수 있어요'}</code>
-            <button className="test-text-button" disabled={!p.recoveryCode} onClick={async () => {
-              try { await navigator.clipboard.writeText(p.recoveryCode); setMessage('코드를 복사했어요.'); }
-              catch { setMessage('코드를 선택해서 복사해 주세요.'); }
-            }}>복사</button>
-          </div>
-          <p className="test-panel-note">이 코드를 가진 사람은 기록을 불러올 수 있어요.</p>
-        </div>
-        <label className="test-settings-field">다른 기기의 기록 불러오기<input value={code} onChange={e => setCode(e.target.value)} placeholder="복원 코드" autoComplete="off" /></label>
-        <button className="test-button" disabled={restoring || !code.trim()} onClick={restore}>{restoring ? '불러오는 중…' : '기록 복원'}</button>
-        {message && <p role="status" className="test-panel-note">{message}</p>}
-        <p className="test-panel-note">외부 API 미연결 상태에서는 로컬 검색·요약·팔레트를 사용합니다. AI 연결 시 오늘 사용량 {p.aiUsage.used}/{p.aiUsage.limit}.</p>
+
+        {/* 5. 데이터 백업 · 장소 가져오기 (접이식 섹션) */}
+        <section className="settings-card">
+          <button
+            type="button"
+            className="settings-accordion-trigger"
+            aria-expanded={dataOpen}
+            onClick={() => setDataOpen(v => !v)}
+          >
+            <div>
+              <span className="settings-section-title" style={{ marginBottom: 0 }}>데이터 백업 · 구글 지도 연동</span>
+              <p className="settings-hint" style={{ marginTop: 2 }}>JSON/CSV 내보내기, 구글 지도 장소 가져오기, 복원 코드</p>
+            </div>
+            <ChevronDown size={18} className={`settings-chevron ${dataOpen ? 'is-open' : ''}`} />
+          </button>
+
+          {dataOpen && (
+            <div className="settings-accordion-body">
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".json,application/json,application/geo+json"
+                hidden
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  try {
+                    const raw = await file.text();
+                    const places = parseGoogleTakeoutPlaces(raw);
+                    if (!places.length) {
+                      setMessage('가져올 수 있는 구글 지도 장소가 없어요.');
+                      return;
+                    }
+                    p.onImportPlaces?.(places);
+                    setMessage(`구글 지도 장소 ${places.length}곳을 대기열에 담았어요.`);
+                  } catch {
+                    setMessage('Saved Places.json 파일을 읽지 못했어요.');
+                  }
+                }}
+              />
+              <div className="settings-data-grid">
+                <button type="button" className="settings-secondary-btn" onClick={() => fileRef.current?.click()}>
+                  <Upload size={14} />
+                  <span>구글 지도 JSON{p.inboxCount ? ` (${p.inboxCount})` : ''}</span>
+                </button>
+                <button type="button" className="settings-secondary-btn" onClick={() => {
+                  const csv = buildGoogleMapsCsv(p.archives || []);
+                  triggerDownload(csv, 'L2_GoogleMyMaps.csv', 'text/csv;charset=utf-8');
+                  setMessage('구글 내 지도용 CSV를 내려받았어요.');
+                }}>
+                  <MapPin size={14} />
+                  <span>지도용 CSV</span>
+                </button>
+                <button type="button" className="settings-secondary-btn" onClick={async () => {
+                  const md = buildNotionMarkdown(p.archives || []);
+                  try {
+                    await navigator.clipboard.writeText(md);
+                    setMessage('노션 마크다운을 복사했어요.');
+                  } catch {
+                    triggerDownload(md, 'L2_Notion_Archive.md', 'text/markdown;charset=utf-8');
+                    setMessage('노션 마크다운 파일을 내려받았어요.');
+                  }
+                }}>
+                  <Copy size={14} />
+                  <span>노션 마크다운</span>
+                </button>
+                <button type="button" className="settings-secondary-btn" onClick={() => {
+                  const json = JSON.stringify(p.archives || [], null, 2);
+                  triggerDownload(json, 'L2_Archive_Backup.json', 'application/json;charset=utf-8');
+                  setMessage('전체 JSON 백업 파일을 내려받았어요.');
+                }}>
+                  <Download size={14} />
+                  <span>JSON 백업</span>
+                </button>
+              </div>
+
+              <div className="settings-recovery-box">
+                <div className="settings-recovery-code-row">
+                  <span className="settings-hint">복원 코드: <code>{p.recoveryCode || '연결 중'}</code></span>
+                  <button
+                    type="button"
+                    className="settings-ghost-btn"
+                    disabled={!p.recoveryCode}
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(p.recoveryCode); setMessage('복원 코드를 복사했어요.'); }
+                      catch { setMessage('코드를 직접 선택해 복사해 주세요.'); }
+                    }}
+                  >
+                    복사
+                  </button>
+                </div>
+                <div className="settings-recovery-restore-row">
+                  <input
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    placeholder="복원 코드로 불러오기"
+                    autoComplete="off"
+                  />
+                  <button type="button" className="settings-secondary-btn" disabled={restoring || !code.trim()} onClick={() => void restore()}>
+                    {restoring ? '복원 중…' : '복원'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {message && <p role="status" className="settings-toast-msg">{message}</p>}
+        <p className="settings-footer-meta">L2 Alpha · 오늘 AI 요약/팔레트 사용량 {p.aiUsage.used}/{p.aiUsage.limit}</p>
       </div>
     </AccessibleDialog>
   );

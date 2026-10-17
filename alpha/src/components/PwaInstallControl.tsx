@@ -416,11 +416,10 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
         <div className="pwa-guide-tip">
           <Sparkles size={15} />
           <div>
-            <strong>설치 전 꼭 확인하세요 (기록 연동 안내)</strong>
+            <strong>홈 화면 앱 실행 후 로그인 안내</strong>
             <p>
-              아이폰(iOS)은 <b>Safari 브라우저</b>와 <b>홈 화면 앱</b>의 내부 저장소가 분리되어 있습니다.
-              테스트 기록을 시작하기 전에 <b>먼저 홈 화면에 추가한 뒤 실행</b>하시거나, 이미 작성한 기록이 있다면{' '}
-              <b>설정 ⚙ → 기기 복원 코드 복사 / JSON 백업</b>으로 홈 화면 앱에서 그대로 이어받을 수 있습니다.
+              홈 화면에 추가한 앱을 처음 실행하면 <b>우측 상단 설정(⚙) 버튼</b>을 눌러 아이디/비밀번호로 로그인해 주세요.
+              브라우저에서 작성한 기록과 사진이 그대로 연동됩니다.
             </p>
           </div>
         </div>
@@ -428,3 +427,83 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
     </AccessibleDialog>
   );
 }
+
+const FIRST_LAUNCH_LOGIN_KEY = 'l2_pwa_first_login_popup_v1';
+
+export function PwaFirstLaunchLoginPopup({
+  pwa,
+  ready,
+  username,
+  onOpenSettings,
+}: {
+  pwa: PwaState;
+  ready: boolean;
+  username?: string | null;
+  onOpenSettings: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!pwa.isStandalone || !ready || username) {
+      setOpen(false);
+      return;
+    }
+    try {
+      if (localStorage.getItem(FIRST_LAUNCH_LOGIN_KEY) !== '1') {
+        setOpen(true);
+      }
+    } catch {
+      setOpen(true);
+    }
+  }, [pwa.isStandalone, ready, username]);
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(FIRST_LAUNCH_LOGIN_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  };
+
+  if (!open) return null;
+
+  return (
+    <AccessibleDialog open={open} onClose={dismiss} title="홈 화면 앱으로 시작하기">
+      <div className="pwa-guide" style={{ gap: 14 }}>
+        <div className="pwa-guide-status is-installed">
+          <CheckCircle2 size={18} />
+          <div>
+            <strong>L2. 웹앱이 준비되었어요!</strong>
+            <p>
+              우측 상단의 <b>설정(⚙) 버튼</b>을 눌러 아이디·비밀번호로 로그인하면 기존 기록을 불러오거나 기기 간 실시간 동기화를 시작할 수 있어요.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 8 }}>
+          <button
+            type="button"
+            className="settings-secondary-btn"
+            style={{ minHeight: 44 }}
+            onClick={dismiss}
+          >
+            나중에 하기
+          </button>
+          <button
+            type="button"
+            className="settings-primary-btn"
+            style={{ minHeight: 44 }}
+            onClick={() => {
+              dismiss();
+              onOpenSettings();
+            }}
+          >
+            ⚙ 설정 눌러 로그인하기
+          </button>
+        </div>
+      </div>
+    </AccessibleDialog>
+  );
+}
+

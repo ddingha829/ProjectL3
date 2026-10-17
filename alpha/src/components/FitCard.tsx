@@ -17,7 +17,7 @@ export default function FitCard({ ratio, children, animationKey, transition = 's
     if (before.key !== animationKey && transition === 'slide' && allowsMotion()) {
       if (timer.current) clearTimeout(timer.current);
       setOutgoing({ children: before.children, width: before.width, key: String(before.key) });
-      timer.current = setTimeout(() => setOutgoing(null), 720);
+      timer.current = setTimeout(() => setOutgoing(null), 500);
     }
     previous.current = { key: animationKey, children, width };
   }, [animationKey, children, width, transition]);
@@ -34,7 +34,7 @@ export default function FitCard({ ratio, children, animationKey, transition = 's
     observer.observe(node);
     return () => observer.disconnect();
   }, [ratio]);
-  return <div ref={ref} className={`fit-card ${transition === 'slide' ? 'fit-card-slide' : ''}`} style={{ '--card-direction': direction < 0 ? -1 : 1 } as CSSProperties}>
+  return <div ref={ref} className={`fit-card ${transition === 'slide' ? 'fit-card-slide' : ''}`} style={{ '--card-direction': direction < 0 ? 1 : -1 } as CSSProperties}>
     <div key={animationKey} className="fit-card-artwork" style={{ width }}>{children}</div>
     {outgoing && <div key={`out-${outgoing.key}`} className="fit-card-outgoing" aria-hidden="true" inert><div style={{ width: outgoing.width }}>{outgoing.children}</div></div>}
   </div>;

@@ -1,11 +1,12 @@
 'use client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ArchiveItem, CardAppearance, CardLayoutType, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { createCardAppearance } from '@/lib/cardAppearance';
 import { prepareCardExport, downloadCardFile } from '@/lib/cardExport';
 import { getGroupMembers, isLogGroup } from '@/lib/logGroups';
 import { haptic } from '@/lib/haptics';
+import { allowsMotion } from '@/lib/motion';
 import { useArchiveRepository } from '@/hooks/useArchiveRepository';
 import { usePresetPreferences } from '@/hooks/usePresetPreferences';
 import { useMotionPreference } from '@/hooks/useMotionPreference';
@@ -17,7 +18,7 @@ import SettingsDialog from '@/components/SettingsDialog';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import GroupEditor from '@/components/GroupEditor';
 import TestPwa from '@/components/TestPwa';
-import { usePwaInstall, PwaInstallBanner, PwaInstallGuideDialog } from '@/components/PwaInstallControl';
+import { usePwaInstall, PwaInstallBanner, PwaInstallGuideDialog, PwaFirstLaunchLoginPopup } from '@/components/PwaInstallControl';
 import './test.css';
 import './workflow.css';
 
@@ -37,11 +38,14 @@ export default function L2TestApp(){
   const [listDetailsOn,setListDetailsOn]=useState(true),[autoPlaceLinkOn,setAutoPlaceLinkOn]=useState(true);
   const [slideDir,setSlideDir]=useState<'next'|'prev'|null>(null);
   const [activeId,setActiveId]=useState(''),[editingId,setEditingId]=useState<string|null>(null),[newId,setNewId]=useState<string|null>(null);
+  const [pendingAppearance,setPendingAppearance]=useState<CardAppearance|null>(null);
   const [toast,setToast]=useState<Toast|null>(null),[applying,setApplying]=useState(false);
   const [inboxPlaces,setInboxPlaces]=useState<PlaceInboxItem[]>([]);
   const [exportState,setExportState]=useState<'idle'|'preparing'|'ready'|'error'>('idle'),[exportError,setExportError]=useState(''),[exportRevision,setExportRevision]=useState(0);
   const exportFile=useRef<File|null>(null),captureRef=useRef<HTMLDivElement|null>(null),toastTimer=useRef<ReturnType<typeof setTimeout>|null>(null),savedTimer=useRef<ReturnType<typeof setTimeout>|null>(null),migrating=useRef(new Set<string>());
-  const swipeStart=useRef<{x:number;y:number;time:number;inSwipeRow:boolean}|null>(null);
+  const mainRef=useRef<HTMLElement|null>(null),outgoingRef=useRef<HTMLDivElement|null>(null);
+  const pendingSwipeTransition=useRef<{dir:'next'|'prev';fromDx:number;width:number}|null>(null);
+  const swipeStart=useRef<{x:number;y:number;dx:number;time:number;lockedAxis:'x'|'y'|null;inSwipeRow:boolean}|null>(null);
 
   const notify=useCallback((title:string,actionLabel?:string,action?:()=>void,tone:Toast['tone']='info')=>{if(toastTimer.current)clearTimeout(toastTimer.current);setToast({title,actionLabel,action,tone});toastTimer.current=setTimeout(()=>setToast(null),action?8000:3000);},[]);
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);if(savedTimer.current)clearTimeout(savedTimer.current);},[]);
@@ -82,7 +86,8 @@ export default function L2TestApp(){
     authorName:preferences.authorName
   }),[preferences.authorName]);
 
-  const appearance=useMemo(()=>item.cardAppearance||createCardAppearance(item,PRESET_SLOTS[0],INITIAL_SKINS,item.author||preferences.authorName),[item,preferences.authorName]);
+  const savedAppearance=useMemo(()=>item.cardAppearance||createCardAppearance(item,PRESET_SLOTS[0],INITIAL_SKINS,item.author||preferences.authorName),[item,preferences.authorName]);
+  const appearance=pendingAppearance||savedAppearance;
 
   useEffect(()=>{
     if(!repository.ready||!preferences.ready||!repository.serverSnapshot&&navigator.onLine)return;
@@ -95,18 +100,49 @@ export default function L2TestApp(){
     }
   },[archives,repository.ready,repository.serverSnapshot,repository.save,preferences.ready,preferences.skins,preferences.authorName,notify]);
 
-  const go=useCallback((next:Tab,directionOverride?:'next'|'prev')=>{
+  const go=useCallback((next:Tab,directionOverride?:'next'|'prev',fromDx=0)=>{
     setTab(current=>{
+      if(current===next&&fromDx===0)return current;
       const dir=directionOverride||(TAB_ORDER[next]>=TAB_ORDER[current]?'next':'prev');
+      if(mainRef.current&&outgoingRef.current&&allowsMotion()){
+        const width=mainRef.current.clientWidth||window.innerWidth||360;
+        const clone=mainRef.current.cloneNode(true) as HTMLElement;
+        clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+        clone.inert=true;
+        clone.setAttribute('aria-hidden','true');
+        clone.style.transform=`translate3d(${fromDx}px, 0, 0)`;
+        outgoingRef.current.innerHTML='';
+        outgoingRef.current.appendChild(clone);
+        const endX=dir==='next'?-width:width;
+        const anim=clone.animate(
+          [{transform:`translate3d(${fromDx}px, 0, 0)`,opacity:1},{transform:`translate3d(${endX}px, 0, 0)`,opacity:0.35}],
+          {duration:340,easing:'cubic-bezier(0.22, 1, 0.36, 1)',fill:'forwards'}
+        );
+        anim.onfinish=()=>{if(outgoingRef.current?.contains(clone))clone.remove();};
+        pendingSwipeTransition.current={dir,fromDx,width};
+      }
+      if(mainRef.current)mainRef.current.style.transform='';
       setSlideDir(dir);
       return next;
     });
+    setPendingAppearance(null);
     setEditingId(null);
     window.scrollTo({top:0,behavior:'instant'});
   },[]);
 
-  const open=(entry:ArchiveItem)=>{setToast(null);setActiveId(entry.id);go('card','next');};
-  const arrived=(entry:ArchiveItem)=>{setActiveId(entry.id);setNewId(entry.id);setSlideDir('next');setTab('archive');window.scrollTo({top:0,behavior:'instant'});if(savedTimer.current)clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setNewId(null),7000);};
+  useLayoutEffect(()=>{
+    const pending=pendingSwipeTransition.current;
+    if(!pending||!mainRef.current||!allowsMotion())return;
+    pendingSwipeTransition.current=null;
+    const startX=(pending.dir==='next'?pending.width:-pending.width)+pending.fromDx;
+    mainRef.current.animate(
+      [{transform:`translate3d(${startX}px, 0, 0)`},{transform:'translate3d(0, 0, 0)'}],
+      {duration:340,easing:'cubic-bezier(0.22, 1, 0.36, 1)'}
+    );
+  },[tab,activeId]);
+
+  const open=(entry:ArchiveItem)=>{setToast(null);setPendingAppearance(null);setActiveId(entry.id);go('card','next');};
+  const arrived=(entry:ArchiveItem)=>{setPendingAppearance(null);setActiveId(entry.id);setNewId(entry.id);go('archive','next');if(savedTimer.current)clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setNewId(null),7000);};
 
   const saveLog=async(draft:LogDraft)=>{
     const previous=editingItem;
@@ -115,11 +151,11 @@ export default function L2TestApp(){
     const previousAppearance=previous?.cardAppearance;
     const cardAppearance=previousAppearance?createCardAppearance(photo,previousAppearance.slot,{[previousAppearance.skin.id]:previousAppearance.skin},previousAppearance.authorName):createCardAppearance(photo,defaultSlot,preferences.skins,preferences.authorName);
     const payload:ArchiveItem={id:previous?.id||crypto.randomUUID(),num:previous?.num||'',cat:draft.category,sub:draft.category,title:draft.title.trim(),quote:draft.body.trim(),loc:draft.place?.loc||'',addressShort:draft.place?.short||'',fullAddress:draft.place?.fullAddress||'',date:previous?.date||dateNow(),timestamp:previous?.timestamp||Date.now(),score:draft.score===null?'':draft.score.toFixed(1),...photo,cropX:draft.cropX,cropY:draft.cropY,good:draft.good.trim(),bad:draft.bad.trim(),note:draft.note.trim(),link:draft.place?.link||'',mapX:draft.place?.x??50,mapY:draft.place?.y??50,author:cardAppearance.authorName,cardAppearance,coordinates:draft.place?.coordinates||null};
-    try{const result=await repository.save(payload,Boolean(previous));setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);haptic.success();notify(previous?'수정했어요':'로그가 쌓였어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
+    try{const result=await repository.save(payload,Boolean(previous));setPendingAppearance(null);setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);haptic.success();notify(previous?'수정했어요':'로그가 쌓였어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
     catch(error){notify('저장하지 못했어요. 입력은 그대로 남아 있어요.',undefined,undefined,'error');throw error;}
   };
 
-  const remove=async(entry:ArchiveItem)=>{try{await repository.remove(entry.id);if(activeId===entry.id){setEditingId(null);setTab('archive');setActiveId('');}notify('로그를 삭제했어요','실행 취소',()=>{void repository.save(entry,false).then(()=>notify('로그를 되돌렸어요')).catch(()=>notify('되돌리지 못했어요.',undefined,undefined,'error'));});}catch(error){notify('삭제하지 못했어요. 로그를 유지합니다.',undefined,undefined,'error');throw error;}};
+  const remove=async(entry:ArchiveItem)=>{try{await repository.remove(entry.id);if(activeId===entry.id){setPendingAppearance(null);setEditingId(null);setTab('archive');setActiveId('');}notify('로그를 삭제했어요','실행 취소',()=>{void repository.save(entry,false).then(()=>notify('로그를 되돌렸어요')).catch(()=>notify('되돌리지 못했어요.',undefined,undefined,'error'));});}catch(error){notify('삭제하지 못했어요. 로그를 유지합니다.',undefined,undefined,'error');throw error;}};
   const createGroup=async(ids:string[],title:string)=>{
     const entries=ids.map(id=>archives.find(entry=>entry.id===id)).filter((entry):entry is ArchiveItem=>Boolean(entry)&&!isLogGroup(entry!));
     if(!entries.length)throw new Error('모을 로그를 선택해 주세요.');
@@ -148,8 +184,9 @@ export default function L2TestApp(){
     }, true);
     notify(`‘${entry.title}’ 위치를 연결했어요`, undefined, undefined, 'success');
   };
-  const applyPreset=async(preset:PresetSlot)=>{if(applying||!actualItem)return;setApplying(true);try{const cardAppearance=createCardAppearance(item,preset,preferences.skins,preferences.authorName);await repository.save({...item,author:cardAppearance.authorName,cardAppearance},true);haptic.snap();}catch{notify('프리셋을 적용하지 못했어요.',undefined,undefined,'error');}finally{setApplying(false);}};
-  const applyLayout=async(layoutId:CardLayoutType)=>{if(applying||!actualItem)return;setApplying(true);try{const nextSlot={...appearance.slot,layout:layoutId};const cardAppearance:CardAppearance={...appearance,slot:nextSlot};await repository.save({...item,cardAppearance},true);haptic.snap();}catch{notify('도안을 변경하지 못했어요.',undefined,undefined,'error');}finally{setApplying(false);}};
+  const applyPreset=(preset:PresetSlot)=>{if(applying||!actualItem)return;const cardAppearance=createCardAppearance(item,preset,preferences.skins,preferences.authorName);setPendingAppearance(cardAppearance);haptic.snap();};
+  const applyLayout=(layoutId:CardLayoutType)=>{if(applying||!actualItem)return;const nextSlot={...appearance.slot,layout:layoutId};const cardAppearance:CardAppearance={...appearance,slot:nextSlot};setPendingAppearance(cardAppearance);haptic.snap();};
+  const saveCard=async()=>{if(applying||!actualItem)return;setApplying(true);try{await repository.save({...item,author:appearance.authorName,cardAppearance:appearance},true);setPendingAppearance(null);haptic.success();notify('카드 모양을 로그북에 저장했어요',undefined,undefined,'success');}catch{notify('카드 모양을 저장하지 못했어요.',undefined,undefined,'error');}finally{setApplying(false);}};
   const savePreset=async(preset:PresetSlot,makeDefault:boolean)=>{
     preferences.update(previous=>{const exists=previous.presetSlots.some(entry=>entry.id===preset.id);if(!exists&&previous.presetSlots.length>=20)throw new Error('프리셋은 20개까지 저장할 수 있어요.');const slots=exists?previous.presetSlots.map(entry=>entry.id===preset.id?{...preset}:entry):[...previous.presetSlots,{...preset}];return {...previous,presetSlots:makeDefault?slots.sort((a,b)=>Number(b.id===preset.id)-Number(a.id===preset.id)):slots,defaultPresetId:makeDefault?preset.id:previous.defaultPresetId};});haptic.success();notify(makeDefault?'기본 프리셋으로 설정했어요':'프리셋을 저장했어요',undefined,undefined,'success');
   };
@@ -210,18 +247,24 @@ export default function L2TestApp(){
     }
   };
 
-  const download=async()=>{
-    const file=await ensureExportFile();
-    if(!file)return;
-    downloadCardFile(file);
-    notify('카드 다운로드를 시작했어요');
-  };
   const share=async()=>{
     const file=await ensureExportFile();
     if(!file)return;
-    try{if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:item.title,text:item.quote});else downloadCardFile(file);}catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))notify('공유하지 못했어요. 카드 저장으로 다시 시도해 주세요.',undefined,undefined,'error');}
+    try{if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:item.title,text:item.quote});else{downloadCardFile(file);notify('카드 이미지를 내려받았어요');}}catch(error){if(!(error instanceof DOMException&&error.name==='AbortError')){downloadCardFile(file);notify('카드 이미지를 내려받았어요');}}
   };
   const restore=async(code:string)=>{const response=await fetch('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recoveryCode:code})});const data=await response.json();if(!response.ok)throw new Error(data.error||'복원 코드를 확인해 주세요.');window.location.reload();};
+
+  const springBackMain=(fromDx:number)=>{
+    const node=mainRef.current;
+    if(!node)return;
+    node.style.transform='';
+    if(Math.abs(fromDx)>2&&allowsMotion()){
+      node.animate(
+        [{transform:`translate3d(${fromDx}px, 0, 0)`},{transform:'translate3d(0, 0, 0)'}],
+        {duration:240,easing:'cubic-bezier(0.22, 1, 0.36, 1)'}
+      );
+    }
+  };
 
   // Horizontal swipe navigation across + 로그 (log) <-> 로그북 (archive) <-> 스튜디오 (studio) <-> 설정 (settings)
   const onPointerDownShell=(e:React.PointerEvent<HTMLDivElement>)=>{
@@ -229,16 +272,47 @@ export default function L2TestApp(){
     const target=e.target as HTMLElement|null;
     if(!target)return;
     if(target.closest('input[type="range"], .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop'))return;
-    const hScroll=target.closest<HTMLElement>('.preset-rail, .record-preset-picker > div[role="group"]');
+    const hScroll=target.closest<HTMLElement>('.preset-rail');
     if(hScroll&&hScroll.scrollWidth>hScroll.clientWidth+4)return;
     const inDialog=target.closest('[role="dialog"]');
     if(inDialog&&!settings)return;
     swipeStart.current={
       x:e.clientX,
       y:e.clientY,
+      dx:0,
       time:Date.now(),
+      lockedAxis:null,
       inSwipeRow:Boolean(target.closest('.swipe-log'))
     };
+  };
+
+  const onPointerMoveShell=(e:React.PointerEvent<HTMLDivElement>)=>{
+    const start=swipeStart.current;
+    if(!start||editingItem||settings)return;
+    const dx=e.clientX-start.x;
+    const dy=e.clientY-start.y;
+    if(start.lockedAxis===null){
+      if(Math.hypot(dx,dy)<10)return;
+      if(Math.abs(dx)>Math.abs(dy)*1.25&&!(start.inSwipeRow&&dx<0)){
+        start.lockedAxis='x';
+      }else{
+        start.lockedAxis='y';
+        return;
+      }
+    }
+    if(start.lockedAxis!=='x')return;
+    const atLeftBoundary=tab==='log'&&dx>0;
+    const effectiveDx=atLeftBoundary?dx*0.24:dx;
+    start.dx=effectiveDx;
+    if(mainRef.current){
+      mainRef.current.style.transform=`translate3d(${effectiveDx.toFixed(1)}px, 0, 0)`;
+    }
+  };
+
+  const onPointerCancelShell=()=>{
+    const start=swipeStart.current;
+    swipeStart.current=null;
+    if(start?.lockedAxis==='x')springBackMain(start.dx);
   };
 
   const onPointerUpShell=(e:React.PointerEvent<HTMLDivElement>)=>{
@@ -247,12 +321,10 @@ export default function L2TestApp(){
     if(!start||editingItem)return;
     const dx=e.clientX-start.x;
     const dy=e.clientY-start.y;
-    const elapsed=Date.now()-start.time;
-    if(elapsed>750)return;
-    if(Math.abs(dx)<68||Math.abs(dx)<Math.abs(dy)*1.4)return;
+    const elapsed=Math.max(1,Date.now()-start.time);
 
     if(settings){
-      if(dx>68){
+      if(dx>68&&Math.abs(dx)>Math.abs(dy)*1.3){
         haptic.tick();
         setSettings(false);
         setSlideDir('prev');
@@ -260,35 +332,45 @@ export default function L2TestApp(){
       return;
     }
 
-    if(start.inSwipeRow&&dx<0)return;
+    if(start.lockedAxis==='y')return;
+    const velocity=Math.abs(dx)/elapsed;
+    const triggered=(Math.abs(dx)>=58||Math.abs(dx)>=28&&velocity>0.38)&&Math.abs(dx)>Math.abs(dy)*1.2;
+    if(!triggered||start.inSwipeRow&&dx<0){
+      if(start.lockedAxis==='x')springBackMain(start.dx);
+      return;
+    }
 
     const currentEffective:Tab=tab==='card'?'archive':tab;
     if(dx<0){
       haptic.tick();
-      if(currentEffective==='log')go('archive','next');
-      else if(currentEffective==='archive')go('studio','next');
-      else if(currentEffective==='studio')setSettings(true);
+      if(currentEffective==='log')go('archive','next',start.dx);
+      else if(currentEffective==='archive')go('studio','next',start.dx);
+      else if(currentEffective==='studio'){springBackMain(start.dx);setSettings(true);}
     }else if(dx>0){
-      haptic.tick();
-      if(tab==='card')go('archive','prev');
-      else if(currentEffective==='studio')go('archive','prev');
-      else if(currentEffective==='archive')go('log','prev');
+      if(tab==='card'){haptic.tick();go('archive','prev',start.dx);}
+      else if(currentEffective==='studio'){haptic.tick();go('archive','prev',start.dx);}
+      else if(currentEffective==='archive'){haptic.tick();go('log','prev',start.dx);}
+      else springBackMain(start.dx);
     }
   };
 
   const storageStatus=!repository.ready?'불러오는 중':failedSyncIds?'동기화 확인 필요':repository.pendingCount?`기기 보관 완료 · ${repository.pendingCount}건 동기화 대기`:preferences.pending?'스타일 동기화 대기':repository.status==='failed'?'서버 연결 대기':'동기화 완료';
-  return <div className={`test-shell view-${tab} ${tab==='log'?'is-composing':''}`} onPointerDown={onPointerDownShell} onPointerUp={onPointerUpShell}><TestPwa/>
+  return <div className={`test-shell view-${tab} ${tab==='log'?'is-composing':''}`} onPointerDown={onPointerDownShell} onPointerMove={onPointerMoveShell} onPointerUp={onPointerUpShell} onPointerCancel={onPointerCancelShell}><TestPwa/>
     <header className="test-header"><button className="test-brand" onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} className={tab===entry.id||tab==='card'&&entry.id==='archive'?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id==='archive'?'page':undefined} onClick={()=>go(entry.id)}>{entry.label}</button>)}</nav><button className="test-settings-button" onClick={()=>setSettings(true)} aria-label="설정 열기">⚙</button></header>
     <PwaInstallBanner pwa={pwa}/>
-    <main key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
-      {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} onSuggest={suggestSummary} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
-      {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
-      {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} onApplyPreset={preset=>void applyPreset(preset)} onApplyLayout={layout=>void applyLayout(layout)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onDownload={()=>void download()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
-      {tab==='studio'&&preferences.ready&&<StudioPanel presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
-    </main>
+    <div className="test-swipe-viewport">
+      <div ref={outgoingRef} className="test-outgoing-host" aria-hidden="true"/>
+      <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
+        {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} onSuggest={suggestSummary} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
+        {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
+        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onApplyLayout={layout=>applyLayout(layout)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
+        {tab==='studio'&&preferences.ready&&<StudioPanel presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
+      </main>
+    </div>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} onSuggest={suggestSummary} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
     {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:30}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
+    <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
     {toast&&<div className={`test-toast ${toast.tone}`} role={toast.tone==='error'?'alert':'status'}><span className="test-toast-check" aria-hidden="true">{toast.tone==='error'?'!':toast.tone==='success'?'✓':'·'}</span><span>{toast.title}</span>{toast.action&&<button onClick={()=>{toast.action?.();setToast(null);}}>{toast.actionLabel}</button>}<button className="test-toast-close" aria-label="알림 닫기" onClick={()=>setToast(null)}>×</button></div>}
   </div>;
 }
