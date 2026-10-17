@@ -14,7 +14,7 @@
 .preset-library{min-width:0;padding:10px 12px 8px;border:1px solid var(--line);border-radius:17px;background:var(--surface)}
 .preset-library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
 .preset-library-heading h2{font-size:12px;font-weight:800;letter-spacing:-.025em}.preset-library-heading>small{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
-.preset-library .preset-rail{padding:3px 1px}.preset-name-row{padding:10px 12px;border:1px solid var(--line);border-radius:15px;background:var(--surface);gap:6px;min-height:62px}
+.preset-library .preset-rail{padding:4px;scroll-padding-inline:4px}.test-shell .preset-library .preset-rail button:focus-visible{outline-offset:1px}.preset-name-row{padding:10px 12px;border:1px solid var(--line);border-radius:15px;background:var(--surface);gap:6px;min-height:62px}
 .preset-name-field{display:grid;gap:3px;min-width:0;flex:1}.preset-name-field>label{font-size:10px;font-weight:650;color:var(--muted)}
 .preset-name-field>input{width:100%;min-width:0;min-height:23px;background:transparent;font-size:17px;font-weight:800;letter-spacing:-.03em;outline:none}
 .preset-name-field:focus-within>label{color:var(--accent)}.preset-name-row:focus-within{border-color:var(--accent)}

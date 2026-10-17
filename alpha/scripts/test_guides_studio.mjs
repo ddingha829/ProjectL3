@@ -91,10 +91,12 @@ try{
 
  for(const [width,height] of [[320,568],[390,844],[768,1024],[1280,800]]){
   await p.setViewport({width,height});await delay(180);
+  const ring=await p.$eval('.preset-library .preset-rail',e=>{e.scrollLeft=0;const first=e.querySelector('button');first.focus({preventScroll:true});const r=e.getBoundingClientRect(),b=first.getBoundingClientRect(),s=getComputedStyle(first),bleed=Math.max(3,first.matches(':focus-visible')?parseFloat(s.outlineWidth)+parseFloat(s.outlineOffset):0);return{left:b.left-r.left,right:r.right-b.right,top:b.top-r.top,bottom:r.bottom-b.bottom,bleed};});assert.ok(Object.keys(ring).filter(k=>k!=='bleed').every(k=>ring[k]>=ring.bleed-.5),'first preset ring must fit inside scroll clip '+JSON.stringify({width,ring}));
   const stage=await p.$eval('.preset-studio',e=>{const r=e.getBoundingClientRect();return{right:r.right,bottom:r.bottom,scroll:e.scrollHeight,height:e.clientHeight};});assert.ok(stage.right<=width+1&&stage.bottom<=height+1,JSON.stringify({width,height,stage}));assert.ok(stage.scroll<=stage.height+3,'Studio must fit '+JSON.stringify({width,height,stage}));
   await navigate(p,'+ 로그');const aligned=await p.evaluate(()=>{const a=document.querySelector('.test-header').getBoundingClientRect(),b=document.querySelector('.quick-input-surface').getBoundingClientRect();return Math.abs(a.x-b.x)<2&&Math.abs(a.width-b.width)<2;});assert.ok(aligned,'composer and header should share width');await shot(p,`composer-${width}`);await navigate(p,'스튜디오');
  }
  pass('Studio and main composer fit 320×568 / 390×844 / 768×1024 / 1280×800; composer width follows header');
+ pass('first preset selection/focus ring remains fully visible at the rail boundary on phone, tablet and desktop');
 
  await p.setViewport({width:390,height:844});await p.click('.test-settings-button');await guide(p);await shot(p,'settings-account-guide');await button(p,'설치 · 백업','.first-guide-footer');await delay(150);await shot(p,'settings-data-guide');await closeGuide(p);await p.click('button[aria-label="추가 정보 닫기"]');
  await p.click('.test-settings-button');await delay(600);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time settings guide and once-only behavior');
