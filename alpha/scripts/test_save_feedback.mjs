@@ -9,7 +9,7 @@ const root=process.cwd(),require=createRequire(import.meta.url),ts=require('type
 function load(file){if(modules.has(file))return modules.get(file).exports;const module={exports:{}};modules.set(file,module);const source=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;new Function('require','module','exports',source)(name=>name.startsWith('@/')?load(path.join(root,'src',name.slice(2))+'.ts'):require(name),module,module.exports);return module.exports;}
 const {INITIAL_SKINS,INITIAL_ARCHIVES,PRESET_SLOTS}=load(path.join(root,'src/data/initialData.ts'));
 const output='C:/Users/User/Documents/Codex/2026-10-16/pets-plugin-work-pets-openai-curated/outputs';fs.mkdirSync(output,{recursive:true});
-const prefs={deviceId:randomUUID(),username:'feedback-test',recoveryCode:'L2-TEST-TEST',authorName:'테스트',presetSlots:PRESET_SLOTS,skins:INITIAL_SKINS,defaultPresetId:PRESET_SLOTS[0].id,aiUsage:{used:0,limit:30}};
+const prefs={deviceId:randomUUID(),username:'feedback-test',recoveryCode:'L2-TEST-TEST',authorName:'테스트',presetSlots:PRESET_SLOTS,skins:INITIAL_SKINS,defaultPresetId:PRESET_SLOTS[0].id,aiUsage:{used:0,limit:20}};
 const rows=new Map([0,1].map((n)=>{const item={...INITIAL_ARCHIVES[0],id:randomUUID(),title:`기존 로그 ${n+1}`,img:'',hasPhoto:false,timestamp:Date.now()-100000+n,cardAppearance:{slot:PRESET_SLOTS[4],skin:INITIAL_SKINS.paper,authorName:'테스트'}};return[item.id,item];}));
 const api={hold:false,requests:[],waiting:[],errors:[]};
 const browser=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--no-sandbox']});

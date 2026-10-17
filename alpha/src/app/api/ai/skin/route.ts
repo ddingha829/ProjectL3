@@ -387,7 +387,7 @@ Return ONLY a JSON object with keys:
       limitReached: isLimitReached,
       usage: { used: currentUsage, limit: AI_DAILY_LIMIT },
       notice: isLimitReached
-        ? '오늘 앱 AI 사용 한도(30회)에 도달하여 정교한 감성 절차적 하모니 엔진으로 생성되었습니다.'
+        ? `오늘 앱 AI 사용 한도(${AI_DAILY_LIMIT}회)에 도달하여 정교한 감성 절차적 하모니 엔진으로 생성되었습니다.`
         : undefined,
     });
   } catch (err) {

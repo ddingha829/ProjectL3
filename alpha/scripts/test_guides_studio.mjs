@@ -14,7 +14,7 @@ const out=path.resolve(process.env.L2_TEST_OUTPUT_DIR||'artifacts/guides-studio'
 const base=process.env.L2_TEST_URL||'http://localhost:3013';
 const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
 const checks=[],errors=[],calls=[];const delay=ms=>new Promise(r=>setTimeout(r,ms));const pass=text=>{checks.push(text);console.log('PASS '+text);};
-const prefs={deviceId:randomUUID(),username:null,recoveryCode:'L2-MOCK-MOCK',authorName:'테스트',presetSlots:structuredClone(PRESET_SLOTS),skins:structuredClone(INITIAL_SKINS),defaultPresetId:PRESET_SLOTS[0].id,aiUsage:{used:0,limit:30}};
+const prefs={deviceId:randomUUID(),username:null,recoveryCode:'L2-MOCK-MOCK',authorName:'테스트',presetSlots:structuredClone(PRESET_SLOTS),skins:structuredClone(INITIAL_SKINS),defaultPresetId:PRESET_SLOTS[0].id,aiUsage:{used:0,limit:20}};
 const records=INITIAL_ARCHIVES.slice(0,3).map((item,i)=>({...item,id:randomUUID(),timestamp:Date.now()-i*100000,img:i===2?'':item.img,hasPhoto:i!==2,cardAppearance:{slot:PRESET_SLOTS[0],skin:INITIAL_SKINS.signal,authorName:'테스트'}}));
 records[0].link='https://www.google.com/maps/search/?api=1&query=cafe&query_place_id=fixture';records[0].coordinates={lat:37.56,lng:126.98};records[1].link='';records[1].coordinates=null;
 const original=JSON.stringify(records);

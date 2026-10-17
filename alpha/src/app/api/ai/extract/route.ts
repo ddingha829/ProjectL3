@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       limitReached: isLimitReached,
       usage: { used: currentUsage, limit: AI_DAILY_LIMIT },
       notice: isLimitReached
-        ? '오늘 앱 AI 사용 한도(30회)에 도달하여 로컬 문맥 분석 엔진으로 요약되었습니다.'
+        ? `오늘 앱 AI 사용 한도(${AI_DAILY_LIMIT}회)에 도달하여 로컬 문맥 분석 엔진으로 요약되었습니다.`
         : undefined,
     });
   } catch (err) {
