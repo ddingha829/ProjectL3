@@ -10,7 +10,9 @@
 **/.env*.local
 
 # local data & test artifacts
-**/data/
+/data/
+/alpha/data/
+/legacy/data/
 **/.test-data/
 **/work/
 **/mockup_captures/
