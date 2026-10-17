@@ -57,7 +57,7 @@ async function release(){api.hold=false;for(const reply of api.waiting.splice(0)
 async function hasTitle(title){await page.waitForFunction(t=>[...document.querySelectorAll('.logbook-title')].some(e=>e.textContent===t),{},title);}
 const checks=[];const pass=s=>{checks.push(s);console.log('PASS '+s);};
 try{
- await page.goto('http://localhost:3013',{waitUntil:'networkidle2'});await ready();await page.waitForSelector('[aria-label="홈 화면에 앱 설치 안내"]');
+ await page.goto(process.env.L2_TEST_URL||'http://localhost:3013',{waitUntil:'networkidle2'});await ready();await page.waitForSelector('[aria-label="홈 화면에 앱 설치 안내"]');
  await page.click('button[aria-label="설치 안내 끄기"]');await page.waitForFunction(()=>!document.querySelector('[aria-label="홈 화면에 앱 설치 안내"]'));
  api.hold=true;await page.type('input[name=title]','저장되는 순간');await category('기타',true);
  await page.waitForSelector('.quick-category-sheet button[data-save-state=saved]');

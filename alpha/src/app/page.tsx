@@ -56,6 +56,7 @@ export default function L2TestApp(){
   const dismissGuide=useCallback(()=>firstGuides.dismiss(guideScreen),[firstGuides.dismiss,guideScreen]);
 
   const notify=useCallback((title:string,actionLabel?:string,action?:()=>void,tone:Toast['tone']='info')=>{if(toastTimer.current)clearTimeout(toastTimer.current);setToast({title,actionLabel,action,tone});toastTimer.current=setTimeout(()=>setToast(null),action?8000:3000);},[]);
+  useEffect(()=>{if(repository.serverSnapshot?.requiresReconnect)notify('보안 업데이트로 다시 연결이 필요해요. 기기 기록은 유지했습니다.','다시 연결',()=>setSettings(true));},[repository.serverSnapshot?.requiresReconnect,notify]);
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);if(savedTimer.current)clearTimeout(savedTimer.current);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);},[]);
   useEffect(()=>{setCardSaved(false);},[activeId]);
   useEffect(()=>{

@@ -13,6 +13,8 @@ export interface ArchiveServerSnapshot {
   /** View-only marker: an IndexedDB snapshot has not confirmed the live cookie. */
   fromCache?: boolean;
   aiUsage?: { used: number; limit: number };
+  isNewDevice?: boolean;
+  requiresReconnect?: boolean;
 }
 
 export interface ArchiveOperation {
@@ -113,6 +115,8 @@ export class LocalArchiveRepository {
   private listeners = new Set<(view: RepositoryView) => void>();
   private localStart: Promise<void> | null = null;
   private networkStart: Promise<void> | null = null;
+  private refreshing: Promise<void> | null = null;
+  private sessionEpoch = 0;
   private mutations: Promise<void> = Promise.resolve();
   private syncing: Promise<void> | null = null;
   private revision = 0;
@@ -199,12 +203,28 @@ export class LocalArchiveRepository {
     if (!this.networkStart) this.networkStart = this.refresh();
     return this.networkStart;
   }
-  async refresh(): Promise<void> {
+  refresh(): Promise<void> {
+    if (!this.refreshing) this.refreshing = this.refreshSession().finally(() => { this.refreshing = null; });
+    return this.refreshing;
+  }
+  private async refreshSession(): Promise<void> {
+    this.sessionReady = false;
+    ++this.sessionEpoch;
     try {
       await this.initializeLocal();
       const sessionResponse = await this.transport('/api/session');
       if (!sessionResponse.ok) throw new Error('기기 세션을 연결하지 못했습니다.');
       const session = await sessionResponse.json() as ArchiveServerSnapshot;
+      if (this.state.ownerId && session.deviceId && this.state.ownerId !== session.deviceId &&
+          (session.isNewDevice || this.state.serverSnapshot?.requiresReconnect) && !session.username) {
+        // Rejecting an old unsigned cookie must not look like deleting the
+        // user's diary. Keep local records and the old recovery code visible
+        // until login/recovery confirms an account. Never upload them to the
+        // newly allocated anonymous cookie.
+        this.snapshotFromCache = true;
+        await this.mutate(current => ({ ...current, serverSnapshot: { ...current.serverSnapshot, username: null, requiresReconnect: true } }));
+        throw new Error('보안 업데이트로 다시 연결이 필요해요. 기기 기록은 유지했습니다. 설정에서 로그인하거나 기존 복원 코드로 연결해 주세요.');
+      }
       // Recovery changes the cookie. Keep each owner's pending work separate.
       if (this.state.ownerId && session.deviceId && this.state.ownerId !== session.deviceId) {
         await this.storage.write(this.state, `owner:${this.state.ownerId}`);
@@ -218,10 +238,14 @@ export class LocalArchiveRepository {
       if (!response.ok) throw new Error('서버 기록을 불러오지 못했습니다. 기기 기록은 보존되었습니다.');
       const data = await response.json();
       if (!Array.isArray(data.archives)) throw new Error('서버 기록 응답을 확인할 수 없습니다.');
+      if (data.deviceId && data.deviceId !== session.deviceId) throw new Error('계정이 변경되었어요. 다시 연결해 주세요.');
       this.error = null;
       await this.mutate(current => ({ ...current, archives: this.merge(data.archives, current.outbox), serverSnapshot: { ...session, ...data, archives: undefined } }));
       await this.flush();
-    } catch (error) { this.error = message(error); this.publish(); }
+      // An older owner's request may have occupied the queue during recovery.
+      // Its response is discarded; now flush this owner's own pending work.
+      await this.flush();
+    } catch (error) { this.sessionReady = false; this.error = message(error); this.publish(); }
   }
   async save(input: ArchiveItem, isEdit = false): Promise<{ item: ArchiveItem; synced: boolean }> {
     await this.initializeLocal();
@@ -264,8 +288,7 @@ export class LocalArchiveRepository {
     await this.initializeLocal();
     this.error = null;
     await this.mutate(current => ({ ...current, outbox: current.outbox.map(operation => ({ ...operation, state: 'pending', error: undefined })) }));
-    if (!this.sessionReady) await this.refresh();
-    else await this.flush();
+    await this.refresh();
   }
   private flush(): Promise<void> {
     if (this.syncing) return this.syncing;
@@ -273,6 +296,8 @@ export class LocalArchiveRepository {
     return this.syncing;
   }
   private async flushQueue(): Promise<void> {
+    const epoch = this.sessionEpoch;
+    const ownerId = this.state.ownerId;
     try {
       if (!this.sessionReady) {
         // start/refresh owns session creation; wait for its cookie before writes.
@@ -280,14 +305,22 @@ export class LocalArchiveRepository {
       }
       while (true) {
         await this.mutations;
+        if (epoch !== this.sessionEpoch || ownerId !== this.state.ownerId || !this.sessionReady) return;
         const operation = this.state.outbox.find(queued => queued.state === 'pending');
         if (!operation) break;
         try {
-          const response = await this.transport(operation.method === 'DELETE' ? `/api/logs?id=${encodeURIComponent(operation.id)}` : '/api/logs', {
+          const response = await this.transport(operation.method === 'DELETE' ? `/api/logs?id=${encodeURIComponent(operation.id)}&expectedDeviceId=${encodeURIComponent(ownerId || '')}` : '/api/logs', {
             method: operation.method, headers: { 'Content-Type': 'application/json' },
-            ...(operation.item ? { body: JSON.stringify(operation.item) } : {}),
+            ...(operation.item ? { body: JSON.stringify({ ...operation.item, expectedDeviceId: ownerId }) } : {}),
           });
           const data = await response.json().catch(() => ({}));
+          if (epoch !== this.sessionEpoch || ownerId !== this.state.ownerId) return;
+          if (response.status === 409 && data.error === 'DEVICE_CHANGED') {
+            this.sessionReady = false;
+            this.error = '계정이 변경되어 이전 기록을 전송하지 않았어요. 다시 연결해 주세요.';
+            this.publish();
+            return;
+          }
           if (!response.ok) {
             const detail = data.detail || data.error || '서버에 아직 동기화하지 못했습니다.';
             const permanent = response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429;
@@ -304,6 +337,7 @@ export class LocalArchiveRepository {
             return { ...current, outbox, archives: this.merge(serverArchives, outbox) };
           });
         } catch (error) {
+          if (epoch !== this.sessionEpoch || ownerId !== this.state.ownerId) return;
           this.error = message(error);
           await this.mutate(current => ({ ...current, outbox: current.outbox.map(queued => queued.id === operation.id && queued.revision === operation.revision ? { ...queued, attempts: queued.attempts + 1, error: this.error || undefined } : queued) }));
           break;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readDeviceId, writeDeviceId } from '@/lib/session';
 import { AI_DAILY_LIMIT, getStore, newId } from '@/lib/store';
 import { callGemini } from '@/lib/gemini';
+import { reserveAiUsage } from '@/lib/aiUsage';
 import {
   extractBadFromText,
   extractGoodFromText,
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
       quote?: string;
       loc?: string;
     };
+    if (typeof title !== 'string' || typeof quote !== 'string' || typeof loc !== 'string' || title.length > 200 || quote.length > 10000 || loc.length > 1000) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
 
     let deviceId = await readDeviceId();
     if (!deviceId) {
@@ -23,10 +25,11 @@ export async function POST(req: NextRequest) {
     }
 
     const store = getStore();
-    const currentUsage = await store.getUsage(deviceId, 'ai');
-    const isLimitReached = currentUsage >= AI_DAILY_LIMIT;
+    const quota = await reserveAiUsage(store, deviceId, Boolean(quote.trim()));
+    const currentUsage = quota.used;
+    const isLimitReached = quota.limitReached;
 
-    if (!isLimitReached && quote.trim()) {
+    if (quota.allowed) {
       try {
         const geminiRes = await callGemini({
           contents: [
@@ -47,7 +50,6 @@ export async function POST(req: NextRequest) {
         if (geminiRes) {
           const parsed = JSON.parse(geminiRes.text);
           if (parsed.good || parsed.note) {
-            const nextUsage = await store.bumpUsage(deviceId, 'ai');
             return NextResponse.json({
               good: parsed.good || extractGoodFromText(quote, title),
               bad: parsed.bad || '',
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
               provider: 'GEMINI',
               model: geminiRes.model,
               limitReached: false,
-              usage: { used: nextUsage, limit: AI_DAILY_LIMIT },
+              usage: { used: currentUsage, limit: AI_DAILY_LIMIT },
             });
           }
         }

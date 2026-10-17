@@ -8,7 +8,8 @@ import {
   accountUuidFromUsername,
   defaultProfile,
   generateRecoveryCode,
-  hashAccountPassword,
+  createPasswordHash,
+  verifyPasswordHash,
   MAX_PHOTO_BYTES,
   normalizeUsername,
   parseDataUrl,
@@ -27,7 +28,7 @@ interface FileDb {
   usage: Record<string, number>; // `${ownerId}:${kind}:${day}`
 }
 
-const DATA_DIR = process.env.VERCEL
+const DATA_DIR = process.env.L2_DATA_DIRECTORY && !process.env.VERCEL ? path.resolve(process.env.L2_DATA_DIRECTORY) : process.env.VERCEL
   ? path.join(os.tmpdir(), 'l2-alpha-data')
   : path.join(process.cwd(), '.test-data');
 const FILE = path.join(DATA_DIR, 'l2_users.json');
@@ -46,7 +47,7 @@ function load(): FileDb {
       return memory;
     }
   } catch {
-    // corrupted or unreadable — fallback to memory
+    throw new Error('기록 파일을 읽지 못했어요. 기존 파일을 덮어쓰지 않았습니다.');
   }
   if (!memory) {
     memory = { profiles: {}, archives: {}, usage: {} };
@@ -55,15 +56,11 @@ function load(): FileDb {
 }
 
 function persist(db: FileDb) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const temporaryFile = `${FILE}.tmp`;
+  fs.writeFileSync(temporaryFile, JSON.stringify(db, null, 2), 'utf8');
+  fs.renameSync(temporaryFile, FILE);
   memory = db;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    const temporaryFile = `${FILE}.tmp`;
-    fs.writeFileSync(temporaryFile, JSON.stringify(db, null, 2), 'utf8');
-    fs.renameSync(temporaryFile, FILE);
-  } catch {
-    // Read-only filesystem fallback: keep in-memory state without throwing 500
-  }
 }
 
 function renumber(items: ArchiveItem[]): ArchiveItem[] {
@@ -106,8 +103,9 @@ export const fileStore: L2Store = {
   },
 
   async savePrefs(deviceId, prefs: ProfilePrefs) {
+    await this.ensureProfile(deviceId);
     const db = load();
-    const current = db.profiles[deviceId] || (await this.ensureProfile(deviceId));
+    const current = db.profiles[deviceId];
     const next: Profile = {
       ...current,
       ...(typeof prefs.authorName === 'string' ? { authorName: prefs.authorName } : {}),
@@ -202,31 +200,44 @@ export const fileStore: L2Store = {
   async loginOrRegister(username, password, previousDeviceId) {
     const norm = normalizeUsername(username);
     const accountId = accountUuidFromUsername(norm);
-    const pwdHash = hashAccountPassword(norm, password);
     const db = load();
     const prefix = `${accountId}:pwd:`;
     const existingKey = Object.keys(db.usage).find((k) => k.startsWith(prefix));
 
     let isNewAccount = false;
     if (existingKey) {
-      const expectedPrefix = `${accountId}:pwd:${pwdHash}:`;
-      if (!existingKey.startsWith(expectedPrefix)) {
+      const stored = existingKey.slice(prefix.length).split(':')[0];
+      if (!await verifyPasswordHash(norm, password, stored)) {
         throw new Error('INVALID_PASSWORD');
+      }
+      if (!stored.startsWith('s1$')) {
+        const pwdHash = await createPasswordHash(password);
+        const current = load();
+        delete current.usage[existingKey];
+        current.usage[`${prefix}${pwdHash}:${norm}`] = 1;
+        persist(current);
       }
     } else {
       isNewAccount = true;
+      const pwdHash = await createPasswordHash(password);
       await this.ensureProfile(accountId);
-      db.usage[`${accountId}:pwd:${pwdHash}:${norm}`] = 1;
-      persist(db);
+      const current = load();
+      const raced = Object.keys(current.usage).find(key => key.startsWith(prefix));
+      if (raced) {
+        if (!await verifyPasswordHash(norm, password, raced.slice(prefix.length).split(':')[0])) throw new Error('INVALID_PASSWORD');
+        isNewAccount = false;
+      } else current.usage[`${accountId}:pwd:${pwdHash}:${norm}`] = 1;
+      persist(current);
     }
 
-    if (previousDeviceId && previousDeviceId !== accountId) {
-      const prevItems = await this.listArchives(previousDeviceId);
-      for (const item of prevItems) {
-        if (!db.archives[item.id]) {
-          await this.saveArchive(accountId, item);
-        }
+    if (previousDeviceId && previousDeviceId !== accountId && !await this.getAccountUsername?.(previousDeviceId)) {
+      // Transfer anonymous ownership explicitly; the normal save guard must
+      // reject another owner's IDs. Never merge registered account A into B.
+      const current = load();
+      for (const row of Object.values(current.archives)) {
+        if (row.ownerId === previousDeviceId) row.ownerId = accountId;
       }
+      persist(current);
     }
 
     return { accountId, username: norm, isNewAccount };

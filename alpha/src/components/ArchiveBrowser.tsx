@@ -188,7 +188,7 @@ export default function ArchiveBrowser(p:Props){
             <button type="button" className="spotlight-btn edit" onClick={()=>{const target=spotlightItem;setSpotlightId(null);if(p.onEdit)p.onEdit(target);else p.onOpen(target);}}>
               <PencilLine size={16}/><span>수정</span>
             </button>
-            <button type="button" className="spotlight-btn delete" onClick={()=>{const target=spotlightItem;setSpotlightId(null);void p.onDelete(target);}}>
+            <button type="button" className="spotlight-btn delete" onClick={()=>{const target=spotlightItem;setSpotlightId(null);void p.onDelete(target).catch(()=>{});}}>
               <Trash2 size={16}/><span>삭제</span>
             </button>
             <button type="button" className="spotlight-btn close" onClick={()=>setSpotlightId(null)}>

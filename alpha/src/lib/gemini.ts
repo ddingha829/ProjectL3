@@ -19,12 +19,9 @@ export async function callGemini(
   if (!key) return null;
 
   for (const model of CANDIDATE_MODELS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), options.timeoutMs || 8000);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(
-        () => controller.abort(),
-        options.timeoutMs || 8000
-      );
 
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
@@ -40,7 +37,6 @@ export async function callGemini(
           signal: controller.signal,
         }
       );
-      clearTimeout(timer);
 
       if (res.ok) {
         const data = await res.json();
@@ -55,7 +51,7 @@ export async function callGemini(
       }
     } catch (err) {
       console.warn(`[Gemini ${model}] error:`, err);
-    }
+    } finally { clearTimeout(timer); }
   }
 
   return null;

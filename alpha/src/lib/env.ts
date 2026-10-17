@@ -10,6 +10,7 @@ let cachedMtime = 0;
  * external keys are suppressed so offline/local fallbacks can be tested.
  */
 export function getRuntimeEnvKey(key: string): string | undefined {
+  if (process.env.L2_TEST_ALLOW_EXTERNAL === 'false') return undefined;
   try {
     const envPath = path.join(process.cwd(), '.env.local');
     if (fs.existsSync(envPath)) {

@@ -6,11 +6,11 @@ import { L2Store } from './types';
 export type { L2Store, Profile, ProfilePrefs } from './types';
 export { isUuid, newId, normalizeRecoveryCode } from './util';
 
-/** Daily AI calls per device (skin + memo extraction). */
+/** Daily AI generation allowance (skin + memo + place fallback). */
 export const AI_DAILY_LIMIT = 20;
-/** Silent cap on Gemini-backed place lookups (fires while typing). */
-export const PLACES_AI_DAILY_LIMIT = 60;
 
 export function getStore(): L2Store {
-  return getSupabaseConfig() ? supabaseStore : fileStore;
+  const configured = getSupabaseConfig();
+  if (process.env.VERCEL && !configured) throw new Error('서버 저장소 설정을 확인해 주세요. 기록은 기기에 보관됩니다.');
+  return configured ? supabaseStore : fileStore;
 }

@@ -40,19 +40,22 @@ returns int language sql security definer as $$
   returning count;
 $$;
 
--- RLS 활성화 및 서버 API 라우트(service_role 또는 anon key) 접근 정책
+-- 개인 기록은 Next.js 서버(service_role)에서만 접근합니다.
 alter table public.l2_profiles enable row level security;
 alter table public.l2_archives enable row level security;
 alter table public.l2_ai_usage enable row level security;
 
 drop policy if exists "l2_profiles_all" on public.l2_profiles;
-create policy "l2_profiles_all" on public.l2_profiles for all using (true) with check (true);
 
 drop policy if exists "l2_archives_all" on public.l2_archives;
-create policy "l2_archives_all" on public.l2_archives for all using (true) with check (true);
 
 drop policy if exists "l2_ai_usage_all" on public.l2_ai_usage;
-create policy "l2_ai_usage_all" on public.l2_ai_usage for all using (true) with check (true);
+
+revoke all on table public.l2_profiles, public.l2_archives, public.l2_ai_usage from anon, authenticated;
+grant all on table public.l2_profiles, public.l2_archives, public.l2_ai_usage to service_role;
+revoke execute on function public.bump_l2_ai_usage(uuid, text, date) from public, anon, authenticated;
+grant execute on function public.bump_l2_ai_usage(uuid, text, date) to service_role;
+alter function public.bump_l2_ai_usage(uuid, text, date) set search_path = public;
 
 -- 사진 업로드용 Storage 버킷 생성 및 정책
 insert into storage.buckets (id, name, public)
@@ -60,13 +63,8 @@ values ('photos', 'photos', true)
 on conflict (id) do nothing;
 
 drop policy if exists "l2_photos_public_read" on storage.objects;
-create policy "l2_photos_public_read" on storage.objects
-  for select using (bucket_id = 'photos');
+-- Public object URLs still work without allowing anonymous bucket listing.
 
 drop policy if exists "l2_photos_server_write" on storage.objects;
-create policy "l2_photos_server_write" on storage.objects
-  for insert with check (bucket_id = 'photos');
 
 drop policy if exists "l2_photos_server_delete" on storage.objects;
-create policy "l2_photos_server_delete" on storage.objects
-  for delete using (bucket_id = 'photos');

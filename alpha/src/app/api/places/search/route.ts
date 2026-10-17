@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRuntimeEnvKey } from '@/lib/env';
 import { callGemini } from '@/lib/gemini';
+import { requireDevice } from '@/lib/session';
+import { getStore } from '@/lib/store';
+import { reserveAiUsage } from '@/lib/aiUsage';
 import { MAP_API_PLACES } from '@/data/initialData';
 import { MapApiPlace } from '@/types/l2';
 import { searchTmdbMovies, getTmdbImageUrl } from '@/lib/tmdb';
@@ -28,6 +31,7 @@ function buildGoogleMapsUrl(query: string): string {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get('q') || '').trim();
+  if (q.length > 300) return NextResponse.json({ error: 'INVALID_QUERY' }, { status: 400 });
   const cat = (
     searchParams.get('category') ||
     searchParams.get('cat') ||
@@ -149,9 +153,11 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Gemini AI Place Resolver (Uses multi-model fallback to resolve Korean restaurant/place names into exact 시/구/동 + Google Maps URL)
-  if (q && results.length === 0) {
+  if (q && results.length === 0 && getRuntimeEnvKey('GEMINI_API_KEY')) {
     try {
-      const gemRes = await callGemini({
+      const { deviceId } = await requireDevice();
+      const quota = await reserveAiUsage(getStore(), deviceId);
+      const gemRes = quota.allowed ? await callGemini({
         contents: [
           {
             parts: [
@@ -168,7 +174,7 @@ export async function GET(req: NextRequest) {
           },
         ],
         responseMimeType: 'application/json',
-      });
+      }) : null;
 
       if (gemRes) {
         const parsed = JSON.parse(gemRes.text);

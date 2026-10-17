@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readDeviceId, writeDeviceId } from '@/lib/session';
 import { AI_DAILY_LIMIT, getStore, newId } from '@/lib/store';
+import { reserveAiUsage } from '@/lib/aiUsage';
 import { callGemini } from '@/lib/gemini';
 import { SkinTheme } from '@/types/l2';
 import { normalizeSkinTheme } from '@/lib/skinValidation';
@@ -310,6 +311,7 @@ export async function POST(req: NextRequest) {
     const { prompt = '' } = (await req.json()) as {
       prompt?: string;
     };
+    if (typeof prompt !== 'string' || prompt.length > 1000) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
 
     let deviceId = await readDeviceId();
     if (!deviceId) {
@@ -318,10 +320,11 @@ export async function POST(req: NextRequest) {
     }
 
     const store = getStore();
-    const currentUsage = await store.getUsage(deviceId, 'ai');
-    const isLimitReached = currentUsage >= AI_DAILY_LIMIT;
+    const quota = await reserveAiUsage(store, deviceId, Boolean(prompt.trim()));
+    const currentUsage = quota.used;
+    const isLimitReached = quota.limitReached;
 
-    if (!isLimitReached && prompt.trim()) {
+    if (quota.allowed) {
       try {
         const geminiRes = await callGemini({
           contents: [
@@ -361,14 +364,13 @@ Return ONLY a JSON object with keys:
               accent: parsed.accent,
               chipBg: parsed.chipBg || 'rgba(255,255,255,0.08)',
             });
-            const nextUsage = await store.bumpUsage(deviceId, 'ai');
             await store.savePrefs(deviceId, { skins: { [skin.id]: skin } });
             return NextResponse.json({
               skin,
               provider: 'GEMINI',
               model: geminiRes.model,
               limitReached: false,
-              usage: { used: nextUsage, limit: AI_DAILY_LIMIT },
+              usage: { used: currentUsage, limit: AI_DAILY_LIMIT },
             });
           }
         }

@@ -1,4 +1,4 @@
-import { createHash, randomInt, randomUUID } from 'crypto';
+import { createHash, randomBytes, randomInt, randomUUID, scrypt, timingSafeEqual } from 'crypto';
 import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { Profile } from './types';
 
@@ -29,6 +29,33 @@ export function hashAccountPassword(username: string, password: string): string 
     .update(`l2-pwd-v1:${norm}:${password}`)
     .digest('hex')
     .slice(0, 32);
+}
+
+function derivePassword(password: string, salt: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, 32, (error, key) => error ? reject(error) : resolve(key));
+  });
+}
+
+/** Salted password hashing; legacy SHA hashes are upgraded after a valid login. */
+export async function createPasswordHash(password: string): Promise<string> {
+  const salt = randomBytes(16).toString('base64url');
+  return `s1$${salt}$${(await derivePassword(password, salt)).toString('base64url')}`;
+}
+
+export async function verifyPasswordHash(username: string, password: string, stored: string): Promise<boolean> {
+  let expected: Buffer;
+  let actual: Buffer;
+  if (/^[a-f0-9]{32}$/.test(stored)) {
+    expected = Buffer.from(stored, 'hex');
+    actual = Buffer.from(hashAccountPassword(username, password), 'hex');
+  } else {
+    const match = /^s1\$([\w-]{22})\$([\w-]{43})$/.exec(stored);
+    if (!match) return false;
+    expected = Buffer.from(match[2], 'base64url');
+    actual = await derivePassword(password, match[1]);
+  }
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 // No 0/O/1/I/L to avoid misreading when typed by hand.

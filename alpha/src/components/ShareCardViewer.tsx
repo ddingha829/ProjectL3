@@ -7,6 +7,7 @@ import CardStage from '@/components/CardStage';
 import { haptic } from '@/lib/haptics';
 import { resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { downloadCardFile, isShareCanceled, prepareCardExport } from '@/lib/cardExport';
+import { cardShareData, googleMapShareUrl } from '@/lib/cardShare';
 
 interface ShareCardViewerProps {
   item: ArchiveItem;
@@ -29,9 +30,10 @@ export default function ShareCardViewer({
   const [preparedFile, setPreparedFile] = useState<File | null>(null);
   const captureRef = useRef<HTMLDivElement | null>(null);
 
-  const preferred = presetSlots[slotIdx] || presetSlots[0] || { id: 'default', name: 'MY CARD', layout: 'broadside' as const, ratio: '3:4' as const, skinId: Object.keys(skins)[0] || 'paper' };
+  const preferred = (slotIdx === 0 ? item.cardAppearance?.slot : null) || presetSlots[slotIdx] || presetSlots[0] || { id: 'default', name: 'MY CARD', layout: 'broadside' as const, ratio: '3:4' as const, skinId: Object.keys(skins)[0] || 'paper' };
   const activeSlot = resolveEffectiveSlot(item, preferred);
-  const activeSkin = skins[activeSlot.skinId] || Object.values(skins)[0] || { id: 'paper', name: 'PAPER', bg: '#F5F2EB', text: '#19191B', sub: '#66615B', border: '#D3CDC2', accent: '#B23824', chipBg: '#EDE8DF' };
+  const activeSkin = (slotIdx === 0 ? item.cardAppearance?.skin : null) || skins[activeSlot.skinId] || Object.values(skins)[0] || { id: 'paper', name: 'PAPER', bg: '#F5F2EB', text: '#19191B', sub: '#66615B', border: '#D3CDC2', accent: '#B23824', chipBg: '#EDE8DF' };
+  const mapUrl = googleMapShareUrl(item);
 
   const handleDownloadPng = async () => {
     if (!captureRef.current || exporting) return;
@@ -54,7 +56,7 @@ export default function ShareCardViewer({
     setError('');
     try {
       // File is already prepared: this call retains the current click's user activation.
-      await navigator.share({ title: item.title, files: [preparedFile] });
+      await navigator.share(cardShareData(item, preparedFile));
       setNotice('카드 공유를 완료했습니다.');
     } catch (reason) {
       if (isShareCanceled(reason)) return;
@@ -63,9 +65,10 @@ export default function ShareCardViewer({
   };
 
   const handleCopyLink = async () => {
+    if (!mapUrl) return;
     try {
       await navigator.clipboard.writeText(
-        `[L2] ${item.title}${item.score ? ` (★${item.score})` : ''} — ${new URL(`/share/${encodeURIComponent(item.id)}`, window.location.origin).href}`
+        mapUrl
       );
       haptic.success();
       setCopied(true);
@@ -121,7 +124,7 @@ export default function ShareCardViewer({
           item={item}
           slot={activeSlot}
           skin={activeSkin}
-          authorName={authorName}
+          authorName={slotIdx === 0 ? item.cardAppearance?.authorName ?? authorName : authorName}
           selectedItems={[item]}
           curationTitle="TOP PICKS."
           cardCaptureRef={captureRef}
@@ -129,8 +132,8 @@ export default function ShareCardViewer({
 
         {/* Direct Action Buttons */}
         <div className="w-full space-y-2.5 pt-2">
-          {item.link && <a
-            href={item.link}
+          {mapUrl && <a
+            href={mapUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full py-4 px-5 rounded-2xl bg-[#FEE500] text-[#111111] kor-heavy text-base flex items-center justify-between shadow-lg hover:brightness-95 transition-all"
@@ -150,9 +153,10 @@ export default function ShareCardViewer({
             </button>
             <button
               onClick={handleCopyLink}
+              disabled={!mapUrl}
               className="py-3.5 px-4 rounded-2xl bg-[var(--accent)] text-white kor-heavy text-sm cursor-pointer"
             >
-              {copied ? '복사 완료 ✓' : '링크 + 추천문구 복사'}
+              {copied ? '복사 완료 ✓' : '지도 링크 복사'}
             </button>
           </div>
           {preparedFile && typeof navigator !== 'undefined' && typeof navigator.share === 'function' && navigator.canShare?.({ files: [preparedFile] }) && (

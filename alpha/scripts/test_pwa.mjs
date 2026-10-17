@@ -5,6 +5,9 @@ const folder='C:/Users/User/Documents/Codex/2026-10-16/pets-plugin-work-pets-ope
 fs.mkdirSync(folder,{recursive:true});
 const browser=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--no-sandbox']});
 const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const base=process.env.L2_TEST_URL||'http://localhost:3014';
+if(!['localhost','127.0.0.1'].includes(new URL(base).hostname)||process.env.L2_TEST_ALLOW_EXTERNAL!=='false')throw new Error('Use an isolated local server with L2_TEST_ALLOW_EXTERNAL=false.');
+await page.evaluateOnNewDocument(()=>{localStorage.setItem('l2_first_visit_guides_v1',JSON.stringify({eligible:false,seen:{}}));localStorage.setItem('l2_pwa_banner_dismissed_v1','1');});
 await page.setViewport({width:390,height:844,deviceScaleFactor:1});
 const click=async text=>{for(const button of await page.$$('button')){if(await button.evaluate((el,t)=>el.textContent.trim()===t||el.querySelector('strong')?.textContent===t,text)){await button.click();return;}}throw new Error('Missing '+text);};
 const ready=async()=>{await page.waitForSelector('textarea:not(:disabled)');await page.waitForFunction(()=>!document.querySelector('input[name="title"]')?.disabled);};
@@ -18,7 +21,8 @@ async function waitForServerCount(count){
  throw new Error('Server record count did not reach '+count+(lastError?': '+lastError.message:''));
 }
 try{
- await page.goto('http://localhost:3013',{waitUntil:'networkidle2'});await ready();
+ await page.goto(base,{waitUntil:'networkidle2'});await ready();
+ assert.equal(await page.evaluate(async()=>(await(await fetch('/api/session')).json()).storeKind),'file','Never write QA fixtures into Supabase');
  await page.waitForFunction(()=>document.documentElement.dataset.offlineReady==='true',{timeout:30000});
  const cache=await page.evaluate(async()=>{const keys=await caches.keys();const requests=(await Promise.all(keys.filter(k=>k.startsWith('l2-test-shell-')).map(async k=>(await (await caches.open(k)).keys()).map(r=>r.url)))).flat();return {keys,requests};});
  assert(cache.requests.some(url=>url.includes('/_next/static/')));assert(!cache.requests.some(url=>url.includes('/api/')));

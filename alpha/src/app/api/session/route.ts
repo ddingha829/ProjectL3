@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
 
     if (body.action === 'logout') {
       const freshId = newId();
-      await writeDeviceId(freshId);
       const profile = await store.ensureProfile(freshId);
+      await writeDeviceId(freshId);
       return NextResponse.json({
         success: true,
         deviceId: freshId,
@@ -72,15 +72,15 @@ export async function POST(req: NextRequest) {
     if (typeof body.username === 'string' && typeof body.password === 'string') {
       const cleanUser = body.username.trim();
       const cleanPass = body.password.trim();
-      if (cleanUser.length < 2) {
+      if (cleanUser.length < 2 || cleanUser.length > 80) {
         return NextResponse.json(
-          { error: '아이디는 2글자 이상 입력해 주세요.' },
+          { error: '아이디는 2~80글자로 입력해 주세요.' },
           { status: 400 }
         );
       }
-      if (cleanPass.length < 4) {
+      if (cleanPass.length < 4 || cleanPass.length > 256) {
         return NextResponse.json(
-          { error: '비밀번호는 4글자 이상 입력해 주세요.' },
+          { error: '비밀번호는 4~256글자로 입력해 주세요.' },
           { status: 400 }
         );
       }
@@ -98,10 +98,10 @@ export async function POST(req: NextRequest) {
           cleanPass,
           previousDeviceId
         );
-        await writeDeviceId(accountId);
         const profile = await store.ensureProfile(accountId);
         const archives = await store.listArchives(accountId);
         const aiUsage = await store.getUsage(accountId, 'ai');
+        await writeDeviceId(accountId);
         return NextResponse.json({
           success: true,
           deviceId: accountId,
@@ -157,11 +157,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await writeDeviceId(foundDeviceId);
     const profile = await store.ensureProfile(foundDeviceId);
     const archives = await store.listArchives(foundDeviceId);
     const aiUsage = await store.getUsage(foundDeviceId, 'ai');
     const username = (await store.getAccountUsername?.(foundDeviceId)) || null;
+    await writeDeviceId(foundDeviceId);
 
     return NextResponse.json({
       success: true,

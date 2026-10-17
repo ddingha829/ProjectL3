@@ -24,6 +24,7 @@ async function save(req: NextRequest, editing: boolean) {
     await store.ensureProfile(deviceId);
     const raw = await req.json();
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return NextResponse.json({ error: 'INVALID_INPUT', detail: '올바른 기록을 보내주세요.' }, { status: 400 });
+    if (raw.expectedDeviceId && raw.expectedDeviceId !== deviceId) return NextResponse.json({ error: 'DEVICE_CHANGED', detail: '계정이 변경되어 이전 기록을 전송하지 않았어요.' }, { status: 409 });
     if (editing && !isUuid(raw.id)) return NextResponse.json({ error: 'INVALID_ID', detail: '수정할 기록을 확인해주세요.' }, { status: 400 });
     const existing = isUuid(raw.id) ? await store.getOwnedArchive(deviceId, raw.id) : null;
     if (editing && !existing) return NextResponse.json({ error: 'NOT_FOUND', detail: '수정할 기록을 찾을 수 없습니다.' }, { status: 404 });
@@ -57,6 +58,8 @@ export async function DELETE(req: NextRequest) {
   if (!isUuid(id)) return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 });
   try {
     const { deviceId } = await requireDevice();
+    const expected = req.nextUrl.searchParams.get('expectedDeviceId');
+    if (expected && expected !== deviceId) return NextResponse.json({ error: 'DEVICE_CHANGED' }, { status: 409 });
     const store = getStore();
     await store.deleteArchive(deviceId, id);
     return NextResponse.json({ archives: await store.listArchives(deviceId) });

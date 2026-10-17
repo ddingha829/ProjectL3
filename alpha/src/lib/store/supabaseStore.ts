@@ -8,7 +8,8 @@ import {
   accountUuidFromUsername,
   defaultProfile,
   generateRecoveryCode,
-  hashAccountPassword,
+  createPasswordHash,
+  verifyPasswordHash,
   MAX_PHOTO_BYTES,
   newId,
   normalizeUsername,
@@ -31,10 +32,9 @@ let clientCacheKey = '';
 export function getSupabaseConfig() {
   const url =
     getRuntimeEnvKey('SUPABASE_URL') || getRuntimeEnvKey('NEXT_PUBLIC_SUPABASE_URL');
-  const key =
-    getRuntimeEnvKey('SUPABASE_SERVICE_ROLE_KEY') ||
-    getRuntimeEnvKey('SUPABASE_ANON_KEY') ||
-    getRuntimeEnvKey('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  const key = getRuntimeEnvKey('SUPABASE_SERVICE_ROLE_KEY') ||
+    (process.env.VERCEL || process.env.NODE_ENV === 'production' ? undefined :
+      getRuntimeEnvKey('SUPABASE_ANON_KEY') || getRuntimeEnvKey('NEXT_PUBLIC_SUPABASE_ANON_KEY'));
   return url && key ? { url, key } : null;
 }
 
@@ -55,6 +55,8 @@ function bucket() {
 }
 
 function isSchemaMissingError(err: unknown): boolean {
+  // Do not acknowledge ephemeral file writes as successful cloud sync.
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') return false;
   const msg = err instanceof Error ? err.message : String(err || '');
   return (
     msg.includes('l2_profiles') ||
@@ -198,14 +200,15 @@ export const supabaseStore: L2Store = {
 
   async listArchives(ownerId) {
     try {
-      const rows = must(
-        await db()
-          .from('l2_archives')
-          .select('id, data')
-          .eq('owner_id', ownerId)
-          .order('created_at', { ascending: false })
-          .limit(500)
-      ) as { id: string; data: ArchiveItem }[];
+      const rows: { id: string; data: ArchiveItem }[] = [];
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
+        const page = must(await db().from('l2_archives').select('id, data')
+          .eq('owner_id', ownerId).order('created_at', { ascending: false })
+          .order('id', { ascending: false }).range(offset, offset + pageSize - 1)) as typeof rows;
+        rows.push(...page);
+        if (page.length < pageSize) break;
+      }
       return renumber(rows.map((r) => ({ ...r.data, id: r.id })));
     } catch (err) {
       if (isSchemaMissingError(err)) return fileStore.listArchives(ownerId);
@@ -281,7 +284,6 @@ export const supabaseStore: L2Store = {
 
   async deleteArchive(ownerId, id) {
     try {
-      const existing = await this.getOwnedArchive(ownerId, id);
       must(
         await db()
           .from('l2_archives')
@@ -290,15 +292,8 @@ export const supabaseStore: L2Store = {
           .eq('owner_id', ownerId)
       );
 
-      const prefix = `/storage/v1/object/public/${bucket()}/`;
-      const img = existing?.img || '';
-      const at = img.indexOf(prefix);
-      if (at >= 0) {
-        const objectPath = img.slice(at + prefix.length);
-        if (objectPath.startsWith(`${ownerId}/`)) {
-          await db().storage.from(bucket()).remove([objectPath]);
-        }
-      }
+      // Keep media available for undo and group cards that reference the same
+      // image. Unreferenced media needs delayed, reference-aware cleanup.
     } catch (err) {
       if (isSchemaMissingError(err)) return fileStore.deleteArchive(ownerId, id);
       throw err;
@@ -393,7 +388,7 @@ export const supabaseStore: L2Store = {
       return parts.slice(1).join(':') || null;
     } catch (err) {
       if (isSchemaMissingError(err)) return fileStore.getAccountUsername?.(deviceId) ?? null;
-      return null;
+      throw err;
     }
   },
 
@@ -401,7 +396,6 @@ export const supabaseStore: L2Store = {
     try {
       const norm = normalizeUsername(username);
       const accountId = accountUuidFromUsername(norm);
-      const pwdHash = hashAccountPassword(norm, password);
 
       const rows = must(
         await db()
@@ -416,12 +410,18 @@ export const supabaseStore: L2Store = {
       let isNewAccount = false;
 
       if (existing) {
-        const expectedPrefix = `pwd:${pwdHash}:`;
-        if (!existing.kind.startsWith(expectedPrefix)) {
+        const stored = existing.kind.slice(4).split(':')[0];
+        if (!await verifyPasswordHash(norm, password, stored)) {
           throw new Error('INVALID_PASSWORD');
+        }
+        if (!stored.startsWith('s1$')) {
+          const pwdHash = await createPasswordHash(password);
+          must(await db().from('l2_ai_usage').update({ kind: `pwd:${pwdHash}:${norm}` })
+            .eq('owner_id', accountId).eq('kind', existing.kind).eq('day', '2000-01-01'));
         }
       } else {
         isNewAccount = true;
+        const pwdHash = await createPasswordHash(password);
         await this.ensureProfile(accountId);
         must(
           await db().from('l2_ai_usage').insert({
@@ -433,14 +433,10 @@ export const supabaseStore: L2Store = {
         );
       }
 
-      if (previousDeviceId && previousDeviceId !== accountId) {
-        const prevItems = await this.listArchives(previousDeviceId);
-        for (const item of prevItems) {
-          const already = await this.getOwnedArchive(accountId, item.id);
-          if (!already) {
-            await this.saveArchive(accountId, item);
-          }
-        }
+      if (previousDeviceId && previousDeviceId !== accountId && !await this.getAccountUsername?.(previousDeviceId)) {
+        must(await db().from('l2_archives')
+          .update({ owner_id: accountId, updated_at: new Date().toISOString() })
+          .eq('owner_id', previousDeviceId));
       }
 
       return { accountId, username: norm, isNewAccount };

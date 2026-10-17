@@ -72,12 +72,15 @@ export default function SettingsDialog(p: Props) {
   const handleLogout = async () => {
     setAuthBusy(true);
     try {
-      await fetch('/api/session', {
+      const response = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'logout' }),
       });
+      if (!response.ok) throw new Error('로그아웃하지 못했어요. 연결을 확인하고 다시 시도해 주세요.');
       window.location.reload();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '로그아웃하지 못했어요.');
     } finally {
       setAuthBusy(false);
     }
