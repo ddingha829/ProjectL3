@@ -173,13 +173,27 @@ export class LocalArchiveRepository {
     this.mutations = operation.catch(error => { this.error = message(error); this.publish(); });
     return operation;
   }
+  private normalizeChronologicalNumbers(list: ArchiveItem[]): ArchiveItem[] {
+    const sorted = [...list].sort((a, b) => b.timestamp - a.timestamp);
+    const nonGroupsOldestFirst = sorted
+      .filter(entry => entry.kind !== 'group' && entry.cat !== 'GROUP')
+      .slice()
+      .sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id));
+    const numById = new Map(
+      nonGroupsOldestFirst.map((entry, idx) => [entry.id, String(idx + 1).padStart(2, '0')])
+    );
+    return sorted.map(entry => {
+      const assigned = numById.get(entry.id);
+      return assigned && entry.num !== assigned ? { ...entry, num: assigned } : entry;
+    });
+  }
   private merge(server: ArchiveItem[], outbox: ArchiveOperation[]): ArchiveItem[] {
     const items = new Map(server.map(item => [item.id, item]));
     for (const operation of outbox) {
       if (operation.method === 'DELETE') items.delete(operation.id);
       else if (operation.item) items.set(operation.id, operation.item);
     }
-    return [...items.values()].sort((a, b) => b.timestamp - a.timestamp);
+    return this.normalizeChronologicalNumbers([...items.values()]);
   }
   start(): Promise<void> {
     if (!this.networkStart) this.networkStart = this.refresh();
@@ -215,15 +229,17 @@ export class LocalArchiveRepository {
     await this.mutate(current => {
       const existing = current.archives.find(archive => archive.id === item.id);
       if (existing && isEdit) { item.timestamp = existing.timestamp; item.date = existing.date; item.num = existing.num; }
-      if (!item.num) item.num = String(current.archives.length + 1).padStart(2, '0');
+      const nextArchives = this.normalizeChronologicalNumbers([item, ...current.archives.filter(archive => archive.id !== item.id)]);
+      const normalizedItem = nextArchives.find(archive => archive.id === item.id) || item;
+      item.num = normalizedItem.num;
       const previous = current.outbox.find(operation => operation.id === item.id);
       const operation: ArchiveOperation = {
-        id: item.id, item, method: previous?.method === 'POST' || !isEdit ? 'POST' : 'PATCH',
+        id: item.id, item: normalizedItem, method: previous?.method === 'POST' || !isEdit ? 'POST' : 'PATCH',
         revision: ++this.revision, attempts: 0, state: 'pending',
       };
       return {
         ...current,
-        archives: [item, ...current.archives.filter(archive => archive.id !== item.id)].sort((a, b) => b.timestamp - a.timestamp),
+        archives: nextArchives,
         outbox: [...current.outbox.filter(queued => queued.id !== item.id), operation],
       };
     });

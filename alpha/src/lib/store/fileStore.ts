@@ -68,10 +68,16 @@ function persist(db: FileDb) {
 
 function renumber(items: ArchiveItem[]): ArchiveItem[] {
   // Oldest = 01 so numbers stay stable as new logs are added.
-  const total = items.length;
-  return items.map((it, idx) => ({
+  const nonGroupsOldestFirst = items
+    .filter((it) => it.kind !== 'group' && it.cat !== 'GROUP')
+    .slice()
+    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0) || a.id.localeCompare(b.id));
+  const numById = new Map(
+    nonGroupsOldestFirst.map((it, idx) => [it.id, String(idx + 1).padStart(2, '0')])
+  );
+  return items.map((it) => ({
     ...it,
-    num: it.num || String(total - idx).padStart(2, '0'),
+    num: numById.get(it.id) || it.num || '',
   }));
 }
 

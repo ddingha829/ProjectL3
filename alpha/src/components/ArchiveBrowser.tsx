@@ -52,6 +52,16 @@ export default function ArchiveBrowser(p:Props){
   const listDetailsOn = p.listDetailsOn !== false;
   const autoPlaceLinkOn = p.autoPlaceLinkOn !== false;
 
+  const chronologicalNumbers = useMemo(() => {
+    const nonGroups = p.archives
+      .filter(item => !isLogGroup(item))
+      .slice()
+      .sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id));
+    return new Map(
+      nonGroups.map((item, idx) => [item.id, String(idx + 1).padStart(2, '0')])
+    );
+  }, [p.archives]);
+
   const filtered=useMemo(()=>p.archives.filter(item=>(category==='ALL'||item.cat===category)&&(!selecting||!isLogGroup(item))&&`${item.title} ${item.quote} ${item.loc} ${item.addressShort}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(view!=='map'||hasLinkedPlace(item))).sort((a,b)=>oldest?a.timestamp-b.timestamp:b.timestamp-a.timestamp),[p.archives,category,query,oldest,view,selecting]);
   const unlinkedMapItems=useMemo(()=>p.archives.filter(item=>!isLogGroup(item)&&!hasLinkedPlace(item)&&(category==='ALL'||item.cat===category)&&item.title.trim().length>=2),[p.archives,category]);
   const spotlightItem=useMemo(()=>p.archives.find(item=>item.id===spotlightId)||null,[p.archives,spotlightId]);
@@ -127,6 +137,7 @@ export default function ArchiveBrowser(p:Props){
     <div ref={elasticRef} className="logbook-collection">{!p.archives.length?<div className="logbook-empty"><h1>나의 첫 로그</h1><button className="test-button primary" onClick={p.onWrite}>로그 남기기</button><button className="test-text-button" onClick={p.onBrowseDesign}>프리셋 둘러보기</button></div>:!filtered.length?<div className="logbook-empty"><p>표시할 로그가 없어요.</p><button className="test-text-button" onClick={()=>{setCategory('ALL');setQuery('');setView('list');}}>전체 로그 보기</button></div>:view==='grid'?<div className="logbook-posters">{filtered.map(item=>{
       const appearance=renderCardAppearance(item);
       const isSpotlit=spotlightId===item.id;
+      const itemWithNum=isLogGroup(item)?item:{...item,num:chronologicalNumbers.get(item.id)||item.num};
       return <button
         type="button"
         id={`record-${item.id}`}
@@ -140,13 +151,14 @@ export default function ArchiveBrowser(p:Props){
         onContextMenu={e=>{e.preventDefault();clearPress();longPressFired.current=true;haptic.snap();setSpotlightId(item.id);}}
         onClick={()=>{if(longPressFired.current){longPressFired.current=false;return;}open(item);}}
       >
-        <div aria-hidden="true"><CardStage item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} selectedItems={isLogGroup(item)?getGroupMembers(item,p.archives):[item]} curationTitle={item.title}/></div>
+        <div aria-hidden="true"><CardStage item={itemWithNum} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} selectedItems={isLogGroup(item)?getGroupMembers(item,p.archives):[itemWithNum]} curationTitle={item.title}/></div>
         {isLogGroup(item)&&<span className="logbook-poster-group">그룹 · {getGroupMembers(item,p.archives).length}</span>}
       </button>;
     })}</div>:<div className="logbook-rows">{filtered.map((item,index)=>{
       const picked=selected.includes(item.id),group=isLogGroup(item),place=view==='map'?item.fullAddress||item.addressShort||item.loc:item.addressShort||item.loc;
       const catLabel=group?'그룹':getArchiveCategory(item.cat).label;
-      return <SwipeLogRow key={item.id} title={item.title} disabled={selecting} onDelete={()=>p.onDelete(item)}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{group?'그룹':String(index+1).padStart(2,'0')}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{item.date}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
+      const logNumber=group?'그룹':(chronologicalNumbers.get(item.id)||item.num||String(filtered.length-index).padStart(2,'0'));
+      return <SwipeLogRow key={item.id} title={item.title} disabled={selecting} onDelete={()=>p.onDelete(item)}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{logNumber}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{item.date}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
     })}</div>}
     </div>
     {spotlightItem&&(()=>{
