@@ -1,11 +1,13 @@
 .quick-form{display:flex;flex-direction:column;gap:12px;position:relative;min-width:0;border:0;padding:0;background:transparent;box-shadow:none}
 .quick-save{border:0!important;padding:0!important;box-shadow:none!important;margin-top:0!important;border-radius:15px!important}
 .quick-composer .quick-memory::placeholder{color:transparent!important;opacity:0!important}
-.memo-prompt{position:absolute;top:4px;left:0;right:0;pointer-events:none;white-space:nowrap;color:var(--fg);font-family:'Pretendard Variable',Inter,sans-serif;font-size:var(--memo-prompt-size,24px);font-weight:900;line-height:1.1;letter-spacing:-.045em}
+.memo-prompt{position:absolute;top:4px;left:0;right:0;pointer-events:none;white-space:nowrap;color:var(--fg);font-family:'Pretendard Variable',Inter,sans-serif;font-size:var(--memo-prompt-size,24px);font-weight:900;line-height:1.1;letter-spacing:-.045em;transition:opacity 150ms ease}
 .photo-memo.has-photo .memo-prompt{top:18px;left:0;right:0}
+.photo-memo-panel:focus-within .memo-prompt{opacity:.28}
+.photo-memo-panel:focus-within .memo-prompt>span{animation-play-state:paused}
 .memo-prompt>span{display:inline-block;animation:memo-letter-wave 3.4s ease-in-out infinite;animation-delay:calc(var(--wave-index)*-180ms)}
 @keyframes memo-letter-wave{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-3.5px) rotate(-.45deg)}75%{transform:translateY(3.5px) rotate(.45deg)}}
-.quick-input-surface{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));border-radius:24px;background:var(--surface);transition:border-color 220ms ease,box-shadow 220ms ease}
+.quick-input-surface{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));border-radius:24px;background:var(--surface);transition:border-color 220ms ease,box-shadow 220ms ease}
 .quick-input-surface:focus-within{border-color:color-mix(in srgb,var(--accent) 58%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent),0 18px 48px -24px color-mix(in srgb,var(--accent) 32%,transparent)}
 .quick-input-surface::before,.quick-input-surface::after{content:'';position:absolute;inset:-38%;z-index:0;pointer-events:none;background-repeat:no-repeat;filter:blur(28px) saturate(1.45);will-change:transform,filter}
 .quick-input-surface::before{opacity:.52;background-image:radial-gradient(ellipse at 22% 28%,#ff4d29 0%,transparent 52%),radial-gradient(ellipse at 78% 68%,#7c5cff 0%,transparent 56%),radial-gradient(ellipse at 52% 48%,#ff2a85 0%,transparent 48%);animation:composer-current-a 6.2s ease-in-out -1.5s infinite alternate}
@@ -14,13 +16,14 @@
 html.light .quick-input-surface::before{opacity:.28}html.light .quick-input-surface::after{opacity:.22}
 @keyframes composer-current-a{0%{transform:translate3d(-14%,-8%,0) rotate(-12deg) scale(.94);filter:blur(28px) saturate(1.4) hue-rotate(-18deg)}50%{transform:translate3d(10%,7%,0) rotate(9deg) scale(1.14);filter:blur(26px) saturate(1.65) hue-rotate(24deg)}100%{transform:translate3d(16%,-11%,0) rotate(20deg) scale(1.05);filter:blur(30px) saturate(1.5) hue-rotate(-32deg)}}
 @keyframes composer-current-b{0%{transform:translate3d(13%,-12%,0) rotate(11deg) scale(1.02);filter:blur(28px) saturate(1.4) hue-rotate(15deg)}50%{transform:translate3d(-10%,12%,0) rotate(-12deg) scale(1.18);filter:blur(25px) saturate(1.7) hue-rotate(-28deg)}100%{transform:translate3d(-16%,-5%,0) rotate(-22deg) scale(.96);filter:blur(30px) saturate(1.45) hue-rotate(36deg)}}
-.quick-fields { min-width: 0; display: flex; flex-direction: column; gap: 12px; border: 0; margin: 0; padding: 0; }
-.quick-title { position:relative;border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-.quick-title label { position:absolute;top:4px;left:0;color:var(--muted);font-size:12px;line-height:16px;font-weight:500;transition:opacity 120ms; }
-.quick-title.is-active label{opacity:0;pointer-events:none}
-.quick-title input { display:block;width:100%;min-height:72px;border:0;outline:none;background:transparent;color:var(--fg);font-size:clamp(32px,9vw,48px);font-weight:900;letter-spacing:-.045em;line-height:1.2; }
+.quick-fields { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; border: 0; margin: 0; padding: 0; }
+.quick-title { position:relative; border-bottom: 1px solid var(--line); padding-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
+.quick-title label { color:var(--muted); font-size:12px; line-height:16px; font-weight:600; transition:color 120ms; }
+.quick-title.is-active label { color: color-mix(in srgb, var(--fg) 72%, var(--muted)); }
+.quick-title input { display:block; width:100%; min-height:44px; border:0; outline:none; background:transparent; color:var(--fg); font-size:clamp(24px,7.2vw,42px); font-weight:900; letter-spacing:-.045em; line-height:1.2; padding:0; }
+.quick-title input::placeholder { color: color-mix(in srgb, var(--fg) 32%, transparent); font-weight: 700; font-size: clamp(18px, 5.2vw, 24px); }
 .quick-title input:focus-visible { outline:none!important; }
-.quick-smart-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.quick-smart-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; flex-shrink:0; }
 .quick-smart-chip { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 12px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); color:var(--fg); font-size:12px; font-weight:600; max-width:100%; }
 .quick-smart-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .quick-smart-chip svg { color:var(--accent); flex-shrink:0; }
@@ -48,17 +51,16 @@ html.light .quick-input-surface::before{opacity:.28}html.light .quick-input-surf
 .quick-suggest-apply { min-height: 44px; margin-top: 14px; padding: 9px 20px; border-radius: 12px; background: var(--fg); color: var(--bg); font-size: 13px; font-weight: 600; }
 .quick-dialog-panel textarea,.quick-dialog-panel input { line-height: 1.65; }
 .quick-dialog-panel textarea::placeholder,.quick-dialog-panel input::placeholder { color: var(--muted); opacity: .8; }
-.photo-memo { min-width: 0; position: relative; display: flex; flex-direction: column; gap: 0; }
-.photo-memo-image { height: clamp(160px, 26svh, 216px); max-height: 216px; position: relative; overflow: hidden; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); }
+.photo-memo { min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 0; cursor: text; }
+.photo-memo-image { height: clamp(160px, 26svh, 216px); max-height: 216px; position: relative; overflow: hidden; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); flex-shrink: 0; transition: height 200ms ease, max-height 200ms ease; }
 .photo-memo-image[hidden] { display: none; }
 .photo-memo-image > img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .photo-memo-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
 .photo-memo-tools button { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid #ffffff35; border-radius: 50%; background: #111115c9; color: white; }
-.photo-memo-panel { position: relative; z-index: 2; min-width: 0; padding: 0; }
+.photo-memo-panel { position: relative; z-index: 2; min-width: 0; min-height: 0; padding: 0; cursor: text; }
 .photo-memo.has-photo .photo-memo-panel { margin: 12px 0 0; padding: 14px 0 4px; border-top: 1px solid var(--line); background: transparent; backdrop-filter: none; box-shadow: none; transform: none; }
-.quick-composer .quick-memory { width: 100%; min-height: 96px; display: block; resize: none; overflow: hidden; padding: 4px 0; border: 0; border-radius: 6px; outline: none!important; background: transparent; color: var(--fg); font-size: 20px; font-weight: 400; line-height: 1.65; letter-spacing: -.015em; }
+.quick-composer .quick-memory { width: 100%; min-height: 88px; display: block; flex: 0 0 auto; resize: none; overflow: hidden; padding: 4px 0; border: 0; border-radius: 6px; outline: none!important; background: transparent; color: var(--fg); font-size: 20px; font-weight: 400; line-height: 1.65; letter-spacing: -.015em; }
 .quick-composer .quick-memory:focus-visible { outline: none!important; }
-.quick-composer .quick-memory::placeholder { color: var(--fg); opacity: 1; font-family: 'Pretendard Variable','Inter',sans-serif; font-size: var(--memo-prompt-size,24px); font-weight: 900; letter-spacing: -.045em; line-height: 1.1; }
 .quick-control { cursor: pointer; transition: background-color 130ms ease,border-color 130ms ease,transform 130ms ease,color 130ms ease; }
 .quick-control:hover { border-color: var(--muted); }
 .quick-control:active { transform: scale(.985); }
@@ -70,18 +72,18 @@ html.light .quick-input-surface::before{opacity:.28}html.light .quick-input-surf
 .quick-star-btn { flex:1; min-height:42px; border-radius:12px; border:1px solid var(--line); background:var(--surface-2); font-size:15px; font-weight:700; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:4px; }
 .quick-star-btn.active { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,var(--surface)); color:var(--accent); }
 @keyframes quick-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-/* Fill the available page height at every width; attached photos retain natural scrolling. */
-.quick-composer.without-photo:not(.is-editing),.quick-composer.without-photo:not(.is-editing) :is(.quick-form,.quick-fields,.quick-input-surface,.photo-memo,.photo-memo-panel){display:flex;flex:1 0 auto;flex-direction:column}
-.quick-composer.without-photo:not(.is-editing) .quick-memory{flex:1 0 auto}
+/* Fill the available page height at every width; textarea itself stays content-sized so iOS keyboard focus never scrolls the header off-screen. */
+.quick-composer.without-photo:not(.is-editing),.quick-composer.without-photo:not(.is-editing) :is(.quick-form,.quick-fields,.quick-input-surface,.photo-memo,.photo-memo-panel){display:flex;flex:1 1 auto;min-height:0;flex-direction:column}
+.quick-composer.without-photo:not(.is-editing) .quick-memory{flex:0 0 auto}
 .quick-actions,.quick-title,.quick-save{flex-shrink:0}
 .quick-composer.has-photo,.quick-composer.is-editing{flex:0 0 auto}
 @media(max-width:640px) {
-  .quick-composer.without-photo:not(.is-editing) { display: flex; flex: 1 0 auto; flex-direction: column; }
-  .quick-composer.without-photo:not(.is-editing) .quick-form { display: flex; flex: 1 0 auto; flex-direction: column; }
-  .quick-composer.without-photo:not(.is-editing) .quick-fields { flex: 1 0 auto; }
-  .quick-composer.without-photo:not(.is-editing) .photo-memo { display: flex; flex: 1 0 auto; flex-direction: column; }
-  .quick-composer.without-photo:not(.is-editing) .photo-memo-panel { display: flex; flex: 1 0 auto; flex-direction: column; }
-  .quick-composer.without-photo:not(.is-editing) .quick-memory { flex: 1 0 auto; }
+  .quick-composer.without-photo:not(.is-editing) { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+  .quick-composer.without-photo:not(.is-editing) .quick-form { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+  .quick-composer.without-photo:not(.is-editing) .quick-fields { flex: 1 1 auto; min-height: 0; }
+  .quick-composer.without-photo:not(.is-editing) .photo-memo { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+  .quick-composer.without-photo:not(.is-editing) .photo-memo-panel { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+  .quick-composer.without-photo:not(.is-editing) .quick-memory { flex: 0 0 auto; }
   .quick-composer.has-photo,.quick-composer.is-editing { flex: 0 0 auto; }
 }
 @media(min-width:640px) {

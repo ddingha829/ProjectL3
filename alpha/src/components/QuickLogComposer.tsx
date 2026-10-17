@@ -147,6 +147,8 @@ export default function QuickLogComposer({
   const suggestButtonRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const composerFocusedRef = useRef(false);
   const photoToken = useRef(0);
   const savingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -163,6 +165,49 @@ export default function QuickLogComposer({
       photoToken.current += 1;
       suggestionToken.current += 1;
       if (timerRef.current) clearTimeout(timerRef.current);
+      delete document.documentElement.dataset.keyboard;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let rafId = 0;
+    const lockTopScroll = () => {
+      if (window.innerWidth > 640) return;
+      const vv = window.visualViewport;
+      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0 || (vv && vv.offsetTop > 0)) {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    };
+    const syncViewport = () => {
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      document.documentElement.style.setProperty('--vvh', `${Math.round(height)}px`);
+      const isMobile = window.innerWidth <= 640;
+      const keyboardDelta = window.innerHeight - height;
+      const isOpen = isMobile && (keyboardDelta > 100 || composerFocusedRef.current);
+      if (isOpen) {
+        document.documentElement.dataset.keyboard = 'open';
+        lockTopScroll();
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(lockTopScroll);
+      } else {
+        delete document.documentElement.dataset.keyboard;
+      }
+    };
+    syncViewport();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', syncViewport);
+    vv?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    return () => {
+      cancelAnimationFrame(rafId);
+      vv?.removeEventListener('resize', syncViewport);
+      vv?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      delete document.documentElement.dataset.keyboard;
     };
   }, []);
 
@@ -357,10 +402,50 @@ export default function QuickLogComposer({
       {editingItem && <div className="mb-3 flex justify-end"><button type="button" onClick={onCancelEdit} disabled={isSaving} className="quick-control min-h-11 rounded-full px-4 text-sm font-medium text-[var(--muted)]">수정 취소</button></div>}
       <form noValidate onSubmit={submit} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); event.currentTarget.requestSubmit(); } }} aria-busy={isSaving} className="quick-form">
         <div className="quick-fields" role="group" aria-label="기록 내용" aria-disabled={disabled}>
-          <div className="quick-input-surface">
+          <div
+            ref={surfaceRef}
+            className="quick-input-surface"
+            onFocusCapture={(event) => {
+              const target = event.target as HTMLElement;
+              if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') return;
+              if ((target as HTMLInputElement).type === 'range' || (target as HTMLInputElement).type === 'file') return;
+              composerFocusedRef.current = true;
+              if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+                document.documentElement.dataset.keyboard = 'open';
+                const snapTop = () => {
+                  window.scrollTo(0, 0);
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                };
+                snapTop();
+                requestAnimationFrame(snapTop);
+                setTimeout(snapTop, 60);
+                setTimeout(snapTop, 160);
+                setTimeout(snapTop, 300);
+              }
+            }}
+            onBlurCapture={() => {
+              setTimeout(() => {
+                const active = document.activeElement as HTMLElement | null;
+                const stillInside = Boolean(
+                  active &&
+                  surfaceRef.current?.contains(active) &&
+                  (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+                );
+                composerFocusedRef.current = stillInside;
+                if (!stillInside && typeof window !== 'undefined') {
+                  const vv = window.visualViewport;
+                  const delta = vv ? window.innerHeight - vv.height : 0;
+                  if (delta <= 100) {
+                    delete document.documentElement.dataset.keyboard;
+                  }
+                }
+              }, 80);
+            }}
+          >
             <div className={`quick-title ${titleFocused || draft.title ? 'is-active' : ''}`}>
               <label htmlFor={`${id}-title`}>제목 <span aria-hidden="true" className="text-[var(--accent)]">*</span><span className="sr-only">필수</span></label>
-              <input ref={titleRef} id={`${id}-title`} name="title" value={draft.title} disabled={disabled} onFocus={() => setTitleFocused(true)} onBlur={() => setTitleFocused(false)} onChange={(event) => update('title', event.target.value)} maxLength={120} required aria-required="true" aria-invalid={Boolean(submitError && !draft.title.trim())} aria-describedby={submitError && !draft.title.trim() ? `${id}-save-error` : undefined} />
+              <input ref={titleRef} id={`${id}-title`} name="title" value={draft.title} placeholder={titleFocused ? '제목을 입력해 주세요' : ''} disabled={disabled} onFocus={() => setTitleFocused(true)} onBlur={() => setTitleFocused(false)} onChange={(event) => update('title', event.target.value)} maxLength={120} required aria-required="true" aria-invalid={Boolean(submitError && !draft.title.trim())} aria-describedby={submitError && !draft.title.trim() ? `${id}-save-error` : undefined} />
             </div>
 
             {(showPlaceHint || (!editingItem && inboxPlaces.length > 0)) && (

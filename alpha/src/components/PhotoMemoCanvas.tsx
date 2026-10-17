@@ -18,14 +18,26 @@ interface Props {
 }
 
 const PROMPT = '무슨 일상을 로그할까요?';
-const photoMemoMinimum = () => 136;
+const photoMemoMinimum = () => 112;
 
 function sizeToContent(textarea: HTMLTextAreaElement, minimum: number) {
-  // Measure intrinsic content without retaining a previous viewport's flex height.
+  const isKeyboardOpen = typeof document !== 'undefined' && document.documentElement.dataset.keyboard === 'open';
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
   const previousFlex = textarea.style.flex;
   textarea.style.flex = 'none';
   textarea.style.height = '0px';
-  textarea.style.height = `${Math.max(minimum, textarea.scrollHeight)}px`;
+  const effectiveMin = isKeyboardOpen && isMobile ? 68 : minimum;
+  const desired = Math.max(effectiveMin, textarea.scrollHeight);
+  if (isKeyboardOpen && isMobile) {
+    const panelHeight = textarea.parentElement?.clientHeight || 0;
+    const maxAllowed = panelHeight > 64 ? panelHeight - 4 : 150;
+    const clamped = Math.min(desired, maxAllowed);
+    textarea.style.height = `${clamped}px`;
+    textarea.style.overflowY = desired > maxAllowed ? 'auto' : 'hidden';
+  } else {
+    textarea.style.height = `${desired}px`;
+    textarea.style.overflowY = 'hidden';
+  }
   textarea.style.flex = previousFlex;
 }
 
@@ -50,7 +62,6 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
     if (inserting) {
       scrollTimer = setTimeout(() => {
         textarea?.focus({ preventScroll: true });
-        panel?.scrollIntoView({ behavior: allowsMotion() ? 'smooth' : 'instant', block: 'center' });
       }, 120);
     }
 
@@ -63,17 +74,17 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
     const height = photo.getBoundingClientRect().height;
     const animation = photo.animate(
       inserting ? [{ height: '0px', opacity: 0 }, { height: `${height}px`, opacity: 1 }] : [{ opacity: 0.35 }, { opacity: 1 }],
-      { duration: inserting ? 520 : 280, easing: 'cubic-bezier(.16,1,.3,1)' }
+      { duration: inserting ? 420 : 260, easing: 'cubic-bezier(.16,1,.3,1)' }
     );
     animation.id = 'photo-insert';
     const imageAnimation = photo.querySelector('img')?.animate(
       [{ transform: 'scale(1.03)', opacity: 0.45 }, { transform: 'scale(1)', opacity: 1 }],
-      { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }
+      { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' }
     );
     const panelAnimation = inserting
       ? panel?.animate(
-          [{ transform: 'translateY(-14px)', opacity: 0.4 }, { transform: 'translateY(0)', opacity: 1 }],
-          { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }
+          [{ transform: 'translateY(-10px)', opacity: 0.45 }, { transform: 'translateY(0)', opacity: 1 }],
+          { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' }
         )
       : undefined;
 
@@ -97,14 +108,16 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    sizeToContent(textarea, img ? photoMemoMinimum() : 96);
+    sizeToContent(textarea, img ? photoMemoMinimum() : 88);
   }, [body, img]);
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
+    const panel = panelRef.current;
     if (!textarea) return;
     let disposed = false;
     let previousWidth = -1;
+    let previousPanelHeight = -1;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     const measure = () => {
@@ -114,25 +127,46 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
       if (available <= 0) return;
       context.font = '900 32px "Pretendard Variable", "Inter", sans-serif';
       const widthAt32 = context.measureText(PROMPT).width - (Array.from(PROMPT).length - 1) * 32 * 0.045;
-      const size = Math.min(48, available * 32 / widthAt32);
+      const size = Math.min(44, available * 32 / widthAt32);
       textarea.style.setProperty('--memo-prompt-size', `${size.toFixed(2)}px`);
       rootRef.current?.style.setProperty('--memo-prompt-size', `${size.toFixed(2)}px`);
-      sizeToContent(textarea, rootRef.current?.dataset.hasPhoto === 'true' ? photoMemoMinimum() : 96);
+      sizeToContent(textarea, rootRef.current?.dataset.hasPhoto === 'true' ? photoMemoMinimum() : 88);
     };
     const observer = new ResizeObserver(() => {
-      if (Math.abs(textarea.clientWidth - previousWidth) < 1) return;
+      const panelH = panel?.clientHeight || 0;
+      if (Math.abs(textarea.clientWidth - previousWidth) < 1 && Math.abs(panelH - previousPanelHeight) < 2) return;
       previousWidth = textarea.clientWidth;
+      previousPanelHeight = panelH;
       measure();
     });
     observer.observe(textarea);
+    if (panel) observer.observe(panel);
     measure();
     void document.fonts.ready.then(measure);
     window.addEventListener('resize', measure);
-    return () => { disposed = true; observer.disconnect(); window.removeEventListener('resize', measure); };
+    window.visualViewport?.addEventListener('resize', measure);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
   }, []);
 
   return (
-    <div ref={rootRef} className={`photo-memo ${img ? 'has-photo' : ''}`} data-has-photo={Boolean(img)}>
+    <div
+      ref={rootRef}
+      className={`photo-memo ${img ? 'has-photo' : ''}`}
+      data-has-photo={Boolean(img)}
+      onClick={(event) => {
+        if (disabled) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('button, input, a')) return;
+        if (target !== textareaRef.current) {
+          textareaRef.current?.focus({ preventScroll: true });
+        }
+      }}
+    >
       <div ref={photoRef} className="photo-memo-image" hidden={!img}>
         {img && <img src={img} alt="첨부한 기록 사진" style={{ objectPosition: `${cropX}% ${cropY}%` }} />}
         <div className="photo-memo-tools">
