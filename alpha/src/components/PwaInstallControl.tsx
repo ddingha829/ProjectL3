@@ -114,30 +114,45 @@ export function usePwaInstall(): PwaState {
 
 export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
   const [dismissed, setDismissed] = useState(true);
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const saved = localStorage.getItem(DISMISS_KEY) === '1';
       setDismissed(saved);
+      if (!saved) {
+        const timer = setTimeout(() => setVisible(true), 280);
+        return () => clearTimeout(timer);
+      }
     } catch {
       setDismissed(false);
+      setVisible(true);
     }
   }, []);
 
-  if (pwa.isStandalone || dismissed) return null;
+  if (pwa.isStandalone || dismissed || !visible) return null;
 
   const dismiss = () => {
-    setDismissed(true);
+    setClosing(true);
     try {
       localStorage.setItem(DISMISS_KEY, '1');
     } catch {
       /* ignore */
     }
+    setTimeout(() => {
+      setDismissed(true);
+      setClosing(false);
+    }, 260);
   };
 
   return (
-    <aside className="pwa-floating-banner" aria-label="홈 화면에 앱 설치 안내">
+    <aside
+      className={`pwa-top-popup ${closing ? 'is-closing' : ''}`}
+      role="region"
+      aria-label="홈 화면에 앱 설치 안내"
+    >
       <div className="pwa-floating-icon" aria-hidden="true">
         L2<span>.</span>
       </div>
@@ -145,12 +160,12 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
         <strong>
           {pwa.inAppName
             ? `${pwa.inAppName} 인앱 브라우저 접속 중`
-            : '홈 화면에 앱으로 추가해보세요'}
+            : '홈 화면에 L2. 앱으로 추가해보세요'}
         </strong>
         <span>
           {pwa.inAppName
             ? '외부 브라우저로 열면 홈 화면 앱으로 설치할 수 있어요'
-            : '주소창 없는 전체화면과 오프라인 보관을 지원해요'}
+            : '주소창 없는 전체화면·오프라인 보관을 지원해요'}
         </span>
       </div>
       <div className="pwa-floating-actions">
@@ -174,9 +189,10 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
           type="button"
           className="pwa-floating-close"
           onClick={dismiss}
-          aria-label="설치 배너 닫기"
+          aria-label="설치 안내 끄기"
+          title="설치 안내 끄기"
         >
-          ×
+          끄기 ×
         </button>
       </div>
     </aside>
