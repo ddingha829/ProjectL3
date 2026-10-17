@@ -163,8 +163,10 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
             : '홈 화면에 L2. 앱으로 추가해보세요'}
         </strong>
         <span>
-          {pwa.inAppName
-            ? '외부 브라우저로 열면 홈 화면 앱으로 설치할 수 있어요'
+          {pwa.inAppName === '카카오톡'
+            ? '우측 하단 공유[↑] → [Safari로 열기]에서 설치 가능'
+            : pwa.inAppName
+            ? '외부 브라우저(Safari·Chrome)로 열면 설치할 수 있어요'
             : '주소창 없는 전체화면·오프라인 보관을 지원해요'}
         </span>
       </div>
@@ -213,11 +215,21 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
   const openInExternalBrowser = () => {
     if (typeof window === 'undefined') return;
     const currentUrl = window.location.href;
+    if (pwa.inAppName === '카카오톡') {
+      window.location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(currentUrl)}`;
+      return;
+    }
     if (pwa.platform === 'android') {
       const noProtocol = currentUrl.replace(/^https?:\/\//i, '');
       window.location.href = `intent://${noProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
       return;
     }
+    copyCurrentUrl();
+  };
+
+  const copyCurrentUrl = () => {
+    if (typeof window === 'undefined') return;
+    const currentUrl = window.location.href;
     void navigator.clipboard?.writeText(currentUrl).then(() => {
       setCopiedUrl(true);
       setTimeout(() => setCopiedUrl(false), 2500);
@@ -242,25 +254,47 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
         ) : pwa.inAppName ? (
           <div className="pwa-guide-status is-inapp">
             <ExternalLink size={18} />
-            <div>
-              <strong>먼저 기본 브라우저(Safari / Chrome)로 열어주세요</strong>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong>1단계: 먼저 Safari / Chrome 외부 브라우저로 열어주세요</strong>
               <p>
-                현재 <b>{pwa.inAppName}</b> 내부 브라우저에서는 홈 화면 추가 기능이 제한됩니다.
-                화면 우측 하단 또는 상단의 <b>[⋮] / [⋯]</b> 메뉴에서{' '}
-                <b>[다른 브라우저로 열기]</b> 또는 <b>[Safari로 열기]</b>를 눌러주세요.
+                현재 <b>{pwa.inAppName}</b> 내부 브라우저에서는 홈 화면 추가 버튼이 숨겨져 있습니다.
               </p>
-              <button
-                type="button"
-                className="test-button"
-                style={{ marginTop: 8, minHeight: 36 }}
-                onClick={openInExternalBrowser}
-              >
-                {pwa.platform === 'android'
-                  ? 'Chrome 브라우저로 바로 열기'
-                  : copiedUrl
-                  ? '✓ 주소 복사 완료! Safari 주소창에 붙여넣어 주세요'
-                  : '현재 주소 복사하기 (Safari에서 열기)'}
-              </button>
+              <p style={{ marginTop: 6, color: 'var(--text)' }}>
+                • <b>방법 1 (추천)</b>: 화면 <b>우측 하단의 공유 아이콘 [↑]</b> (또는 <b>[⋮]</b>)을 누른 뒤{' '}
+                <b>[Safari로 열기] / [다른 브라우저로 열기]</b>를 눌러주세요.
+              </p>
+              <p style={{ marginTop: 4, color: 'var(--text)' }}>
+                • <b>방법 2</b>: 아래 버튼으로 바로 외부 브라우저를 열거나, 주소를 복사해 Safari 주소창에 붙여넣어 주세요.
+              </p>
+              <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
+                {(pwa.inAppName === '카카오톡' || pwa.platform === 'android') && (
+                  <button
+                    type="button"
+                    className="test-button"
+                    style={{ minHeight: 38 }}
+                    onClick={openInExternalBrowser}
+                  >
+                    {pwa.platform === 'ios'
+                      ? 'Safari 외부 브라우저로 바로 열기'
+                      : '외부 브라우저(Chrome)로 바로 열기'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="test-button"
+                  style={{
+                    minHeight: 36,
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--line-strong)',
+                  }}
+                  onClick={copyCurrentUrl}
+                >
+                  {copiedUrl
+                    ? '✓ 주소 복사 완료! Safari 주소창에 붙여넣어 주세요'
+                    : '현재 주소 복사하기'}
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
