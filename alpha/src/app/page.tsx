@@ -1,15 +1,19 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ArchiveItem, CardAppearance, CardLayoutType, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
+import type { ArchiveItem, CardAppearance, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { createCardAppearance } from '@/lib/cardAppearance';
 import { prepareCardExport, downloadCardFile } from '@/lib/cardExport';
+import { cardShareData, googleMapShareUrl } from '@/lib/cardShare';
 import { getGroupMembers, isLogGroup } from '@/lib/logGroups';
 import { haptic } from '@/lib/haptics';
 import { allowsMotion } from '@/lib/motion';
+import { fallbackSkinId, visibleSkins } from '@/lib/skinLibrary';
 import { useArchiveRepository } from '@/hooks/useArchiveRepository';
 import { usePresetPreferences } from '@/hooks/usePresetPreferences';
 import { useMotionPreference } from '@/hooks/useMotionPreference';
+import { useFirstVisitGuides, type GuideScreen } from '@/hooks/useFirstVisitGuides';
+import FirstVisitGuide from '@/components/FirstVisitGuide';
 import QuickLogComposer, { type LogDraft } from '@/components/QuickLogComposer';
 import ArchiveBrowser from '@/components/ArchiveBrowser';
 import StudioPanel from '@/components/StudioPanel';
@@ -31,6 +35,7 @@ const LIST_DETAILS_KEY = 'l2_list_details_on';
 const AUTO_PLACE_LINK_KEY = 'l2_auto_place_link_on';
 
 export default function L2TestApp(){
+  const firstGuides=useFirstVisitGuides();
   const repository=useArchiveRepository(),preferences=usePresetPreferences(repository.serverSnapshot),archives=repository.archives;
   const { motion, changeMotion } = useMotionPreference();
   const pwa = usePwaInstall();
@@ -47,6 +52,8 @@ export default function L2TestApp(){
   const mainRef=useRef<HTMLElement|null>(null),outgoingRef=useRef<HTMLDivElement|null>(null);
   const pendingSwipeTransition=useRef<{dir:'next'|'prev';fromDx:number;width:number}|null>(null);
   const swipeStart=useRef<{x:number;y:number;dx:number;time:number;lockedAxis:'x'|'y'|null;inSwipeRow:boolean}|null>(null);
+  const guideScreen:GuideScreen=settings?'settings':tab;
+  const dismissGuide=useCallback(()=>firstGuides.dismiss(guideScreen),[firstGuides.dismiss,guideScreen]);
 
   const notify=useCallback((title:string,actionLabel?:string,action?:()=>void,tone:Toast['tone']='info')=>{if(toastTimer.current)clearTimeout(toastTimer.current);setToast({title,actionLabel,action,tone});toastTimer.current=setTimeout(()=>setToast(null),action?8000:3000);},[]);
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);if(savedTimer.current)clearTimeout(savedTimer.current);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);},[]);
@@ -192,7 +199,6 @@ export default function L2TestApp(){
     notify(`‘${entry.title}’ 위치를 연결했어요`, undefined, undefined, 'success');
   };
   const applyPreset=(preset:PresetSlot)=>{if(applying||!actualItem)return;setCardSaved(false);const cardAppearance=createCardAppearance(item,preset,preferences.skins,preferences.authorName);setPendingAppearance(cardAppearance);haptic.snap();};
-  const applyLayout=(layoutId:CardLayoutType)=>{if(applying||!actualItem)return;setCardSaved(false);const nextSlot={...appearance.slot,layout:layoutId};const cardAppearance:CardAppearance={...appearance,slot:nextSlot};setPendingAppearance(cardAppearance);haptic.snap();};
   const saveCard=async()=>{if(cardSaveLock.current||!actualItem||!pendingAppearance)return;cardSaveLock.current=true;setApplying(true);setCardSaved(false);try{await repository.save({...item,author:appearance.authorName,cardAppearance:appearance},true);setPendingAppearance(null);setCardSaved(true);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);cardSavedTimer.current=setTimeout(()=>setCardSaved(false),1400);haptic.success();notify('로그북에 저장했어요',undefined,undefined,'success');}catch{notify('카드 모양을 저장하지 못했어요.',undefined,undefined,'error');}finally{cardSaveLock.current=false;setApplying(false);}};
   const savePreset=async(preset:PresetSlot,makeDefault:boolean)=>{
     preferences.update(previous=>{const exists=previous.presetSlots.some(entry=>entry.id===preset.id);if(!exists&&previous.presetSlots.length>=20)throw new Error('프리셋은 20개까지 저장할 수 있어요.');const slots=exists?previous.presetSlots.map(entry=>entry.id===preset.id?{...preset}:entry):[...previous.presetSlots,{...preset}];return {...previous,presetSlots:makeDefault?slots.sort((a,b)=>Number(b.id===preset.id)-Number(a.id===preset.id)):slots,defaultPresetId:makeDefault?preset.id:previous.defaultPresetId};});haptic.success();notify(makeDefault?'기본 프리셋으로 설정했어요':'프리셋을 저장했어요',undefined,undefined,'success');
@@ -206,15 +212,19 @@ export default function L2TestApp(){
   };
   const deleteSkin=(id:string)=>{
     preferences.update(previous=>{
-      const nextSkins={...previous.skins};
-      delete nextSkins[id];
-      return {...previous,skins:nextSkins};
+      if(Object.keys(visibleSkins(previous.skins)).length<=1)throw new Error('색상은 하나 이상 남겨 주세요.');
+      const target=previous.skins[id]||INITIAL_SKINS[id];
+      if(!target)return previous;
+      const nextSkins={...previous.skins,[id]:{...target,hidden:true}};
+      const fallback=fallbackSkinId(nextSkins);
+      return {...previous,skins:nextSkins,presetSlots:previous.presetSlots.map(slot=>slot.skinId===id?{...slot,skinId:fallback}:slot)};
     });
     notify('팔레트를 삭제했어요');
   };
   const generateSkin=async(prompt:string)=>{const response=await fetch('/api/ai/skin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});if(!response.ok)throw new Error('팔레트를 만들지 못했어요.');const {skin}=await response.json() as {skin:SkinTheme};preferences.update(previous=>({...previous,skins:{...previous.skins,[skin.id]:skin}}));return skin;};
   const suggestSummary=async(draft:LogDraft)=>{const response=await fetch('/api/ai/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:draft.title,quote:draft.body,loc:draft.place?.loc||'',category:draft.category})});if(!response.ok)throw new Error('요약을 만들지 못했어요. 다시 시도해 주세요.');const data=await response.json();return {good:String(data.good||''),bad:String(data.bad||''),note:String(data.note||'')};};
 
+  const currentCardCapture=useCallback(()=>mainRef.current?.querySelector<HTMLDivElement>('.record-card-stage .fit-card-artwork [data-card-capture="true"]')||null,[]);
   useEffect(()=>{
     exportFile.current = null;
     if (tab !== 'card' || !actualItem) { setExportState('idle'); return; }
@@ -224,7 +234,8 @@ export default function L2TestApp(){
       try {
         let node: HTMLDivElement | null = null;
         for (let attempt = 0; attempt < 100 && !canceled; attempt++) {
-          if (captureRef.current?.isConnected) { node = captureRef.current; break; }
+          const activeCapture=currentCardCapture();
+          if (activeCapture?.isConnected) { node = activeCapture; break; }
           await new Promise(resolve => setTimeout(resolve, 40));
         }
         if (canceled) return;
@@ -240,10 +251,11 @@ export default function L2TestApp(){
 
   const ensureExportFile=async():Promise<File|null>=>{
     if(exportFile.current)return exportFile.current;
-    if(!captureRef.current)return null;
+    const node=currentCardCapture();
+    if(!node)return null;
     try{
       setExportState('preparing');
-      const prepared=await prepareCardExport(captureRef.current,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`,pixelRatio:2});
+      const prepared=await prepareCardExport(node,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`,pixelRatio:2});
       exportFile.current=prepared.file;
       setExportState('ready');
       return prepared.file;
@@ -257,7 +269,9 @@ export default function L2TestApp(){
   const share=async()=>{
     const file=await ensureExportFile();
     if(!file)return;
-    try{if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:item.title,text:item.quote});else{downloadCardFile(file);notify('카드 이미지를 내려받았어요');}}catch(error){if(!(error instanceof DOMException&&error.name==='AbortError')){downloadCardFile(file);notify('카드 이미지를 내려받았어요');}}
+    const data=cardShareData(item,file),mapUrl=googleMapShareUrl(item);
+    const download=()=>{downloadCardFile(file);notify('카드 이미지를 내려받았어요',mapUrl?'지도 링크 복사':undefined,mapUrl?()=>{void navigator.clipboard.writeText(mapUrl).then(()=>notify('지도 링크를 복사했어요')).catch(()=>notify('지도 링크를 복사하지 못했어요.',undefined,undefined,'error'));}:undefined);};
+    try{if(navigator.share&&navigator.canShare?.(data))await navigator.share(data);else download();}catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))download();}
   };
   const restore=async(code:string)=>{const response=await fetch('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recoveryCode:code})});const data=await response.json();if(!response.ok)throw new Error(data.error||'복원 코드를 확인해 주세요.');window.location.reload();};
 
@@ -370,14 +384,15 @@ export default function L2TestApp(){
       <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
         {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} onSuggest={suggestSummary} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
         {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
-        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onApplyLayout={layout=>applyLayout(layout)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
+        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
         {tab==='studio'&&preferences.ready&&<StudioPanel presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
       </main>
     </div>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} onSuggest={suggestSummary} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:30}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username}/>}
+    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:30}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
+    {repository.ready&&preferences.ready&&firstGuides.enabled&&!firstGuides.seen[guideScreen]&&!editingItem&&!isSavingLog&&<FirstVisitGuide key={guideScreen} screen={guideScreen} onDismiss={dismissGuide}/>}
     {toast&&<div className={`test-toast ${toast.tone}`} role={toast.tone==='error'?'alert':'status'}><span className="test-toast-check" aria-hidden="true">{toast.tone==='error'?'!':toast.tone==='success'?'✓':'·'}</span><span>{toast.title}</span>{toast.action&&<button onClick={()=>{toast.action?.();setToast(null);}}>{toast.actionLabel}</button>}<button className="test-toast-close" aria-label="알림 닫기" onClick={()=>setToast(null)}>×</button></div>}
   </div>;
 }

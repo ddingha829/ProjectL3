@@ -1,14 +1,16 @@
 'use client';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { ArchiveItem, CardLayoutType, PresetSlot, SkinTheme } from '@/types/l2';
+import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_SKINS } from '@/data/initialData';
-import { CARD_LAYOUTS, getCardLayout } from '@/lib/cardLayouts';
+import { getCardLayout } from '@/lib/cardLayouts';
 import { isLogGroup } from '@/lib/logGroups';
 import CardStage from './CardStage';
 import FitCard from './FitCard';
 import AccessibleDialog from './AccessibleDialog';
 import SaveFeedback from './SaveFeedback';
+import { useDragScrollRail } from '@/hooks/useDragScrollRail';
+import { allowsMotion } from '@/lib/motion';
 import './CardWorkspace.css';
 
 interface Props {
@@ -26,7 +28,6 @@ interface Props {
   saved?: boolean;
   hasPendingChange?: boolean;
   onApplyPreset: (preset: PresetSlot) => void;
-  onApplyLayout?: (layout: CardLayoutType) => void;
   onEdit: () => void;
   onSaveCard: () => void;
   onShare: () => void;
@@ -34,14 +35,12 @@ interface Props {
   onOpenMember: (item: ArchiveItem) => void;
 }
 
-const NO_PHOTO_LAYOUTS = CARD_LAYOUTS.filter(entry => entry.isNoPhoto);
-
 export default function CardWorkspace(p: Props) {
   const [membersOpen, setMembersOpen] = useState(false);
   const [direction, setDirection] = useState(1);
   const railRef = useRef<HTMLDivElement>(null);
+  const railDrag = useDragScrollRail(railRef);
   const shareReady = p.exportState === 'ready' && !p.applying;
-  const isNoPhoto = (p.item.hasPhoto === false || !p.item.img) && !isLogGroup(p.item);
   const allSkins = { ...INITIAL_SKINS, ...(p.skins || {}) };
 
   const activeIndex = Math.max(
@@ -59,7 +58,7 @@ export default function CardWorkspace(p: Props) {
     if (!rail) return;
     const activeBtn = rail.querySelector<HTMLElement>('[aria-pressed="true"]');
     if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      activeBtn.scrollIntoView({ behavior: allowsMotion() ? 'smooth' : 'instant', inline: 'center', block: 'nearest' });
     }
   }, [p.slot.id, p.slot.skinId, p.slot.layout]);
 
@@ -111,7 +110,7 @@ export default function CardWorkspace(p: Props) {
         </div>
       )}
 
-      <div className="record-preset-controls" aria-label="카드 스타일 선택">
+      <div className="record-preset-controls" aria-label="카드 프리셋 선택">
         <div className="record-preset-bar-head">
           <div className="record-preset-title-group">
             <span>프리셋</span>
@@ -120,21 +119,6 @@ export default function CardWorkspace(p: Props) {
           </div>
 
           <div className="record-preset-head-right">
-            {isNoPhoto && p.onApplyLayout && (
-              <div className="record-nophoto-tabs" role="group" aria-label="글 전용 카드 도안">
-                {NO_PHOTO_LAYOUTS.map(layout => (
-                  <button
-                    type="button"
-                    key={layout.id}
-                    aria-pressed={p.slot.layout === layout.id}
-                    disabled={p.applying}
-                    onClick={() => p.onApplyLayout?.(layout.id)}
-                  >
-                    {layout.sub.replace('형', '')}
-                  </button>
-                ))}
-              </div>
-            )}
             <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동">
               <button
                 type="button"
@@ -158,6 +142,7 @@ export default function CardWorkspace(p: Props) {
 
         <div
           ref={railRef}
+          {...railDrag}
           className="preset-rail record-preset-rail"
           role="group"
           aria-label="옆으로 스와이프하여 프리셋 선택"

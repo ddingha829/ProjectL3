@@ -16,6 +16,7 @@ const browser=await puppeteer.launch({executablePath:'C:/Program Files/Google/Ch
 const page=await browser.newPage();await page.setBypassServiceWorker(true);await page.setViewport({width:390,height:844});await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'no-preference'}]);
 page.on('pageerror',e=>api.errors.push(e.message));
 await page.evaluateOnNewDocument(()=>{
+ localStorage.setItem('l2_first_visit_guides_v1',JSON.stringify({eligible:false,seen:{}}));
  window.__feedback={haptics:[],writes:[],phases:[],failLocal:false};
  Object.defineProperty(navigator,'vibrate',{configurable:true,value:pattern=>{window.__feedback.haptics.push({pattern,time:performance.now()});return true;}});
  const put=IDBObjectStore.prototype.put;

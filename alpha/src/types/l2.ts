@@ -83,6 +83,8 @@ export interface SkinTheme {
   chipBg: string;
   headerBg?: string;
   headerText?: string;
+  /** Library deletion marker; saved card snapshots remain independent. */
+  hidden?: boolean;
 }
 
 /** A record owns its appearance independently from later Studio edits. */

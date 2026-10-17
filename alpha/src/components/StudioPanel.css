@@ -5,3 +5,33 @@
 .preset-rail .preset-add{position:sticky;right:0;z-index:1;background:var(--surface);box-shadow:-8px 0 12px var(--bg)}
 .preset-details{gap:5px}.preset-toggles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px 8px}.preset-toggles label{min-height:22px;gap:5px;white-space:nowrap}.preset-ratios button{min-height:24px}
 @media(max-height:600px) and (max-width:799px){.preset-details{gap:4px}.preset-toggles label{min-height:20px}}
+
+/* A clearly labelled library and editable name, separate from the artwork. */
+.preset-rail{cursor:grab;touch-action:pan-x pinch-zoom;-webkit-overflow-scrolling:touch;user-select:none}
+.preset-rail.preset-rail.is-dragging,.preset-rail.preset-rail.is-coasting{scroll-snap-type:none;scroll-behavior:auto}
+.preset-rail.is-dragging,.preset-rail.is-dragging button{cursor:grabbing!important}.preset-rail.is-dragging button{pointer-events:none}
+.preset-studio{grid-template-rows:auto auto minmax(70px,1fr) 138px 44px}
+.preset-library{min-width:0;padding:10px 12px 8px;border:1px solid var(--line);border-radius:17px;background:var(--surface)}
+.preset-library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
+.preset-library-heading h2{font-size:12px;font-weight:800;letter-spacing:-.025em}.preset-library-heading>small{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.preset-library .preset-rail{padding:3px 1px}.preset-name-row{padding:10px 12px;border:1px solid var(--line);border-radius:15px;background:var(--surface);gap:6px;min-height:62px}
+.preset-name-field{display:grid;gap:3px;min-width:0;flex:1}.preset-name-field>label{font-size:10px;font-weight:650;color:var(--muted)}
+.preset-name-field>input{width:100%;min-width:0;min-height:23px;background:transparent;font-size:17px;font-weight:800;letter-spacing:-.03em;outline:none}
+.preset-name-field:focus-within>label{color:var(--accent)}.preset-name-row:focus-within{border-color:var(--accent)}
+.preset-photo-mode button{display:flex;align-items:center;justify-content:center;gap:3px;width:auto;min-height:34px;padding:5px 7px;font-size:10px;white-space:nowrap}
+.preset-stepper .preset-delete-color{width:auto!important;min-width:43px;display:flex!important;flex-direction:column;gap:2px;color:var(--muted);font-size:9px}
+.preset-stepper .preset-delete-color:hover{color:var(--accent)}.preset-palette-del{min-width:32px;min-height:32px;bottom:5px;right:5px}
+.preset-palette-item>button:first-child{padding-bottom:31px}.preset-palette-del:disabled{opacity:.3}
+@media(min-width:800px){
+ .preset-studio{grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto auto minmax(0,1fr) 44px;gap:12px 28px}
+ .preset-library{grid-column:1/-1;grid-row:1}.preset-library .preset-rail{grid-column:auto}
+ .preset-preview{grid-column:1;grid-row:2/5}.preset-name-row{grid-column:2;grid-row:2;align-self:start;padding:12px}
+ .preset-controls{grid-column:2;grid-row:3;height:184px}.preset-footer{grid-column:2;grid-row:4}
+}
+@media(max-height:650px) and (max-width:799px){
+ .preset-studio{gap:5px;grid-template-rows:auto auto minmax(50px,1fr) 116px 40px}
+ .preset-library{padding:6px 10px}.preset-library-heading{margin-bottom:2px}.preset-library .preset-rail button{min-height:30px;padding:5px 10px}
+ .preset-name-row{min-height:52px;padding:6px 10px}.preset-name-field>input{font-size:15px}.preset-tabs button{min-height:28px}.preset-control-panel{height:76px}
+ .preset-footer button{min-height:40px;font-size:11px}
+ .preset-footer{min-height:40px}
+}

@@ -2,6 +2,7 @@ import type { ArchiveItem, CardAppearance, PresetSlot, SkinTheme } from '@/types
 import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { CARD_LAYOUTS, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { normalizeSkinTheme } from '@/lib/skinValidation';
+import { fallbackSkinId } from '@/lib/skinLibrary';
 
 const elementKeys = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations'] as const;
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -39,6 +40,6 @@ export function normalizeCardAppearance(value: unknown, item?: Pick<ArchiveItem,
 
 export function createCardAppearance(item: Pick<ArchiveItem, 'hasPhoto' | 'img'> & Partial<Pick<ArchiveItem, 'cat'>>, preferred: PresetSlot, skins: Record<string, SkinTheme>, authorName: string): CardAppearance {
   const safeSlot = normalizePresetSlot(preferred) || { ...PRESET_SLOTS[0] };
-  const sourceSkin = skins[safeSlot.skinId] || INITIAL_SKINS.paper;
+  const sourceSkin = skins[safeSlot.skinId] && !skins[safeSlot.skinId].hidden ? skins[safeSlot.skinId] : skins[fallbackSkinId(skins)] || INITIAL_SKINS.paper;
   return normalizeCardAppearance({ slot: safeSlot, skin: sourceSkin, authorName }, item)!;
 }

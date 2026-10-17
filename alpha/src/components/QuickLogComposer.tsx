@@ -410,7 +410,7 @@ export default function QuickLogComposer({
   };
 
   return (
-    <section className={`quick-composer ${draft.img ? 'has-photo' : 'without-photo'} ${editingItem ? 'is-editing' : ''} mx-auto w-full max-w-3xl`} aria-labelledby={`${id}-heading`}>
+    <section className={`quick-composer ${draft.img ? 'has-photo' : 'without-photo'} ${editingItem ? 'is-editing' : ''} mx-auto w-full`} aria-labelledby={`${id}-heading`}>
       <h1 id={`${id}-heading`} className="sr-only">{editingItem ? '기록 수정' : '기록 작성'}</h1>
       {editingItem && <div className="mb-3 flex justify-end"><button type="button" onClick={onCancelEdit} disabled={isSaving} className="quick-control min-h-11 rounded-full px-4 text-sm font-medium text-[var(--muted)]">수정 취소</button></div>}
       <form noValidate onSubmit={submit} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); event.currentTarget.requestSubmit(); } }} aria-busy={isSaving} className="quick-form">

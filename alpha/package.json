@@ -13,7 +13,8 @@
     "test:map": "node scripts/test_map_presets.mjs",
     "test:motion": "node scripts/test_motion.mjs",
     "test:motion-defaults": "node scripts/test_motion_defaults.mjs",
-    "test:save-feedback": "node scripts/test_save_feedback.mjs"
+    "test:save-feedback": "node scripts/test_save_feedback.mjs",
+    "test:guides-studio": "node scripts/test_guides_studio.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -157,6 +157,10 @@ export const PRESET_SLOTS: PresetSlot[] = [
 ];
 
 export const INITIAL_SKINS: Record<string, SkinTheme> = {
+  oat: { id: 'oat', name: 'OAT MILK', bg: '#F2EDDF', text: '#443C2F', sub: '#6E6250', border: '#D5CCB7', accent: '#815A37', chipBg: '#E7DFCC', headerBg: '#E7DFCC', headerText: '#443C2F' },
+  mist: { id: 'mist', name: 'SAGE MIST', bg: '#E7ECEB', text: '#263E3A', sub: '#4E6561', border: '#C5D1CD', accent: '#45665D', chipBg: '#D7E2DD', headerBg: '#D7E2DD', headerText: '#263E3A' },
+  rose: { id: 'rose', name: 'DUSTY ROSE', bg: '#F2E7E5', text: '#483733', sub: '#745D57', border: '#DECBC6', accent: '#925448', chipBg: '#E8D8D3', headerBg: '#E8D8D3', headerText: '#483733' },
+  lilac: { id: 'lilac', name: 'LILAC PAPER', bg: '#ECE8F1', text: '#3D354A', sub: '#655B73', border: '#D2CADF', accent: '#6C5B88', chipBg: '#DFD8E9', headerBg: '#DFD8E9', headerText: '#3D354A' },
   signal: {
     id: 'signal', name: 'L2 SIGNAL', bg: '#E12D00', text: '#FFFFFF', sub: '#FFFFFF',
     headerBg: '#E12D00', headerText: '#FFFFFF', border: '#F57B5F', accent: '#000000', chipBg: '#E12D00',

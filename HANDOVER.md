@@ -1,5 +1,12 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 update
+- First-visit guidance uses live leader lines, once per screen/browser for new installations; Settings can replay it. Existing cached installations are not interrupted.
+- Studio separates its preset library and name field, includes coherent fictional photo/text samples and four soft bundled palettes. Palette deletion persists as `SkinTheme.hidden` without changing saved card snapshots.
+- Card details select presets only; both preset rails support native horizontal scrolling and mouse dragging. Composer width follows the header.
+- Native card sharing sends an image plus a real Google Maps URL when linked, otherwise the image only. Log memo text is excluded. Export targets the active artwork, not an outgoing slide.
+- See `alpha/DOCS/FIRST_VISIT_STUDIO.md` and `alpha/DOCS/AI_COSTS.md` for scope, verification and current Gemini billing research.
+
 ## 1. Repository & Deployment Structure
 - **Git Root**: `C:\Users\User\Desktop\ProjectL3` (`https://github.com/ddingha829/ProjectL3`, branch `master`)
 - **Active Next.js 16 Application**: `C:\Users\User\Desktop\ProjectL3\alpha` (Vercel Root Directory is `alpha`)

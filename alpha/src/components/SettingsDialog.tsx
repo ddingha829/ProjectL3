@@ -32,6 +32,7 @@ interface Props {
   onImportPlaces?: (places: PlaceInboxItem[]) => void;
   pwa?: PwaState;
   username?: string | null;
+  onReplayGuide?: () => void;
 }
 
 export default function SettingsDialog(p: Props) {
@@ -415,6 +416,7 @@ export default function SettingsDialog(p: Props) {
           )}
         </section>
 
+        {p.onReplayGuide&&<button type="button" className="settings-secondary-btn" onClick={p.onReplayGuide}><HelpCircle size={14}/><span>사용 가이드 다시 보기</span></button>}
         {message && <p role="status" className="settings-toast-msg">{message}</p>}
         <p className="settings-footer-meta">L2 Alpha · 오늘 AI 요약/팔레트 사용량 {p.aiUsage.used}/{p.aiUsage.limit}</p>
       </div>
