@@ -1,0 +1,16 @@
+.record-design-editor {border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--bg) 40%,transparent);min-width:0;}
+.record-design-editor summary {min-height:58px;cursor:pointer;padding:15px;font-size:14px;font-weight:650;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.record-design-editor summary::after {content:'+';font-size:20px;font-weight:400;color:var(--muted);}
+.record-design-editor[open] summary::after {content:'−';}
+.record-design-editor summary small {margin-left:auto;max-width:60%;font-size:10px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.record-design-fields {display:grid;gap:22px;padding:4px 15px 18px;}
+.record-design-field {display:grid;gap:10px;font-size:12px;color:var(--muted);}
+.record-design-field :is(select,input) {width:100%;min-width:0;min-height:46px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);font-size:16px;color:var(--fg);}
+.record-design-palettes {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.record-design-palettes button {padding:10px;border:1px solid var(--line);border-radius:12px;text-align:left;min-width:0;font-size:11px;}
+.record-design-palettes button.selected {border-color:var(--accent);}
+.record-design-colors {display:flex;height:22px;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:7px;}
+.record-design-colors i {flex:1;}
+.record-design-elements {display:grid;gap:12px;}
+.record-design-elements label {display:flex;align-items:center;justify-content:space-between;min-height:36px;font-size:13px;}
+.record-design-elements input {width:18px;height:18px;accent-color:var(--accent);}

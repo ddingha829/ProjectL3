@@ -1,24 +1,24 @@
 # dependencies
-node_modules/
+**/node_modules/
 
 # next.js build output
-.next/
-out/
+**/.next/
+**/out/
 
 # secrets — never commit real keys
-.env
-.env*.local
+**/.env
+**/.env*.local
 
-# local data (file-store fallback & legacy test DB)
-data/
-
-# capture artifacts
-mockup_captures/
-*.zip
+# local data & test artifacts
+**/data/
+**/.test-data/
+**/work/
+**/mockup_captures/
+**/*.zip
+**/*.tsbuildinfo
+**/next-env.d.ts
 
 # misc
 .DS_Store
-*.log
+**/*.log
 .vercel
-*.tsbuildinfo
-next-env.d.ts

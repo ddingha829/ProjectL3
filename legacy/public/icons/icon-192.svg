@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+    <rect width="192" height="192" rx="42" fill="#08080A" />
+    <!-- Subtle architectural inner border -->
+    <rect x="4" y="4" width="184" height="184" rx="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+    <g transform="translate(54, 123)">
+      <text font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Pretendard', sans-serif" font-weight="900" font-size="84" fill="#F5F4F0" letter-spacing="-0.06em">L2</text>
+    </g>
+    <!-- Vermilion Accent Dot -->
+    <circle cx="142" cy="119" r="9" fill="#FF3B1D" />
+  </svg>
