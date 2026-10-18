@@ -1,5 +1,10 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 사진 맞춤/드래그 후속 수정
+
+- Card detail now offers 사진 조정: contain/cover, 1~3× zoom and direct mouse/touch drag with a live card preview. Apply stages a per-log photo draft; Card Save persists it, cancel restores it. Composer/content editing shares the same drag engine and retains axis sliders. See `alpha/DOCS/PHOTO_FRAMING.md` and `test:photo-adjust`.
+- `cropZoom`/`photoFit` are optional fields in the archive JSON alongside cropX/Y (no SQL migration). Preserve these through edits/outbox/export; old logs default to 1× and each layout's old fit. New photo replacement clears framing. Tests cover reload/API persistence, native touch pointer events, WebKit dragging, zoomed share pixels and unchanged presets/other logs.
+
 ## 2026-10-18 티켓/공유 후속 수정
 
 - TICKET uses a flexible, contain-fit poster area and compact content/footer; only 3:4 and 9:16 are supported. The common ratio picker disables 1:1 for Ticket. Legacy square tickets resolve to 9:16.

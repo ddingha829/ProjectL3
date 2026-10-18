@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState, type CSSProperties } from 'react';
+import React, { type CSSProperties } from 'react';
+import PhotoViewport from './PhotoViewport';
+import {photoCrop,type PhotoCrop} from '@/lib/photoCrop';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { getCardLayout, itemHasPhoto, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { CARD_GRAIN } from '@/lib/cardGrain';
@@ -16,11 +18,9 @@ interface CardStageProps {
   selectedItems: ArchiveItem[];
   curationTitle: string;
   cardCaptureRef?: React.RefObject<HTMLDivElement | null>;
-  onUpdateCrop?: (cropX: number, cropY: number) => void;
+  photoEditing?: boolean;
+  onPhotoChange?: (crop:PhotoCrop) => void;
 }
-
-type Crop = { x: number; y: number };
-const clamp = (value: number) => Math.max(0, Math.min(100, value));
 
 function accentInk(color: string): string {
   const hex = color.replace('#', '');
@@ -30,53 +30,8 @@ function accentInk(color: string): string {
   return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722 > .179 ? '#111114' : '#FFFFFF';
 }
 
-export default function CardStage({ item, slot: preferredSlot, skin, authorName, selectedItems, curationTitle, cardCaptureRef, onUpdateCrop }: CardStageProps) {
+export default function CardStage({ item, slot: preferredSlot, skin, authorName, selectedItems, curationTitle, cardCaptureRef, photoEditing=false, onPhotoChange }: CardStageProps) {
   const slot = resolveEffectiveSlot(item, preferredSlot);
-  const [cropMode, setCropMode] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [crop, setCrop] = useState<Crop>({ x: item.cropX ?? 50, y: item.cropY ?? 50 });
-  const cropRef = useRef(crop);
-  const gesture = useRef<{ pointer: number; startX: number; startY: number; initial: Crop; overflowX: number; overflowY: number } | null>(null);
-
-  useEffect(() => {
-    const next = { x: item.cropX ?? 50, y: item.cropY ?? 50 };
-    cropRef.current = next;
-    setCrop(next);
-  }, [item.id, item.cropX, item.cropY]);
-  useEffect(() => {
-    setCropMode(false);
-    setIsDragging(false);
-    gesture.current = null;
-  }, [item.id, slot.layout]);
-
-  const updateDraft = (next: Crop) => { cropRef.current = next; setCrop(next); };
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!cropMode || !onUpdateCrop || !event.isPrimary || event.button !== 0) return;
-    const image = event.currentTarget.querySelector('img');
-    if (!image?.naturalWidth) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const cover = Math.max(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
-    gesture.current = { pointer: event.pointerId, startX: event.clientX, startY: event.clientY, initial: cropRef.current, overflowX: image.naturalWidth * cover - rect.width, overflowY: image.naturalHeight * cover - rect.height };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setIsDragging(true);
-  };
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = gesture.current;
-    if (!drag || drag.pointer !== event.pointerId) return;
-    updateDraft({ x: drag.overflowX > 1 ? clamp(drag.initial.x - (event.clientX - drag.startX) / drag.overflowX * 100) : drag.initial.x, y: drag.overflowY > 1 ? clamp(drag.initial.y - (event.clientY - drag.startY) / drag.overflowY * 100) : drag.initial.y });
-  };
-  const finishGesture = (event: React.PointerEvent<HTMLDivElement>, commit: boolean) => {
-    const drag = gesture.current;
-    if (!drag || drag.pointer !== event.pointerId) return;
-    gesture.current = null;
-    setIsDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    if (!commit) { updateDraft(drag.initial); return; }
-    const next = cropRef.current;
-    if (next.x !== drag.initial.x || next.y !== drag.initial.y) onUpdateCrop?.(Math.round(next.x), Math.round(next.y));
-  };
-
-  const hasPhoto = itemHasPhoto(item);
   const showScore = slot.showScore !== false && item.score !== '' && Number.isFinite(Number(item.score));
   const showLocation = slot.showLocation !== false;
   const showSignature = slot.showSignature !== false;
@@ -90,20 +45,10 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   const photoHeight = compact ? 120 : story ? 290 : 185;
   const location = item.fullAddress || item.addressShort || item.loc;
 
-  const photo = (height: number | string, fullBleed = false) => <div
-    className={`${styles.photo} ${fullBleed ? styles.photoCover : ''} ${cropMode ? styles.cropActive : ''}`}
-    style={{ height, cursor: cropMode ? isDragging ? 'grabbing' : 'grab' : undefined }}
-    onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
-    onPointerUp={(event) => finishGesture(event, true)} onPointerCancel={(event) => finishGesture(event, false)}
-    role={cropMode ? 'group' : undefined} aria-label={cropMode ? '사진 위치 조정. 드래그하거나 방향키를 사용하세요.' : undefined} tabIndex={cropMode ? 0 : undefined}
-    onKeyDown={(event) => {
-      if (!cropMode || !onUpdateCrop || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
-      event.preventDefault();
-      const step = event.shiftKey ? 5 : 1;
-      const next = { x: clamp(cropRef.current.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0)), y: clamp(cropRef.current.y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0)) };
-      updateDraft(next); onUpdateCrop(next.x, next.y);
-    }}
-  ><img src={item.img} alt={item.title} draggable={false} style={{ objectPosition: `${crop.x}% ${crop.y}%` }} /></div>;
+  const photo = (height: number | string, fullBleed = false) => <PhotoViewport
+    src={item.img} alt={item.title} crop={photoCrop(item)} defaultFit={slot.layout==='ticket'?'contain':'cover'}
+    editing={photoEditing} onChange={onPhotoChange}
+    className={`${styles.photo} ${fullBleed ? styles.photoCover : ''}`} style={{height}}/>;
   const label = (text: React.ReactNode, className = '') => <span className={`${styles.label} ${className}`}>{text}</span>;
   const decoration = (text: React.ReactNode, className = '') => showDecorations ? <span data-card-decoration="true" className={`${styles.label} ${className}`}>{text}</span> : null;
   const score = showScore ? <span className={styles.score} aria-label={`평점 ${item.score}`}>{item.score}</span> : null;
@@ -222,6 +167,6 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   const variables = { '--card-bg': skin.bg, '--card-text': skin.text, '--card-sub': skin.sub, '--card-border': skin.border, '--card-accent': skin.accent, '--card-chip': skin.chipBg, '--card-accent-ink': accentInk(skin.accent), backgroundColor: skin.bg } as CSSProperties;
   return <div data-card-preview="true" className={styles.stage}>
     <CardFrame ratio={slot.ratio} layout={slot.layout} captureRef={cardCaptureRef} style={variables}><div className={`${styles.surface} ${treatment}`}>{artwork}</div>{slot.showGrain !== false && <div className={styles.grain} style={{ backgroundImage: `url("${CARD_GRAIN}")` }} aria-hidden="true" />}</CardFrame>
-    {hasPhoto && onUpdateCrop && !getCardLayout(slot.layout).isNoPhoto && slot.layout !== 'curation' && <div className={styles.cropToolbar}>{cropMode && <span className={styles.cropHint}>사진을 드래그해 조정하세요</span>}<button type="button" aria-pressed={cropMode} onClick={() => setCropMode((active) => !active)}>{cropMode ? '위치 조정 완료' : '사진 위치 조정'}</button></div>}
+
   </div>;
 }

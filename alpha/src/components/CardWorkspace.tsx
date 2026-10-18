@@ -1,6 +1,6 @@
 'use client';
 import { useState, type RefObject } from 'react';
-import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, Crop } from 'lucide-react';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { PRESET_SLOTS, INITIAL_SKINS } from '@/data/initialData';
 import { isLogGroup } from '@/lib/logGroups';
@@ -13,6 +13,9 @@ import { cardStyleKey } from '@/lib/cardStyle';
 import PresetLibrary from './PresetLibrary';
 import CardStyleControls from './CardStyleControls';
 import './CardWorkspace.css';
+import PhotoAdjustDialog from './PhotoAdjustDialog';
+import {getCardLayout,itemHasPhoto} from '@/lib/cardLayouts';
+import type {PhotoCrop} from '@/lib/photoCrop';
 
 interface Props {
   item: ArchiveItem;
@@ -31,6 +34,7 @@ interface Props {
   onApplyPreset: (preset: PresetSlot) => void;
   onChangeStyle: (patch: Partial<PresetSlot>) => void;
   onResetStyle: () => void;
+  onChangePhoto: (crop:PhotoCrop) => void;
   onEdit: () => void;
   onSaveCard: () => void;
   onShare: () => void;
@@ -40,6 +44,8 @@ interface Props {
 
 export default function CardWorkspace(p: Props) {
   const [membersOpen, setMembersOpen] = useState(false);
+  const [photoOpen,setPhotoOpen]=useState(false);
+  const canAdjustPhoto=!isLogGroup(p.item)&&itemHasPhoto(p.item)&&!getCardLayout(p.slot.layout).isNoPhoto;
   const [direction, setDirection] = useState(1);
   const shareReady = p.exportState === 'ready' && !p.applying;
   const allSkins = { ...INITIAL_SKINS, ...(p.skins || {}) };
@@ -103,7 +109,9 @@ export default function CardWorkspace(p: Props) {
           <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동"><button type="button" aria-label="이전 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?0:sourceIndex)-1,-1)}><ChevronLeft size={17}/></button><button type="button" aria-label="다음 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?-1:sourceIndex)+1,1)}><ChevronRight size={17}/></button></div>
         </div>
         <CardStyleControls slot={p.slot} skin={p.skin} item={p.item} skins={allSkins} disabled={p.applying} onChange={(patch,dir)=>{setDirection(dir||1);p.onChangeStyle(patch);}}/>
-        <div className="record-style-status"><span>{customized?'이 로그만 꾸민 디자인':'프리셋을 고르거나 이 로그만 꾸며보세요'}</span>{p.hasPendingChange&&<button type="button" disabled={p.applying} onClick={p.onResetStyle}>변경 취소</button>}</div>
+        <div className="record-style-status"><span>{customized?'이 로그만 꾸민 디자인':'프리셋을 고르거나 이 로그만 꾸며보세요'}</span><div className="record-style-buttons">{canAdjustPhoto&&<button type="button" className="record-photo-adjust" disabled={p.applying} onClick={()=>setPhotoOpen(true)}><Crop size={13}/>사진 조정</button>}{p.hasPendingChange&&<button type="button" disabled={p.applying} onClick={p.onResetStyle}>변경 취소</button>}</div></div>
+        {photoOpen&&<PhotoAdjustDialog item={p.item} slot={p.slot} skin={p.skin} authorName={p.authorName} onApply={p.onChangePhoto} onClose={()=>setPhotoOpen(false)}/>}
+
       </div>
 
       <div className="record-card-actions" role="group" aria-label="카드 작업">

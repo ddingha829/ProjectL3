@@ -30,7 +30,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     ] },
   ],
   card: [{ label: '이 로그만 꾸미기', hints: [
-    { text: '이 로그의 카드 미리 보기', detail: '꾸민 디자인은 이 로그에만 적용돼요.', selector: '.record-card-stage .fit-card-artwork' },
+    { text: '이 로그의 카드 미리 보기', detail: '꾸민 디자인은 이 로그에만 적용돼요.\n‘사진 조정’에서 확대하고 드래그할 수 있어요.', selector: '.record-card-stage .fit-card-artwork' },
     { text: '프리셋을 골라 시작하기', detail: '보관함의 디자인을 골라 바로 적용해 보세요.', selector: '.record-preset-controls' },
     { text: '이 로그만 더 꾸미기', detail: '디자인·색상·비율·표시 항목을 바꿔도\n원본 프리셋은 그대로예요.', selector: '.record-design-tools .preset-tabs' },
     { text: '내용 수정', detail: '제목·메모·사진·장소를 수정해요.', selector: '.record-card-actions button:nth-child(1)' },

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Settings2 } from 'lucide-react';
 import type { ArchiveItem, CardAppearance, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
+import {photoCrop,photoCropKey,type PhotoCrop} from '@/lib/photoCrop';
 import { sameCardAppearance } from '@/lib/cardStyle';
 import { createCardAppearance } from '@/lib/cardAppearance';
 import { assignDefault, defaultPresetFor, reorderPresets, type PresetDefaultScope } from '@/lib/presetDefaults';
@@ -48,6 +49,7 @@ export default function L2TestApp(){
   const [slideDir,setSlideDir]=useState<'next'|'prev'|null>(null);
   const [activeId,setActiveId]=useState(''),[editingId,setEditingId]=useState<string|null>(null),[newId,setNewId]=useState<string|null>(null);
   const [pendingAppearance,setPendingAppearance]=useState<CardAppearance|null>(null);
+  const [pendingPhoto,setPendingPhoto]=useState<PhotoCrop|null>(null);
   const [toast,setToast]=useState<Toast|null>(null),[applying,setApplying]=useState(false),[isSavingLog,setIsSavingLog]=useState(false),[cardSaved,setCardSaved]=useState(false);
   const logSaveLock=useRef(false),cardSaveLock=useRef(false),cardSavedTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const [inboxPlaces,setInboxPlaces]=useState<PlaceInboxItem[]>([]);
@@ -96,8 +98,8 @@ export default function L2TestApp(){
 
   const defaultSlot=preferences.presetSlots.find(slot=>slot.id===preferences.defaultPresetId)||preferences.presetSlots[0];
   const actualItem=archives.find(entry=>entry.id===activeId)||archives[0];
-  const item=actualItem||INITIAL_ARCHIVES[0];
-  const editingItem=archives.find(entry=>entry.id===editingId)||null;
+  const item=useMemo(()=>{const base=actualItem||INITIAL_ARCHIVES[0];return pendingPhoto?{...base,...pendingPhoto}:base;},[actualItem,pendingPhoto]);
+  const editingItem=editingId===item.id?item:archives.find(entry=>entry.id===editingId)||null;
   const members=useMemo(()=>getGroupMembers(item,archives),[item,archives]);
 
   // Immutable fallback appearance for existing records that somehow lack cardAppearance:
@@ -149,7 +151,7 @@ export default function L2TestApp(){
       setSlideDir(dir);
       return next;
     });
-    setPendingAppearance(null);
+    setPendingAppearance(null);setPendingPhoto(null);
     setEditingId(null);
     window.scrollTo({top:0,behavior:'instant'});
   },[]);
@@ -165,8 +167,8 @@ export default function L2TestApp(){
     );
   },[tab,activeId]);
 
-  const open=(entry:ArchiveItem)=>{setToast(null);setPendingAppearance(null);setActiveId(entry.id);go('card','next');};
-  const arrived=(entry:ArchiveItem)=>{setPendingAppearance(null);setActiveId(entry.id);setNewId(entry.id);go('archive','next');if(savedTimer.current)clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setNewId(null),1600);};
+  const open=(entry:ArchiveItem)=>{setToast(null);setPendingAppearance(null);setPendingPhoto(null);setActiveId(entry.id);go('card','next');};
+  const arrived=(entry:ArchiveItem)=>{setPendingAppearance(null);setPendingPhoto(null);setActiveId(entry.id);setNewId(entry.id);go('archive','next');if(savedTimer.current)clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setNewId(null),1600);};
 
   const saveLog=async(draft:LogDraft,acknowledge?:()=>Promise<void>)=>{
     const previous=editingItem;
@@ -177,14 +179,14 @@ export default function L2TestApp(){
     const previousAppearance=previous?.cardAppearance;
     const categoryDefault=defaultPresetFor(draft.category,preferences.presetSlots,preferences.defaultPresetId);
     const cardAppearance=previousAppearance?createCardAppearance(photo,previousAppearance.slot,{[previousAppearance.skin.id]:previousAppearance.skin},previousAppearance.authorName):createCardAppearance(photo,categoryDefault,preferences.skins,preferences.authorName);
-    const payload:ArchiveItem={id:previous?.id||crypto.randomUUID(),num:previous?.num||'',cat:draft.category,sub:draft.category,title:draft.title.trim(),quote:draft.body.trim(),loc:draft.place?.loc||'',addressShort:draft.place?.short||'',fullAddress:draft.place?.fullAddress||'',date:previous?.date||dateNow(),timestamp:previous?.timestamp||Date.now(),score:draft.score===null?'':draft.score.toFixed(1),...photo,cropX:draft.cropX,cropY:draft.cropY,good:draft.good.trim(),bad:draft.bad.trim(),note:draft.note.trim(),link:draft.place?.link||'',mapX:draft.place?.x??50,mapY:draft.place?.y??50,author:cardAppearance.authorName,cardAppearance,coordinates:draft.place?.coordinates||null};
+    const payload:ArchiveItem={id:previous?.id||crypto.randomUUID(),num:previous?.num||'',cat:draft.category,sub:draft.category,title:draft.title.trim(),quote:draft.body.trim(),loc:draft.place?.loc||'',addressShort:draft.place?.short||'',fullAddress:draft.place?.fullAddress||'',date:previous?.date||dateNow(),timestamp:previous?.timestamp||Date.now(),score:draft.score===null?'':draft.score.toFixed(1),...photo,cropX:draft.cropX,cropY:draft.cropY,cropZoom:draft.cropZoom??1,photoFit:draft.photoFit,good:draft.good.trim(),bad:draft.bad.trim(),note:draft.note.trim(),link:draft.place?.link||'',mapX:draft.place?.x??50,mapY:draft.place?.y??50,author:cardAppearance.authorName,cardAppearance,coordinates:draft.place?.coordinates||null};
     logSaveLock.current=true;setIsSavingLog(true);
-    try{const result=await repository.save(payload,Boolean(previous));haptic.success();await acknowledge?.();logSaveLock.current=false;setPendingAppearance(retainedStyle);setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);notify(previous?'수정 내용을 저장했어요':navigator.onLine?'로그북에 저장했어요':'기기에 저장했어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
+    try{const result=await repository.save(payload,Boolean(previous));haptic.success();await acknowledge?.();logSaveLock.current=false;setPendingAppearance(retainedStyle);setPendingPhoto(null);setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);notify(previous?'수정 내용을 저장했어요':navigator.onLine?'로그북에 저장했어요':'기기에 저장했어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
     catch(error){notify('저장하지 못했어요. 입력은 그대로 남아 있어요.',undefined,undefined,'error');throw error;}
     finally{logSaveLock.current=false;setIsSavingLog(false);}
   };
 
-  const remove=async(entry:ArchiveItem)=>{try{await repository.remove(entry.id);if(activeId===entry.id){setPendingAppearance(null);setEditingId(null);setTab('archive');setActiveId('');}notify('로그를 삭제했어요','실행 취소',()=>{void repository.save(entry,false).then(()=>notify('로그를 되돌렸어요')).catch(()=>notify('되돌리지 못했어요.',undefined,undefined,'error'));});}catch(error){notify('삭제하지 못했어요. 로그를 유지합니다.',undefined,undefined,'error');throw error;}};
+  const remove=async(entry:ArchiveItem)=>{try{await repository.remove(entry.id);if(activeId===entry.id){setPendingAppearance(null);setPendingPhoto(null);setEditingId(null);setTab('archive');setActiveId('');}notify('로그를 삭제했어요','실행 취소',()=>{void repository.save(entry,false).then(()=>notify('로그를 되돌렸어요')).catch(()=>notify('되돌리지 못했어요.',undefined,undefined,'error'));});}catch(error){notify('삭제하지 못했어요. 로그를 유지합니다.',undefined,undefined,'error');throw error;}};
   const createGroup=async(ids:string[],title:string)=>{
     const entries=ids.map(id=>archives.find(entry=>entry.id===id)).filter((entry):entry is ArchiveItem=>Boolean(entry)&&!isLogGroup(entry!));
     if(!entries.length)throw new Error('모을 로그를 선택해 주세요.');
@@ -220,7 +222,7 @@ export default function L2TestApp(){
     const next=createCardAppearance(item,{...appearance.slot,...patch},skins,appearance.authorName);
     setCardSaved(false);setPendingAppearance(sameCardAppearance(savedAppearance,next)?null:next);haptic.tick();
   };
-  const saveCard=async()=>{if(cardSaveLock.current||!actualItem||!pendingAppearance)return;cardSaveLock.current=true;setApplying(true);setCardSaved(false);try{await repository.save({...item,author:appearance.authorName,cardAppearance:appearance},true);setPendingAppearance(null);setCardSaved(true);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);cardSavedTimer.current=setTimeout(()=>setCardSaved(false),1400);haptic.success();notify('로그북에 저장했어요',undefined,undefined,'success');}catch{notify('카드 모양을 저장하지 못했어요.',undefined,undefined,'error');}finally{cardSaveLock.current=false;setApplying(false);}};
+  const saveCard=async()=>{if(cardSaveLock.current||!actualItem||!pendingAppearance&&!pendingPhoto)return;cardSaveLock.current=true;setApplying(true);setCardSaved(false);try{await repository.save({...item,author:appearance.authorName,cardAppearance:appearance},true);setPendingAppearance(null);setPendingPhoto(null);setCardSaved(true);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);cardSavedTimer.current=setTimeout(()=>setCardSaved(false),1400);haptic.success();notify('로그북에 저장했어요',undefined,undefined,'success');}catch{notify('카드 모양을 저장하지 못했어요.',undefined,undefined,'error');}finally{cardSaveLock.current=false;setApplying(false);}};
   const savePreset=async(preset:PresetSlot,scope?:PresetDefaultScope,order?:string[])=>{
     preferences.update(previous=>{const exists=previous.presetSlots.some(entry=>entry.id===preset.id);if(!exists&&previous.presetSlots.length>=20)throw new Error('프리셋은 20개까지 저장할 수 있어요.');const original=previous.presetSlots.find(entry=>entry.id===preset.id);const committed={...preset,...(original?.defaultFor?{defaultFor:original.defaultFor}:{})};const slots=scope?assignDefault(previous.presetSlots,committed,scope):exists?previous.presetSlots.map(entry=>entry.id===preset.id?committed:entry):[...previous.presetSlots,committed];return {...previous,presetSlots:!scope&&order?reorderPresets(slots,order):slots,defaultPresetId:scope==='ALL'?preset.id:previous.defaultPresetId};});haptic.success();notify(scope?'기본 프리셋으로 설정했어요':'프리셋을 저장했어요',undefined,undefined,'success');
   };
@@ -407,12 +409,12 @@ export default function L2TestApp(){
       <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
         {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
         {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
-        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onChangeStyle={changeCardStyle} onResetStyle={()=>{setPendingAppearance(null);setCardSaved(false);}} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
+        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance||pendingPhoto)} onApplyPreset={preset=>applyPreset(preset)} onChangeStyle={changeCardStyle} onChangePhoto={crop=>{if(applying||!actualItem)return;setPendingPhoto(photoCropKey(crop)===photoCropKey(actualItem)?null:photoCrop(crop));setCardSaved(false);}} onResetStyle={()=>{setPendingAppearance(null);setPendingPhoto(null);setCardSaved(false);}} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
         {tab==='studio'&&preferences.ready&&<StudioPanel key={repository.serverSnapshot?.deviceId||'local'} presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onReorderPresets={reorderPresetList} onClearCategoryDefault={clearCategoryDefault} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
       </main>
     </div>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open font={font} onFont={changeFont} beforeLogin={async()=>{await repository.prepareForLogin();await preferences.prepareForLogin();}} onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
+    {settings&&<SettingsDialog open font={font} onFont={changeFont} beforeLogin={async()=>{await repository.prepareForLogin();await preferences.prepareForLogin();}} onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setPendingPhoto(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
     {repository.ready&&preferences.ready&&firstGuides.enabled&&!firstGuides.seen[guideScreen]&&!editingItem&&!isSavingLog&&<FirstVisitGuide key={guideScreen} screen={guideScreen} onDismiss={dismissGuide}/>}

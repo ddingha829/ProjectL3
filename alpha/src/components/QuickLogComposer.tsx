@@ -6,6 +6,8 @@ import type { ArchiveCategory, ArchiveItem, MapApiPlace, PlaceInboxItem } from '
 import { ARCHIVE_CATEGORIES, getArchiveCategory } from '@/lib/archiveCategories';
 import { useLogDraft } from '@/hooks/useLogDraft';
 import AccessibleDialog from '@/components/AccessibleDialog';
+import PhotoCropControls from './PhotoCropControls';
+import {photoCrop,type PhotoFit} from '@/lib/photoCrop';
 import PhotoMemoCanvas from '@/components/PhotoMemoCanvas';
 import SaveFeedback from '@/components/SaveFeedback';
 import PhotoPickerDialog from './PhotoPickerDialog';
@@ -21,6 +23,8 @@ export interface LogDraft {
   img: string;
   cropX: number;
   cropY: number;
+  cropZoom?:number;
+  photoFit?:PhotoFit;
   place: MapApiPlace | null;
   good: string;
   bad: string;
@@ -44,7 +48,7 @@ interface QuickLogComposerProps {
 const CATEGORY_ICONS = { dining: Utensils, cinema: Clapperboard, place: MapPin, other: Shapes };
 
 export function emptyLogDraft(): LogDraft {
-  return { title: '', body: '', category: 'DINING', score: null, img: '', cropX: 50, cropY: 50, place: null, good: '', bad: '', note: '' };
+  return { title: '', body: '', category: 'DINING', score: null, img: '', cropX: 50, cropY: 50, cropZoom:1, place: null, good: '', bad: '', note: '' };
 }
 
 function draftFromItem(item: ArchiveItem | null): LogDraft {
@@ -58,6 +62,8 @@ function draftFromItem(item: ArchiveItem | null): LogDraft {
     img: item.hasPhoto === false ? '' : item.img || '',
     cropX: item.cropX ?? 50,
     cropY: item.cropY ?? 50,
+    cropZoom:item.cropZoom??1,
+    photoFit:item.photoFit,
     place: item.loc || item.addressShort || item.fullAddress || item.link ? {
       name: item.title,
       short: item.addressShort || item.loc || '',
@@ -272,7 +278,7 @@ export default function QuickLogComposer({
     try {
       const img = await preparePhoto(file);
       if (mountedRef.current && token === photoToken.current) {
-        setDraft((current) => ({ ...current, img, cropX: 50, cropY: 50 }));
+        setDraft((current) => ({ ...current, img, cropX: 50, cropY: 50, cropZoom:1, photoFit:undefined }));
         setSaved(false);
       }
     } catch (error) {
@@ -427,8 +433,9 @@ export default function QuickLogComposer({
               </div>
             )}
 
-            <PhotoMemoCanvas id={`${id}-body`} body={draft.body} img={draft.img} cropX={draft.cropX} cropY={draft.cropY} cropOpen={cropOpen} disabled={disabled} onBody={(body) => update('body', body)} onToggleCrop={() => setCropOpen((current) => !current)} onRemovePhoto={() => { photoToken.current += 1; setPhotoBusy(false); update('img', ''); setCropOpen(false); }} />
-            {draft.img && cropOpen && <div className="grid gap-3 rounded-2xl border border-[var(--line)] p-4 sm:grid-cols-2">{(['cropX', 'cropY'] as const).map((axis) => <label key={axis} className="text-xs font-medium text-[var(--muted)]">{axis === 'cropX' ? '가로 위치' : '세로 위치'}<input type="range" min="0" max="100" step="1" value={draft[axis]} disabled={disabled} onChange={(event) => update(axis, Number(event.target.value))} className="mt-2 block h-8 w-full" /></label>)}</div>}
+            <PhotoMemoCanvas id={`${id}-body`} body={draft.body} img={draft.img} cropX={draft.cropX} cropY={draft.cropY} cropZoom={draft.cropZoom} photoFit={draft.photoFit} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} onCrop={crop=>setDraft(current=>({...current,...crop}))} cropOpen={cropOpen} disabled={disabled} onBody={(body) => update('body', body)} onToggleCrop={() => setCropOpen((current) => !current)} onRemovePhoto={() => { photoToken.current += 1; setPhotoBusy(false); update('img', ''); setCropOpen(false); }} />
+            {draft.img && cropOpen && <><p className="photo-adjust-hint">사진을 드래그해 위치를 옮길 수 있어요.</p><PhotoCropControls value={photoCrop(draft)} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} disabled={disabled} positions onChange={crop=>setDraft(current=>({...current,...crop}))}/></>}
+
 
             <div className="quick-actions" role="group" aria-label="기록 첨부">
               <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
@@ -454,7 +461,7 @@ export default function QuickLogComposer({
       <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} onAlbum={()=>fileRef.current?.click()} onCamera={()=>cameraRef.current?.click()} onMedia={item=>{
         photoToken.current += 1;
         const reference = `[TMDB 참고] ${item.title}${item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;
-        setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,category:'CINEMA',note:[current.note,reference].filter(Boolean).join('\n\n').slice(0,1000)}));
+        setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,cropZoom:1,photoFit:undefined,category:'CINEMA',note:[current.note,reference].filter(Boolean).join('\n\n').slice(0,1000)}));
         setManualCategory(true);setPhotoError('');setSaved(false);setDialog(null);
       }}/>
       <AccessibleDialog open={dialog === 'category'} onClose={() => { if (!isSaving) setDialog(null); }} title="어떤 로그인가요?">

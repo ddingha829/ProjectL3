@@ -21,6 +21,8 @@ export function isStoredDraft(value: unknown): value is LogDraft {
     isArchiveCategory(draft.category) && draft.category !== 'GROUP' &&
     (draft.score === null || (typeof draft.score === 'number' && Number.isFinite(draft.score) && draft.score >= 0 && draft.score <= 5)) &&
     typeof draft.cropX === 'number' && Number.isFinite(draft.cropX) && draft.cropX >= 0 && draft.cropX <= 100 &&
+    (draft.cropZoom===undefined||(typeof draft.cropZoom==='number'&&Number.isFinite(draft.cropZoom)&&draft.cropZoom>=1&&draft.cropZoom<=3)) &&
+    (draft.photoFit===undefined||draft.photoFit==='contain'||draft.photoFit==='cover') &&
     typeof draft.cropY === 'number' && Number.isFinite(draft.cropY) && draft.cropY >= 0 && draft.cropY <= 100 && validPlace;
 }
 

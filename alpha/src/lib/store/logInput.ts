@@ -2,6 +2,7 @@ import type { ArchiveCategory, ArchiveItem } from '@/types/l2';
 import { isUuid, newId } from './util';
 import { isArchiveCategory } from '@/lib/archiveCategories';
 import { normalizeCardAppearance } from '@/lib/cardAppearance';
+import {photoCrop} from '@/lib/photoCrop';
 import { isGeoPoint } from '@/lib/mapLocations';
 
 function text(value: unknown, fallback = ''): string {
@@ -44,7 +45,7 @@ export function normalizeLogInput(raw: unknown, existing?: ArchiveItem): Archive
     addressShort: text(body.addressShort), fullAddress: text(body.fullAddress), date, timestamp,
     score, quote, good: text(body.good), bad: text(body.bad), note: text(body.note),
     link: text(body.link), img: image, hasPhoto: Boolean(image),
-    cropX: position(body.cropX), cropY: position(body.cropY), mapX: position(body.mapX), mapY: position(body.mapY), author: text(body.author),
+    ...photoCrop(body as Partial<ArchiveItem>), mapX: position(body.mapX), mapY: position(body.mapY), author: text(body.author),
     ...(cardAppearance ? { cardAppearance } : {}),
     ...(grouped ? { kind: 'group' as const, memberIds } : {}),
     ...(isGeoPoint(body.coordinates) ? { coordinates: { lat: body.coordinates.lat, lng: body.coordinates.lng } } : {}),

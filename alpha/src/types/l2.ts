@@ -56,6 +56,8 @@ export interface ArchiveItem {
   hasPhoto?: boolean;
   cropX: number;
   cropY: number;
+  cropZoom?: number;
+  photoFit?: 'contain' | 'cover';
   mapX: number;
   mapY: number;
   author?: string;

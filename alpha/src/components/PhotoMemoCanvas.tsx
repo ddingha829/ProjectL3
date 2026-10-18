@@ -2,6 +2,8 @@
 
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { Crop, X } from 'lucide-react';
+import PhotoViewport from './PhotoViewport';
+import type {PhotoCrop,PhotoFit} from '@/lib/photoCrop';
 import { allowsMotion, MOTION_EVENT } from '@/lib/motion';
 
 interface Props {
@@ -10,6 +12,10 @@ interface Props {
   img: string;
   cropX: number;
   cropY: number;
+  cropZoom?: number;
+  photoFit?:PhotoFit;
+  defaultFit?:PhotoFit;
+  onCrop:(crop:PhotoCrop)=>void;
   cropOpen: boolean;
   disabled?: boolean;
   onBody: (value: string) => void;
@@ -42,7 +48,7 @@ function sizeToContent(textarea: HTMLTextAreaElement, minimum: number) {
 }
 
 /** Inline photo preview above the body memo panel, with smooth slide-down & scroll when a photo is attached. */
-export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen, disabled = false, onBody, onRemovePhoto, onToggleCrop }: Props) {
+export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropZoom, photoFit, defaultFit, onCrop, cropOpen, disabled = false, onBody, onRemovePhoto, onToggleCrop }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -167,19 +173,18 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
       onClick={(event) => {
         if (disabled) return;
         const target = event.target as HTMLElement;
-        if (target.closest('button, input, a')) return;
+        if (target.closest('button, input, a, [data-crop-interactive]')) return;
         if (target !== textareaRef.current) {
           textareaRef.current?.focus({ preventScroll: true });
         }
       }}
     >
-      <div ref={photoRef} className="photo-memo-image" hidden={!img}>
-        {img && <img src={img} alt="첨부한 기록 사진" style={{ objectPosition: `${cropX}% ${cropY}%` }} />}
+      <PhotoViewport viewportRef={photoRef} className="photo-memo-image" hidden={!img} src={img} alt="첨부한 기록 사진" crop={{cropX,cropY,cropZoom,photoFit}} defaultFit={defaultFit} editing={cropOpen} disabled={disabled} onChange={onCrop}>
         <div className="photo-memo-tools">
           <button type="button" className="quick-control" disabled={disabled} onClick={onToggleCrop} aria-expanded={cropOpen} aria-label="사진 위치 조정"><Crop size={17} aria-hidden="true" /></button>
           <button type="button" className="quick-control" disabled={disabled} onClick={onRemovePhoto} aria-label="사진 제거"><X size={18} aria-hidden="true" /></button>
         </div>
-      </div>
+      </PhotoViewport>
       <div ref={panelRef} className="photo-memo-panel">
         <label htmlFor={id} className="sr-only">기억하고 싶은 순간</label>
         <textarea ref={textareaRef} id={id} name="body" value={body} disabled={disabled} onChange={(event) => onBody(event.target.value)} placeholder={PROMPT} rows={3} maxLength={5000} className="quick-memory" />
