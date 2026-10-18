@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, ExternalLink, Share, PlusSquare, Smartphone, CheckCircle2, Sparkles } from 'lucide-react';
+import { Download, ExternalLink, Share, PlusSquare, Smartphone, CheckCircle2, Sparkles, Settings2 } from 'lucide-react';
 import AccessibleDialog from './AccessibleDialog';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -125,7 +125,8 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const saved = localStorage.getItem(DISMISS_KEY) === '1';
+      // In-app browsers need their own handoff, even after dismissal in Safari/Chrome.
+      const saved = pwa.inAppName ? sessionStorage.getItem(`${DISMISS_KEY}_${pwa.inAppName}`) === '1' : localStorage.getItem(DISMISS_KEY) === '1';
       setDismissed(saved);
       if (!saved) {
         const timer = setTimeout(() => setVisible(true), 280);
@@ -135,14 +136,15 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
       setDismissed(false);
       setVisible(true);
     }
-  }, []);
+  }, [pwa.inAppName]);
 
-  if (pwa.isStandalone || dismissed || !visible) return null;
+  if (pwa.isStandalone || dismissed || !visible || pwa.guideOpen) return null;
 
   const dismiss = () => {
     setClosing(true);
     try {
-      localStorage.setItem(DISMISS_KEY, '1');
+      if (pwa.inAppName) sessionStorage.setItem(`${DISMISS_KEY}_${pwa.inAppName}`, '1');
+      else localStorage.setItem(DISMISS_KEY, '1');
     } catch {
       /* ignore */
     }
@@ -169,7 +171,7 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
         </strong>
         <span>
           {pwa.inAppName === '카카오톡'
-            ? '우측 하단 공유[↑] → [Safari로 열기]에서 설치 가능'
+            ? pwa.platform === 'android' ? '메뉴 → 다른 브라우저로 열기 → Chrome에서 앱 설치' : '공유 → Safari로 열기 → 홈 화면에 추가'
             : pwa.inAppName
             ? '외부 브라우저(Safari·Chrome)로 열면 설치할 수 있어요'
             : '주소창 없는 전체화면·오프라인 보관을 지원해요'}
@@ -418,7 +420,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
           <div>
             <strong>홈 화면 앱 실행 후 로그인 안내</strong>
             <p>
-              홈 화면에 추가한 앱을 처음 실행하면 <b>우측 상단 설정(⚙) 버튼</b>을 눌러 아이디/비밀번호로 로그인해 주세요.
+              홈 화면에 추가한 앱을 처음 실행하면 <b>우측 상단 설정 버튼</b>을 눌러 아이디/비밀번호로 로그인해 주세요.
               브라우저에서 작성한 기록과 사진이 그대로 연동됩니다.
             </p>
           </div>
@@ -445,7 +447,7 @@ export function PwaFirstLaunchLoginPopup({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!pwa.isStandalone || !ready || username) {
+    if (!pwa.isStandalone || !ready || username || pwa.guideOpen) {
       setOpen(false);
       return;
     }
@@ -456,7 +458,7 @@ export function PwaFirstLaunchLoginPopup({
     } catch {
       setOpen(true);
     }
-  }, [pwa.isStandalone, ready, username]);
+  }, [pwa.isStandalone, ready, username, pwa.guideOpen]);
 
   const dismiss = () => {
     try {
@@ -477,7 +479,7 @@ export function PwaFirstLaunchLoginPopup({
           <div>
             <strong>L2. 웹앱이 준비되었어요!</strong>
             <p>
-              우측 상단의 <b>설정(⚙) 버튼</b>을 눌러 아이디·비밀번호로 로그인하면 기존 기록을 불러오거나 기기 간 실시간 동기화를 시작할 수 있어요.
+              우측 상단의 <b>설정 버튼</b>을 눌러 아이디·비밀번호로 로그인하면 기존 기록을 불러오거나 기기 간 실시간 동기화를 시작할 수 있어요.
             </p>
           </div>
         </div>
@@ -499,7 +501,7 @@ export function PwaFirstLaunchLoginPopup({
               onOpenSettings();
             }}
           >
-            ⚙ 설정 눌러 로그인하기
+            <Settings2 size={15} aria-hidden="true"/> 설정에서 로그인하기
           </button>
         </div>
       </div>

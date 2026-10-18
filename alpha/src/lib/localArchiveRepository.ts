@@ -119,6 +119,7 @@ export class LocalArchiveRepository {
   private sessionEpoch = 0;
   private mutations: Promise<void> = Promise.resolve();
   private syncing: Promise<void> | null = null;
+  private resetting = false;
   private revision = 0;
   private sessionReady = false;
   private snapshotFromCache = false;
@@ -204,6 +205,7 @@ export class LocalArchiveRepository {
     return this.networkStart;
   }
   refresh(): Promise<void> {
+    if (this.resetting) return Promise.resolve();
     if (!this.refreshing) this.refreshing = this.refreshSession().finally(() => { this.refreshing = null; });
     return this.refreshing;
   }
@@ -248,6 +250,7 @@ export class LocalArchiveRepository {
     } catch (error) { this.sessionReady = false; this.error = message(error); this.publish(); }
   }
   async save(input: ArchiveItem, isEdit = false): Promise<{ item: ArchiveItem; synced: boolean }> {
+    if (this.resetting) throw new Error('로그 초기화 중이에요. 잠시 기다려 주세요.');
     await this.initializeLocal();
     const item = { ...input, ...(input.cardAppearance ? { cardAppearance: cloneCardAppearance(input.cardAppearance) } : {}), id: uuid.test(input.id) ? input.id : crypto.randomUUID() };
     await this.mutate(current => {
@@ -273,6 +276,7 @@ export class LocalArchiveRepository {
     return { item, synced: false };
   }
   async remove(id: string): Promise<void> {
+    if (this.resetting) throw new Error('로그 초기화 중이에요. 잠시 기다려 주세요.');
     await this.initializeLocal();
     await this.mutate(current => ({
       ...current, archives: current.archives.filter(item => item.id !== id),
@@ -285,12 +289,42 @@ export class LocalArchiveRepository {
     await this.mutate(current => ({ ...current, archives: typeof update === 'function' ? update(current.archives) : update }));
   }
   async retrySync(): Promise<void> {
+    if (this.resetting) return;
     await this.initializeLocal();
     this.error = null;
     await this.mutate(current => ({ ...current, outbox: current.outbox.map(operation => ({ ...operation, state: 'pending', error: undefined })) }));
     await this.refresh();
   }
+  async resetAllLogs(): Promise<void> {
+    if (this.resetting) return;
+    await this.initializeLocal();
+    if (this.refreshing) await this.refreshing;
+    if (!this.sessionReady || !this.state.ownerId) throw new Error('온라인으로 연결한 뒤 초기화해 주세요.');
+    const ownerId = this.state.ownerId;
+    this.resetting = true;
+    this.sessionReady = false;
+    ++this.sessionEpoch;
+    let confirmed = false;
+    try {
+      // Drain an already dispatched write before the delete, and invalidate its response.
+      if (this.syncing) await this.syncing;
+      await this.mutations;
+      const response = await this.transport('/api/logs/reset', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedDeviceId: ownerId, confirmation: 'DELETE_ALL_LOGS' }) });
+      const data = await response.json();
+      if (!response.ok || data.deviceId !== ownerId || this.state.ownerId !== ownerId) throw new Error(data.error === 'DEVICE_CHANGED' ? '계정이 변경되어 초기화하지 않았어요. 다시 연결해 주세요.' : data.error || '로그를 초기화하지 못했어요.');
+      await this.mutate(current => ({ ...current, archives: [], outbox: [] }));
+      // Clear the secondary recovery snapshot so it cannot resurrect deleted logs.
+      await this.storage.write(this.state, `owner:${ownerId}`);
+      this.error = null;
+      confirmed = true;
+    } finally {
+      this.resetting = false;
+      this.sessionReady = confirmed && this.state.ownerId === ownerId;
+      this.publish();
+    }
+  }
   private flush(): Promise<void> {
+    if (this.resetting) return Promise.resolve();
     if (this.syncing) return this.syncing;
     this.syncing = this.flushQueue().finally(() => { this.syncing = null; });
     return this.syncing;

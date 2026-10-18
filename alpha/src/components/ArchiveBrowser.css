@@ -32,3 +32,9 @@
 .logbook-poster.just-added{animation:logbook-arrive 360ms cubic-bezier(.22,1,.36,1) 160ms both,logbook-saved 1100ms ease-out 160ms both}
 @keyframes logbook-arrive{from{opacity:.55;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
 @keyframes logbook-saved{from{outline-color:color-mix(in srgb,var(--accent) 52%,transparent);background-color:color-mix(in srgb,var(--accent) 7%,var(--bg))}to{outline-color:transparent;background-color:var(--bg)}}
+
+/* Only the selected view spells out its label; the row can wrap on tiny screens. */
+.logbook-views button{display:flex;gap:5px;width:auto;min-width:34px;min-height:40px;padding:6px 9px;transition:background-color 180ms ease,color 180ms ease}.logbook-view-label{font-size:11px;white-space:nowrap;font-weight:750;animation:logbook-view-in 180ms ease both}.logbook-tools-row{flex-wrap:wrap;gap:4px 8px}.logbook-views{flex-shrink:0}
+.logbook-posters{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));align-items:start}.logbook-poster{min-width:0}
+@media(max-width:600px){.logbook-posters{grid-template-columns:repeat(2,minmax(0,1fr))}.logbook-views button{padding:5px 7px}.logbook-view-label{font-size:10px}.logbook-tools-row{gap:3px}}
+@keyframes logbook-view-in{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}

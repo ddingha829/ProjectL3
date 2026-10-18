@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Settings2 } from 'lucide-react';
 import type { ArchiveItem, CardAppearance, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { createCardAppearance } from '@/lib/cardAppearance';
@@ -223,7 +224,7 @@ export default function L2TestApp(){
     notify('팔레트를 삭제했어요');
   };
   const generateSkin=async(prompt:string)=>{const response=await fetch('/api/ai/skin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});if(!response.ok)throw new Error('팔레트를 만들지 못했어요.');const {skin}=await response.json() as {skin:SkinTheme};preferences.update(previous=>({...previous,skins:{...previous.skins,[skin.id]:skin}}));return skin;};
-  const suggestSummary=async(draft:LogDraft)=>{const response=await fetch('/api/ai/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:draft.title,quote:draft.body,loc:draft.place?.loc||'',category:draft.category})});if(!response.ok)throw new Error('요약을 만들지 못했어요. 다시 시도해 주세요.');const data=await response.json();return {good:String(data.good||''),bad:String(data.bad||''),note:String(data.note||'')};};
+
 
   const currentCardCapture=useCallback(()=>mainRef.current?.querySelector<HTMLDivElement>('.record-card-stage .fit-card-artwork [data-card-capture="true"]')||null,[]);
   useEffect(()=>{
@@ -241,7 +242,7 @@ export default function L2TestApp(){
         }
         if (canceled) return;
         if (!node) throw new Error('카드가 아직 준비되지 않았어요.');
-        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.png`, pixelRatio: 2 });
+        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.jpg` });
         if (!canceled) { exportFile.current = prepared.file; setExportState('ready'); }
       } catch (error) {
         if (!canceled) { setExportState('error'); setExportError(error instanceof Error ? error.message : '이미지를 준비하지 못했어요.'); }
@@ -256,7 +257,7 @@ export default function L2TestApp(){
     if(!node)return null;
     try{
       setExportState('preparing');
-      const prepared=await prepareCardExport(node,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`,pixelRatio:2});
+      const prepared=await prepareCardExport(node,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.jpg`});
       exportFile.current=prepared.file;
       setExportState('ready');
       return prepared.file;
@@ -293,7 +294,7 @@ export default function L2TestApp(){
     if(editingItem||logSaveLock.current)return;
     const target=e.target as HTMLElement|null;
     if(!target)return;
-    if(target.closest('input[type="range"], .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop'))return;
+    if(target.closest('input[type="range"], .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop, .swipe-log'))return;
     const hScroll=target.closest<HTMLElement>('.preset-rail');
     if(hScroll&&hScroll.scrollWidth>hScroll.clientWidth+4)return;
     const inDialog=target.closest('[role="dialog"]');
@@ -367,7 +368,7 @@ export default function L2TestApp(){
       haptic.tick();
       if(currentEffective==='log')go('archive','next',start.dx);
       else if(currentEffective==='archive')go('studio','next',start.dx);
-      else if(currentEffective==='studio'){springBackMain(start.dx);setSettings(true);}
+      else if(currentEffective==='studio')springBackMain(start.dx);
     }else if(dx>0){
       if(tab==='card'){haptic.tick();go('archive','prev',start.dx);}
       else if(currentEffective==='studio'){haptic.tick();go('archive','prev',start.dx);}
@@ -378,19 +379,19 @@ export default function L2TestApp(){
 
   const storageStatus=!repository.ready?'불러오는 중':failedSyncIds?'동기화 확인 필요':repository.pendingCount?`기기 보관 완료 · ${repository.pendingCount}건 동기화 대기`:preferences.pending?'스타일 동기화 대기':repository.status==='failed'?'서버 연결 대기':'동기화 완료';
   return <div className={`test-shell view-${tab} ${tab==='log'?'is-composing':''}`} onPointerDown={onPointerDownShell} onPointerMove={onPointerMoveShell} onPointerUp={onPointerUpShell} onPointerCancel={onPointerCancelShell}><TestPwa/>
-    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={tab===entry.id||tab==='card'&&entry.id==='archive'?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id==='archive'?'page':undefined} onClick={()=>go(entry.id)}>{entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기">⚙</button></header>
+    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={tab===entry.id||tab==='card'&&entry.id==='archive'?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id==='archive'?'page':undefined} onClick={()=>go(entry.id)}>{entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기"><Settings2 size={20} strokeWidth={2} aria-hidden="true"/></button></header>
     <PwaInstallBanner pwa={pwa}/>
     <div className="test-swipe-viewport">
       <div ref={outgoingRef} className="test-outgoing-host" aria-hidden="true"/>
       <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
-        {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} onSuggest={suggestSummary} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
+        {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
         {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
         {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
         {tab==='studio'&&preferences.ready&&<StudioPanel presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
       </main>
     </div>
-    <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} onSuggest={suggestSummary} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
+    <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
+    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
     {repository.ready&&preferences.ready&&firstGuides.enabled&&!firstGuides.seen[guideScreen]&&!editingItem&&!isSavingLog&&<FirstVisitGuide key={guideScreen} screen={guideScreen} onDismiss={dismissGuide}/>}

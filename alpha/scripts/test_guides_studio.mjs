@@ -21,7 +21,7 @@ const original=JSON.stringify(records);
 async function makePage(existing=false){
  const p=await browser.newPage();await p.setViewport({width:390,height:844,deviceScaleFactor:1.5});await p.setBypassServiceWorker(true);p.on('pageerror',e=>errors.push(e.message));
  await p.evaluateOnNewDocument((existing,profile)=>{localStorage.setItem('l2_auto_place_link_on','off');if(existing&&!localStorage.getItem('l2_test_preferences_v2'))localStorage.setItem('l2_test_preferences_v2',JSON.stringify(profile));},existing,prefs);
- await p.evaluateOnNewDocument(()=>{window.__shares=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:data=>!!data.files?.length});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{const file=data.files[0],view=new DataView(await file.arrayBuffer());window.__shares.push({keys:Object.keys(data),text:data.text,title:data.title,url:data.url,files:data.files.length,width:view.getUint32(16),height:view.getUint32(20)});}});});
+ await p.evaluateOnNewDocument(()=>{window.__shares=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:data=>!!data.files?.length});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{const file=data.files[0],view=await createImageBitmap(file);window.__shares.push({keys:Object.keys(data),text:data.text,title:data.title,url:data.url,files:data.files.length,width:view.width,height:view.height,bytes:file.size,type:file.type});}});});
  await p.setRequestInterception(true);p.on('request',async r=>{
   const url=new URL(r.url());if(!url.pathname.startsWith('/api/'))return r.continue();calls.push({url:url.pathname,method:r.method()});
   let data={...prefs,archives:records};
@@ -33,8 +33,8 @@ async function makePage(existing=false){
  return p;
 }
 async function button(p,text,scope='body'){for(const e of await p.$$(scope+' button'))if(await e.evaluate((el,t)=>el.getClientRects().length&&el.textContent.trim()===t,text)){await e.click();return;}throw Error('Button missing '+text);}
-async function guide(p){await p.waitForSelector('.first-visit-guide');await p.waitForFunction(()=>document.querySelectorAll('.first-guide-lines path').length>0);}
-async function closeGuide(p){await p.click('.first-guide-close');await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));await delay(100);}
+async function guide(p){await p.waitForSelector('.first-visit-guide');await p.waitForFunction(()=>document.querySelector('.first-guide-highlight')?.offsetWidth>0);}
+async function closeGuide(p){await button(p,'건너뛰기','.first-guide-footer');await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));await delay(100);}
 async function navigate(p,text){await button(p,text,'.test-header nav');await delay(600);}
 async function shot(p,name){await p.evaluate(()=>document.fonts.ready);await p.screenshot({path:path.join(out,name+'.png')});}
 async function bounds(p){return p.evaluate(()=>[...document.querySelectorAll('.first-guide-label')].map(e=>{const r=e.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom};}));}
@@ -49,13 +49,13 @@ try{
  const p=await makePage();await p.goto(base,{waitUntil:'networkidle2'});await p.waitForSelector('[aria-label="홈 화면에 앱 설치 안내"]');
  assert.equal(await p.$('.first-visit-guide'),null,'installation remains first');
  await p.click('[aria-label="설치 안내 끄기"]');await p.waitForFunction(()=>!document.querySelector('.pwa-top-popup'));await guide(p);
- assert.equal(await p.$$eval('.first-guide-lines path',els=>els.length),6);assert.equal(await p.$$eval('.first-guide-lines text',els=>els.length),0);
+ assert.equal(await p.$$eval('.first-guide-highlight',els=>els.length),1);assert.equal(await p.$('svg.first-guide-lines'),null);
  assert.equal(await p.$eval('.test-shell',e=>e.inert),true);await shot(p,'first-log-guide');
- await p.mouse.click(5,400);await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));
+ await p.mouse.click(5,400);await p.waitForFunction(()=>document.querySelector('.first-guide-label')?.textContent.includes('2 / 6'));assert.ok(await p.$('.first-visit-guide'));for(let i=0;i<5;i++){await p.mouse.click(5,400);await delay(50);}await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));
  assert.equal(await p.$eval('input[name=title]',e=>e.value),'');assert.equal(await p.$eval('.test-shell',e=>e.inert),false);
- await p.reload({waitUntil:'networkidle2'});await delay(700);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time guide waits for installation, has real leaders, one tap dismisses without click-through and survives reload');
+ await p.reload({waitUntil:'networkidle2'});await delay(700);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time guide waits for installation, uses a real target highlight, each tap advances and the final tap dismisses without click-through and survives reload');
 
- await navigate(p,'로그북');await guide(p);await shot(p,'logbook-menu-guide');await button(p,'찾기 · 정리','.first-guide-footer');await delay(80);await shot(p,'logbook-search-guide');await closeGuide(p);
+ await navigate(p,'로그북');await guide(p);await shot(p,'logbook-menu-guide');for(let i=0;i<4;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'logbook-search-guide');await closeGuide(p);
  await p.click('.logbook-row');await guide(p);await shot(p,'card-guide');assert.equal(await p.$('.record-nophoto-tabs'),null);await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));pass('logbook and card guides, optional guide sections and keyboard dismissal');
  const rail=await p.$('.record-preset-rail'),r=await rail.boundingBox(),before=await rail.evaluate(e=>({scroll:e.scrollLeft,selected:e.querySelector('[aria-pressed=true] strong').textContent}));
  await p.mouse.move(r.x+r.width-18,r.y+r.height/2);await p.mouse.down();await p.mouse.move(r.x+35,r.y+r.height/2,{steps:12});await p.mouse.up();await delay(650);
@@ -66,18 +66,18 @@ try{
  await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await delay(700);assert.ok(await rail.evaluate(e=>e.scrollLeft>60));assert.ok(await p.$('.record-card'));await client.send('Emulation.setTouchEmulationEnabled',{enabled:false});await client.detach();pass('native touch swipe scrolls the preset list without starting page navigation');
  await p.$eval('.record-preset-rail',e=>{e.scrollLeft=0;});await delay(200);await p.click('.record-preset-chip:nth-child(2)');
  await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');
- await p.waitForFunction(()=>window.__shares.length>=1);const mapped=await p.evaluate(()=>window.__shares.at(-1));assert.deepEqual(mapped.keys,['files','text']);assert.equal(mapped.text,records[0].link);assert.equal(mapped.files,1);assert.equal(mapped.width,mapped.height,'export must use the new square preset, never the outgoing portrait card');
+ await p.waitForFunction(()=>window.__shares.length>=1);const mapped=await p.evaluate(()=>window.__shares.at(-1));assert.deepEqual(mapped.keys,['files','text']);assert.equal(mapped.text,records[0].link);assert.equal(mapped.files,1);assert.ok(mapped.width<=1080&&mapped.bytes<=500*1024);assert.equal(mapped.type,'image/jpeg');assert.equal(mapped.width,mapped.height,'export must use the new square preset, never the outgoing portrait card');
  await navigate(p,'로그북');await p.$$eval('.logbook-row',els=>els[1].click());await delay(600);await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');
  await p.waitForFunction(()=>window.__shares.length>=2);const imageOnly=await p.evaluate(()=>window.__shares.at(-1));assert.deepEqual(imageOnly.keys,['files']);assert.equal(imageOnly.files,1);pass('actual native-share invocation: Google-linked card adds only map URL, unlinked card has only the image; export uses current preset');
 
- await navigate(p,'스튜디오');await guide(p);await shot(p,'studio-library-guide');await button(p,'편집 · 저장','.first-guide-footer');await delay(80);await shot(p,'studio-controls-guide');await closeGuide(p);
+ await navigate(p,'스튜디오');await guide(p);await shot(p,'studio-library-guide');for(let i=0;i<5;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'studio-controls-guide');await closeGuide(p);
  assert.equal(await p.$eval('.preset-library-heading h2',e=>e.textContent),'프리셋 목록');assert.equal(await p.$eval('.preset-name-field label',e=>getComputedStyle(e).display),'block');
  assert.ok((await p.$eval('.preset-preview',e=>e.textContent)).includes('오후의 한 잔'));
  await p.waitForFunction(()=>[...document.querySelectorAll('.preset-preview img')].some(e=>e.complete&&e.naturalWidth>0));
  await shot(p,'studio-photo');
  await p.click('button[aria-label="글 예시"]');await delay(650);assert.ok((await p.$eval('.preset-preview',e=>e.textContent)).includes('천천히 걸은 저녁'));assert.equal(await p.$$eval('.preset-preview .fit-card-artwork img',els=>els.length),0);await shot(p,'studio-text');
  await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),4);await p.click('button[aria-label="추가 정보 닫기"]');
- await p.click('button[aria-label="사진 예시"]');await delay(600);await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),7);await button(p,'RECEIPT비스트로 감열 영수증','.preset-layout-picker');await delay(650);await shot(p,'studio-receipt');pass('separate preset library and visible name, coherent fictional photo/text samples, strict 7/4 layout modes');
+ await p.click('button[aria-label="사진 예시"]');await delay(600);await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),6);await button(p,'RECEIPT비스트로 감열 영수증','.preset-layout-picker');await delay(650);await shot(p,'studio-receipt');pass('separate preset library and visible name, coherent fictional photo/text samples, six normal photo designs, four text designs and a separate group-only LIST');
 
  await button(p,'색상','.preset-tabs');await p.click('.preset-current');await p.waitForSelector('.preset-palette-picker');
  for(const id of ['oat','mist','rose','lilac']){assert.ok((await p.$eval('.preset-palette-picker',e=>e.textContent)).includes(INITIAL_SKINS[id].name));assert.ok(skinContrast(INITIAL_SKINS[id].text,INITIAL_SKINS[id].bg)>=4.5);}
@@ -98,7 +98,7 @@ try{
  pass('Studio and main composer fit 320×568 / 390×844 / 768×1024 / 1280×800; composer width follows header');
  pass('first preset selection/focus ring remains fully visible at the rail boundary on phone, tablet and desktop');
 
- await p.setViewport({width:390,height:844});await p.click('.test-settings-button');await guide(p);await shot(p,'settings-account-guide');await button(p,'설치 · 백업','.first-guide-footer');await delay(150);await shot(p,'settings-data-guide');await closeGuide(p);await p.click('button[aria-label="추가 정보 닫기"]');
+ await p.setViewport({width:390,height:844});await p.click('.test-settings-button');await guide(p);await shot(p,'settings-account-guide');for(let i=0;i<3;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(150);await shot(p,'settings-data-guide');await closeGuide(p);await p.click('button[aria-label="추가 정보 닫기"]');
  await p.click('.test-settings-button');await delay(600);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time settings guide and once-only behavior');
  const existing=await makePage(true);await existing.goto(base,{waitUntil:'networkidle2'});const banner=await existing.$('[aria-label="설치 안내 끄기"]');if(banner)await banner.click();await delay(800);assert.equal(await existing.$('.first-visit-guide'),null);await existing.click('.test-settings-button');await delay(600);assert.equal(await existing.$('.first-visit-guide'),null);await button(existing,'사용 가이드 다시 보기','.modern-settings');await guide(existing);pass('existing installations are not interrupted; explicit Settings replay starts guidance');
  for(const [width,height] of [[320,568],[768,1024],[1280,800]]){await existing.setViewport({width,height});await delay(120);for(const b of await bounds(existing))assert.ok(b.left>=0&&b.top>=0&&b.right<=width+1&&b.bottom<=height+1);}

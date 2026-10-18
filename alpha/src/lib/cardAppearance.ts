@@ -4,7 +4,7 @@ import { CARD_LAYOUTS, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { normalizeSkinTheme } from '@/lib/skinValidation';
 import { fallbackSkinId } from '@/lib/skinLibrary';
 
-const elementKeys = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations'] as const;
+const elementKeys = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations', 'showNumber'] as const;
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const label = (value: string, maximum = 64) => value.replace(/[\u0000-\u001f]/g, '').slice(0, maximum);
 
@@ -19,8 +19,8 @@ export function normalizePresetSlot(value: unknown): PresetSlot | undefined {
 }
 
 export function normalizeDefaultPresetId(value: unknown, slots: readonly PresetSlot[] = PRESET_SLOTS): string {
-  if (typeof value === 'string' && slots.some(slot => slot.id === value)) return value;
-  return slots.find(slot => slot.id === PRESET_SLOTS[0].id)?.id || slots[0]?.id || PRESET_SLOTS[0].id;
+  if (typeof value === 'string' && slots.some(slot => slot.id === value && slot.layout !== 'curation')) return value;
+  return slots.find(slot => slot.id === PRESET_SLOTS[0].id && slot.layout !== 'curation')?.id || slots.find(slot => slot.layout !== 'curation')?.id || PRESET_SLOTS[0].id;
 }
 
 export function cloneCardAppearance(appearance: CardAppearance): CardAppearance {

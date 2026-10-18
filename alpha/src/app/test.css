@@ -70,7 +70,7 @@ html, body { overflow-x: clip; }
 .test-swipe-viewport{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
 .test-outgoing-host{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
 .test-outgoing-host>.test-main{width:100%;height:100%}
-.test-swipe-viewport>.test-main{position:relative;z-index:2;will-change:transform}
+.test-swipe-viewport>.test-main{position:relative;z-index:2}
 .is-composing .test-main{display:flex;flex-direction:column;flex:1;padding:12px 0 0}
 .is-composing .quick-composer{display:flex;flex-direction:column;flex:1;width:100%}
 .test-header nav button{font-size:17px;font-weight:800;letter-spacing:-.035em}

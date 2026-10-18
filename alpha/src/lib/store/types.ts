@@ -27,6 +27,7 @@ export interface L2Store {
   /** Inserts or updates. Updates are silently ignored if the id belongs to someone else. */
   saveArchive(ownerId: string, item: ArchiveItem): Promise<ArchiveItem | null>;
   deleteArchive(ownerId: string, id: string): Promise<void>;
+  deleteAllArchives(ownerId: string): Promise<void>;
   /** Public read for share pages — no ownership check. */
   getPublicArchive(
     id: string

@@ -1,8 +1,8 @@
 # ProjectL3 테스트 버전 · 요청별 적용 내역
 
-2026-10-17 · 적용 위치 `C:/Users/User/Desktop/ProjectL3/.test-version` · 실행 주소 http://localhost:3013
+초기 작성 2026-10-17 · 현재 적용 위치 `C:/Users/User/Desktop/ProjectL3/alpha` · 운영 https://project-l3-nine.vercel.app/
 
-원본 소스·원본 저장소는 유지합니다. 아래 내용은 테스트 버전에 적용한 동작이며, Google 장소 검색 키 설정에 관한 항목만 별도 확인이 필요합니다.
+초기 테스트 작업은 현재 운영 앱에 통합되었습니다. 아래는 최초 1–8번 및 후속 요구 기록입니다. 2026-10-18 개발 지시서의 최신 적용 내역·검증·제한은 `UX_UPGRADE_REPORT.md`를 함께 확인하세요.
 
 ## 처음 1~8번 요청
 

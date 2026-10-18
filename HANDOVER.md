@@ -1,9 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
 ## 2026-10-18 update
+- Latest UX/image/data follow-up is documented in `alpha/DOCS/UX_UPGRADE_REPORT.md`: target-highlight step guides, per-in-app install handoff, one-photo WebP compression (1080px / quality .8 / ≤300KiB), 1080px / ≤500KiB JPEG card export, album/camera/TMDB picker, responsive logbook/search/swipe behavior, group-only LIST, Studio number toggle, account-only AI usage, client ZIP backup and confirmed owner-only reset. Reset tests used isolated local/mocked data only. Keep reset draining in-flight sync and clearing owner outbox/cache.
+- Additional four card designs are proposals, not four new engine layouts. Compare `alpha/DOCS/card-design-concepts.html`. Official UI UX Pro Max is installed locally at `C:/Users/User/.codex/skills/ui-ux-pro-max`; see `CARD_DESIGN_PROPOSALS.md` for provenance.
 - Stability/security follow-up `524cd51` is deployed and verified; see `alpha/DOCS/STABILITY_REVIEW.md`. With user approval, a server-only Supabase Secret key was registered as `SUPABASE_SERVICE_ROLE_KEY` in Vercel Production/Preview, then `alpha/supabase/security-hardening.sql` was applied. Anonymous access to all three L3 tables and the usage RPC now returns 401; server access and live CRUD/photo/undo/cross-device login checks pass. Only newly created QA fixtures were used and cleaned up. Keep these DB restrictions in future schema updates.
 - Follow-up includes signed session cookies (one-time reconnection with local diary preservation), salted password migration, account isolation, complete archive pagination, strict persistence errors, atomic AI allowance reservation, and the first-preset ring clipping fix.
-- First-visit guidance uses live leader lines, once per screen/browser for new installations; Settings can replay it. Existing cached installations are not interrupted.
+- First-visit guidance uses measured translucent target highlights and advances on tap until the last step; Settings can replay it. Existing cached installations are not interrupted.
 - Studio separates its preset library and name field, includes coherent fictional photo/text samples and four soft bundled palettes. Palette deletion persists as `SkinTheme.hidden` without changing saved card snapshots.
 - Card details select presets only; both preset rails support native horizontal scrolling and mouse dragging. Composer width follows the header.
 - Native card sharing sends an image plus a real Google Maps URL when linked, otherwise the image only. Log memo text is excluded. Export targets the active artwork, not an outgoing slide.
@@ -22,7 +24,7 @@
 - `src/app/page.tsx`: Main 3-tab (`+ 로그` / `로그북` / `스튜디오`) + `card` view orchestrator, 60fps physical swipe navigation, and `pendingAppearance` state for unsaved card preset previews.
 - `src/app/test.css` & `src/app/workflow.css`: Layout shell, standalone PWA safe-area clearance (`data-standalone="true"`), mobile keyboard viewport lock (`html[data-keyboard="open"]` with `--vvh`), and modern settings dialog styles.
 - `src/components/QuickLogComposer.tsx` & `QuickLogComposer.css`:
-  - Client-side photo compression (`preparePhoto`: max `900px`, JPEG `0.74`).
+  - Client-side photo compression (`imageCompression.ts`: max width `1080px`, WebP `0.8`, ≤300KiB, WASM fallback when native encoding is unavailable).
   - Translucent frosted-glass action pills (`사진` / `장소` / `세부 설정`) placed inside the bottom of `.quick-input-surface`.
   - Clean white modern `로그 저장` button (`.quick-save-button`).
   - Mobile keyboard handling via `window.visualViewport` (`--vvh`) and `window.scrollTo(0, 0)` so the top header and title never get pushed off-screen.

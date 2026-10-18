@@ -1,11 +1,12 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, Download, Copy, MapPin, Smartphone, HelpCircle, ChevronDown, UserCheck, LogOut, RefreshCw } from 'lucide-react';
+import { Trash2, Upload, Download, Copy, MapPin, Smartphone, HelpCircle, ChevronDown, UserCheck, LogOut, RefreshCw } from 'lucide-react';
 import AccessibleDialog from './AccessibleDialog';
 import type { ArchiveItem, PlaceInboxItem } from '@/types/l2';
 import type { MotionPreference } from '@/lib/motion';
 import { buildGoogleMapsCsv, buildNotionMarkdown, parseGoogleTakeoutPlaces } from '@/lib/googleMapsParser';
+import { exportLogbookZip, type BackupProgress } from '@/lib/logBackup';
 import type { PwaState } from './PwaInstallControl';
 
 interface Props {
@@ -33,6 +34,7 @@ interface Props {
   pwa?: PwaState;
   username?: string | null;
   onReplayGuide?: () => void;
+  onResetLogs: () => Promise<void>;
 }
 
 export default function SettingsDialog(p: Props) {
@@ -42,6 +44,9 @@ export default function SettingsDialog(p: Props) {
   const [authBusy, setAuthBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [progress,setProgress] = useState<BackupProgress|null>(null);
+  const exportLock = useRef(false);
+  const [resetOpen,setResetOpen] = useState(false),[resetBusy,setResetBusy] = useState(false),[resetWord,setResetWord] = useState(''),[resetError,setResetError] = useState('');
   const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [haptics, setHaptics] = useState(() => {
@@ -118,8 +123,22 @@ export default function SettingsDialog(p: Props) {
     try { localStorage.setItem('l2_test_haptics', next ? 'on' : 'off'); } catch {}
   };
 
-  return (
-    <AccessibleDialog open={p.open} onClose={p.onClose} title="설정">
+  const exportZip = async () => {
+    if(exportLock.current)return;
+    exportLock.current=true;setMessage('');setProgress({percent:0,label:'백업 준비 중'});
+    try { const result=await exportLogbookZip(p.archives||[],setProgress);setMessage(result.missing?`ZIP을 내려받았어요. 사진 ${result.missing}장은 연결 문제로 원본 URL만 보관했습니다.`:'로그와 사진을 ZIP으로 내려받았어요.'); }
+    catch(error){setMessage(error instanceof Error?error.message:'백업하지 못했어요. 다시 시도해 주세요.');}
+    finally{setProgress(null);exportLock.current=false;}
+  };
+  const resetLogs = async () => {
+    if(resetBusy||resetWord!=='초기화')return;
+    setResetBusy(true);setResetError('');
+    try{await p.onResetLogs();setResetOpen(false);setResetWord('');setMessage('모든 로그를 초기화했어요.');}
+    catch(error){setResetError(error instanceof Error?error.message:'초기화하지 못했어요.');}
+    finally{setResetBusy(false);}
+  };
+  return (<>
+    <AccessibleDialog open={p.open} onClose={()=>{if(!progress&&!resetBusy)p.onClose();}} title="설정">
       <div className="modern-settings">
         {/* 1. 계정 & 클라우드 동기화 카드 */}
         <section className="settings-card">
@@ -132,6 +151,7 @@ export default function SettingsDialog(p: Props) {
             </button>
           </div>
 
+          {p.username&&<div className="settings-ai-usage"><span>오늘 AI 팔레트</span><strong>{p.aiUsage.used} / {p.aiUsage.limit}회</strong><progress max={p.aiUsage.limit} value={Math.min(p.aiUsage.used,p.aiUsage.limit)} aria-label="오늘 AI 사용량"/></div>}
           {p.storageError && <p className="settings-alert">{p.storageError}</p>}
 
           {p.username ? (
@@ -322,7 +342,7 @@ export default function SettingsDialog(p: Props) {
           >
             <div>
               <span className="settings-section-title" style={{ marginBottom: 0 }}>데이터 백업 · 구글 지도 연동</span>
-              <p className="settings-hint" style={{ marginTop: 2 }}>JSON/CSV 내보내기, 구글 지도 장소 가져오기, 복원 코드</p>
+              <p className="settings-hint" style={{ marginTop: 2 }}>로그·사진 ZIP 백업, 구글 지도 장소 가져오기, 복원 코드</p>
             </div>
             <ChevronDown size={18} className={`settings-chevron ${dataOpen ? 'is-open' : ''}`} />
           </button>
@@ -352,6 +372,7 @@ export default function SettingsDialog(p: Props) {
                   }
                 }}
               />
+              <button type="button" className="settings-primary-btn settings-zip-button" disabled={Boolean(progress)||!p.archives?.length} onClick={()=>void exportZip()}><Download size={17}/><span>로그 · 사진 ZIP 내보내기</span></button>
               <div className="settings-data-grid">
                 <button type="button" className="settings-secondary-btn" onClick={() => fileRef.current?.click()}>
                   <Upload size={14} />
@@ -388,6 +409,7 @@ export default function SettingsDialog(p: Props) {
                 </button>
               </div>
 
+              <button type="button" className="settings-reset-button" disabled={!p.archives?.length} onClick={()=>{setResetWord('');setResetError('');setResetOpen(true);}}><Trash2 size={16}/>모든 로그 초기화</button>
               <div className="settings-recovery-box">
                 <div className="settings-recovery-code-row">
                   <span className="settings-hint">복원 코드: <code>{p.recoveryCode || '연결 중'}</code></span>
@@ -421,8 +443,12 @@ export default function SettingsDialog(p: Props) {
 
         {p.onReplayGuide&&<button type="button" className="settings-secondary-btn" onClick={p.onReplayGuide}><HelpCircle size={14}/><span>사용 가이드 다시 보기</span></button>}
         {message && <p role="status" className="settings-toast-msg">{message}</p>}
-        <p className="settings-footer-meta">L2 Alpha · 오늘 AI 요약/팔레트 사용량 {p.aiUsage.used}/{p.aiUsage.limit}</p>
+        <p className="settings-footer-meta">Made by Team L2 · v1.0.0 alpha</p>
       </div>
     </AccessibleDialog>
-  );
+    <AccessibleDialog open={resetOpen} onClose={()=>{if(!resetBusy)setResetOpen(false);}} title="모든 로그를 지울까요?" description="로그와 그룹이 서버 및 이 기기에서 삭제되며 되돌릴 수 없어요. 계정과 프리셋은 유지됩니다. 먼저 ZIP 백업을 권장해요.">
+      <form className="settings-reset-form" onSubmit={event=>{event.preventDefault();void resetLogs();}}><label htmlFor="reset-confirmation">확인하려면 ‘초기화’를 입력해 주세요.</label><input id="reset-confirmation" value={resetWord} onChange={event=>setResetWord(event.target.value)} autoComplete="off" disabled={resetBusy}/>{resetError&&<p role="alert">{resetError}</p>}<button type="submit" className="settings-reset-button" disabled={resetBusy||resetWord!=='초기화'}>{resetBusy?'삭제 중…':'모든 로그 영구 삭제'}</button></form>
+    </AccessibleDialog>
+    <AccessibleDialog open={Boolean(progress)} onClose={()=>{}} title="로그북 백업 중" description="사진을 모으고 이 기기에서 ZIP으로 압축하고 있어요."><div className="backup-progress" role="status" aria-live="polite"><strong>{progress?.percent||0}<small>%</small></strong><progress max={100} value={progress?.percent||0} aria-label="ZIP 내보내기 진행률"/><p>{progress?.label}</p></div></AccessibleDialog>
+  </>);
 }

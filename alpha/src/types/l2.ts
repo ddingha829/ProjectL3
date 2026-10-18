@@ -70,6 +70,7 @@ export interface PresetSlot {
   showSignature?: boolean;
   showGrain?: boolean;
   showDecorations?: boolean;
+  showNumber?: boolean;
 }
 
 export interface SkinTheme {

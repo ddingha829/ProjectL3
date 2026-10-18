@@ -300,6 +300,15 @@ export const supabaseStore: L2Store = {
     }
   },
 
+  async deleteAllArchives(ownerId) {
+    try {
+      must(await db().from('l2_archives').delete().eq('owner_id', ownerId));
+    } catch (err) {
+      if (isSchemaMissingError(err)) return fileStore.deleteAllArchives(ownerId);
+      throw err;
+    }
+  },
+
   async getPublicArchive(id) {
     try {
       const row = must(

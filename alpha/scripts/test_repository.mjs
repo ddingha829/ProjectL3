@@ -49,13 +49,16 @@ const waitFor = async (check, label) => {
 };
 function server() {
   const rows = new Map();
+  const calls = [];
   let offline = false;
   let rejectSave = false;
   let loseResponse = false;
   let gate = null;
   const transport = async (url, init = {}) => {
+    calls.push({ url, method: init.method });
     if (offline) throw new Error('offline');
     if (url === '/api/session') return Response.json({ deviceId: 'test-owner', authorName: 'TEST' });
+    if (url === '/api/logs/reset' && init.method === 'DELETE') { assert.equal(JSON.parse(init.body).expectedDeviceId, 'test-owner'); rows.clear(); return Response.json({ archives: [], deviceId: 'test-owner' }); }
     if (init.method === 'DELETE') rows.delete(new URL(url, 'http://local').searchParams.get('id'));
     else if (init.method === 'POST' || init.method === 'PATCH') {
       if (gate) await gate;
@@ -67,7 +70,7 @@ function server() {
     return Response.json({ archives: [...rows.values()] });
   };
   return {
-    rows, transport,
+    rows, calls, transport,
     offline: value => { offline = value; }, rejectSave: value => { rejectSave = value; },
     loseNextResponse: () => { loseResponse = true; }, hold: value => { gate = value; },
   };
@@ -208,8 +211,8 @@ syncedPresetRestart.start();
 syncedPresetRestart.applySnapshot({ ...initialPresetPreferences(), deviceId: 'owner-a', fromCache: true });
 assert.equal(syncedPresetRestart.getView().defaultPresetId, '03', 'stale archive cache cannot overwrite already-synced local preferences');
 assert.equal(syncedPresetRestart.getView().pending, false);
-syncedPresetRestart.applySnapshot({ ...remotePreferences.get('owner-a'), defaultPresetId: '04', deviceId: 'owner-a' });
-assert.equal(syncedPresetRestart.getView().defaultPresetId, '04', 'fresh confirmed server preferences still apply');
+syncedPresetRestart.applySnapshot({ ...remotePreferences.get('owner-a'), defaultPresetId: '05', deviceId: 'owner-a' });
+assert.equal(syncedPresetRestart.getView().defaultPresetId, '05', 'fresh confirmed server preferences still apply');
 preferenceOffline = true;
 syncedPresetRestart.update({ defaultPresetId: '02' });
 await syncedPresetRestart.retrySync();
@@ -552,4 +555,22 @@ try {
   assert.deepEqual(restoredStyleData.archives.find(item => item.id === styledSaved.id).cardAppearance, frozenAppearance);
   console.log('PASS default preset API/session/restore persistence, legacy fallback, immutable record style on disk and content edits');
 } finally { process.chdir(oldDirectory); }
+const resetNetwork = server(), resetStorage = new DurableMemory(), resetRepository = new LocalArchiveRepository(resetStorage, resetNetwork.transport);
+await resetRepository.start();
+let releaseResetWrite;
+resetNetwork.hold(new Promise(resolve => { releaseResetWrite = resolve; }));
+await resetRepository.save(createItem('초기화와 동시에 저장 중인 로그'));
+await waitFor(() => resetNetwork.calls.some(call => call.method === 'POST'), 'write dispatched');
+const resetTask = resetRepository.resetAllLogs();
+await new Promise(resolve => setTimeout(resolve, 10));
+assert.equal(resetNetwork.calls.some(call => call.url === '/api/logs/reset'), false, 'wait for dispatched write before reset');
+await assert.rejects(() => resetRepository.save(createItem('초기화 중 저장 차단')), /초기화 중/);
+releaseResetWrite(); await resetTask;
+assert.equal(resetNetwork.rows.size, 0); assert.equal(resetRepository.getView().archives.length, 0); assert.equal(resetRepository.getView().pendingCount, 0);
+const resetRestart = new LocalArchiveRepository(resetStorage, resetNetwork.transport); await resetRestart.start();
+assert.equal(resetRestart.getView().archives.length, 0, 'restart cannot restore deleted outbox');
+resetNetwork.hold(null); await resetRestart.save(createItem('네트워크 실패 시 유지'));
+await waitFor(() => resetRestart.getView().pendingCount === 0, 'fixture synced');
+resetNetwork.offline(true); await assert.rejects(() => resetRestart.resetAllLogs()); assert.equal(resetRestart.getView().archives.length, 1);
+console.log('PASS reset drains in-flight writes, blocks new writes, clears owner cache/outbox, and preserves data on network failure');
 console.log('All repository/backend tests passed.');

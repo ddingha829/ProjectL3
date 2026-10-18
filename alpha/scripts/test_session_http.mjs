@@ -58,6 +58,14 @@ assert.equal((await request('/api/ai/extract', restored.cookie, 'POST', { quote:
 assert.equal((await request('/api/ai/skin', restored.cookie, 'POST', { prompt: [] })).response.status, 400);
 assert.equal((await request('/api/places/search?q='+'x'.repeat(301), restored.cookie)).response.status, 400);
 pass('AI local fallback and malformed/oversized input guards return predictable responses without paid calls');
+const resetBody = { expectedDeviceId: restored.data.deviceId, confirmation: 'DELETE_ALL_LOGS' };
+assert.equal((await request('/api/logs/reset', restored.cookie, 'DELETE', { expectedDeviceId: restored.data.deviceId })).response.status, 400);
+assert.equal((await request('/api/logs/reset', loginB.cookie, 'DELETE', resetBody)).response.status, 409);
+assert.equal((await request('/api/logs/reset', restored.cookie, 'DELETE', resetBody)).response.status, 200);
+assert.equal((await request('/api/logs', restored.cookie)).data.archives.length, 0);
+assert((await request('/api/logs', loginB.cookie)).data.archives.some(row => row.id === bItem.id));
+assert.equal((await request('/api/session', restored.cookie)).data.username, `qa-a-${suffix}`);
+pass('confirmed reset deletes only the signed owner’s logs, preserves account and leaves the other owner untouched');
 await request(`/api/logs?id=${item.id}`, restored.cookie, 'DELETE');
 await request(`/api/logs?id=${bItem.id}`, loginB.cookie, 'DELETE');
 console.log('All local HTTP checks passed. Run only with L2_TEST_ALLOW_EXTERNAL=false and an isolated L2_DATA_DIRECTORY.');

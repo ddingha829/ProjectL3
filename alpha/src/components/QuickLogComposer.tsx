@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Camera, MapPin, SlidersHorizontal, Utensils, Clapperboard, Shapes, Sparkles, Inbox, Star } from 'lucide-react';
+import { Camera, MapPin, SlidersHorizontal, Utensils, Clapperboard, Shapes, Inbox, Star } from 'lucide-react';
 import type { ArchiveCategory, ArchiveItem, MapApiPlace, PlaceInboxItem } from '@/types/l2';
 import { ARCHIVE_CATEGORIES, getArchiveCategory } from '@/lib/archiveCategories';
 import { useLogDraft } from '@/hooks/useLogDraft';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import PhotoMemoCanvas from '@/components/PhotoMemoCanvas';
 import SaveFeedback from '@/components/SaveFeedback';
+import PhotoPickerDialog from './PhotoPickerDialog';
+import { compressUploadedImage as preparePhoto } from '@/lib/imageUtils';
 import { allowsMotion } from '@/lib/motion';
 import './QuickLogComposer.css';
 
@@ -34,7 +36,6 @@ interface QuickLogComposerProps {
   onCancelEdit: () => void;
   isReady: boolean;
   recordCount: number;
-  onSuggest?: (draft: LogDraft) => Promise<SuggestedSummary>;
   inboxPlaces?: PlaceInboxItem[];
   onRemoveInboxPlace?: (id: string) => void;
   autoPlaceLinkOn?: boolean;
@@ -89,39 +90,11 @@ function isPlace(value: unknown): value is MapApiPlace {
     typeof place.y === 'number' && Number.isFinite(place.y);
 }
 
-async function preparePhoto(file: File): Promise<string> {
-  if (!file.type.startsWith('image/')) throw new Error('사진 파일을 선택해 주세요.');
-  if (file.size > 15 * 1024 * 1024) throw new Error('15MB 이하의 사진을 선택해 주세요.');
-  const url = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    if (!image.naturalWidth || !image.naturalHeight) throw new Error('사진 크기를 확인하지 못했어요.');
-    const scale = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('사진을 준비하지 못했어요. 다시 선택해 주세요.');
-    context.fillStyle = '#f5f4f0';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.74);
-  } catch (error) {
-    if (error instanceof Error && /사진|15MB/.test(error.message)) throw error;
-    throw new Error('사진을 읽지 못했어요. JPG, PNG 또는 WebP 사진으로 다시 선택해 주세요.');
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
 export default function QuickLogComposer({
   editingItem,
   onSave,
   onCancelEdit,
   isReady,
-  onSuggest,
   inboxPlaces = [],
   onRemoveInboxPlace,
   autoPlaceLinkOn = true,
@@ -130,7 +103,7 @@ export default function QuickLogComposer({
   const storageKey = `l2:quick-log:v1:${editingItem?.id || 'new'}`;
   const { draft: storedDraft, setDraft, isRestored, restored, error: draftError, clearDraft } = useLogDraft(storageKey, initialDraft);
   const [manualCategory, setManualCategory] = useState(Boolean(editingItem));
-  const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | null>(null);
+  const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | 'photo' | null>(null);
   const [titleFocused, setTitleFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [placeResults, setPlaceResults] = useState<MapApiPlace[]>([]);
@@ -146,12 +119,8 @@ export default function QuickLogComposer({
   // Clear durable draft recovery immediately, but keep the just-saved text visible until navigation.
   const draft = saved && completedDraft.current ? completedDraft.current : storedDraft;
   const [cropOpen, setCropOpen] = useState(false);
-  const [suggestion, setSuggestion] = useState<SuggestedSummary | null>(null);
-  const [suggesting, setSuggesting] = useState(false);
-  const [suggestionError, setSuggestionError] = useState('');
-  const suggestionToken = useRef(0);
-  const suggestButtonRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const composerFocusedRef = useRef(false);
@@ -169,7 +138,6 @@ export default function QuickLogComposer({
     return () => {
       mountedRef.current = false;
       photoToken.current += 1;
-      suggestionToken.current += 1;
       if (timerRef.current) clearTimeout(timerRef.current);
       delete document.documentElement.dataset.keyboard;
     };
@@ -227,10 +195,6 @@ export default function QuickLogComposer({
     setSearchQuery('');
     setPlaceResults([]);
     setDialog(null);
-    suggestionToken.current += 1;
-    setSuggestion(null);
-    setSuggesting(false);
-    setSuggestionError('');
     // A sync update changes the item object, but must not reset an active editing session.
   }, [storageKey]);
 
@@ -360,29 +324,6 @@ export default function QuickLogComposer({
     else setDialog('category');
   };
 
-  const suggestSummary = async () => {
-    if (!onSuggest || suggesting || isSaving) return;
-    const token = ++suggestionToken.current;
-    setSuggesting(true);
-    setSuggestion(null);
-    setSuggestionError('');
-    try {
-      const result = await onSuggest({ ...draft });
-      if (!mountedRef.current || token !== suggestionToken.current) return;
-      const next = {
-        good: typeof result.good === 'string' ? result.good : '',
-        bad: typeof result.bad === 'string' ? result.bad : '',
-        note: typeof result.note === 'string' ? result.note : '',
-      };
-      if (!next.good && !next.bad && !next.note) throw new Error('제안할 내용이 없습니다.');
-      setSuggestion(next);
-    } catch (error) {
-      if (mountedRef.current && token === suggestionToken.current) setSuggestionError(error instanceof Error ? error.message : '요약 제안을 받지 못했습니다.');
-    } finally {
-      if (mountedRef.current && token === suggestionToken.current) setSuggesting(false);
-    }
-  };
-
   const disabled = isSaving || !isRestored;
   const meaningfulInput = Boolean(draft.body.trim() || draft.title.trim());
   const fieldClass = 'w-full rounded-2xl border border-[var(--line)] bg-[var(--bg)] px-4 py-3 text-base font-normal';
@@ -490,8 +431,9 @@ export default function QuickLogComposer({
             {draft.img && cropOpen && <div className="grid gap-3 rounded-2xl border border-[var(--line)] p-4 sm:grid-cols-2">{(['cropX', 'cropY'] as const).map((axis) => <label key={axis} className="text-xs font-medium text-[var(--muted)]">{axis === 'cropX' ? '가로 위치' : '세로 위치'}<input type="range" min="0" max="100" step="1" value={draft[axis]} disabled={disabled} onChange={(event) => update(axis, Number(event.target.value))} className="mt-2 block h-8 w-full" /></label>)}</div>}
 
             <div className="quick-actions" role="group" aria-label="기록 첨부">
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
-              <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; void uploadPhoto(file); }} />
+              <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
+              <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if(file)setDialog(null); void uploadPhoto(file); }} />
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if(file)setDialog(null); void uploadPhoto(file); }} />
               <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
               <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
             </div>
@@ -509,6 +451,12 @@ export default function QuickLogComposer({
         </div>
       </form>
 
+      <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} onAlbum={()=>fileRef.current?.click()} onCamera={()=>cameraRef.current?.click()} onMedia={item=>{
+        photoToken.current += 1;
+        const reference = `[TMDB 참고] ${item.title}${item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;
+        setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,category:'CINEMA',note:[current.note,reference].filter(Boolean).join('\n\n').slice(0,1000)}));
+        setManualCategory(true);setPhotoError('');setSaved(false);setDialog(null);
+      }}/>
       <AccessibleDialog open={dialog === 'category'} onClose={() => { if (!isSaving) setDialog(null); }} title="어떤 로그인가요?">
         <div className="quick-category-sheet" role="group" aria-label="로그 분류 선택" aria-busy={isSaving}>{ARCHIVE_CATEGORIES.map((category) => { const Icon = CATEGORY_ICONS[category.icon]; const selected = committingCategory === category.id; return <button type="button" key={category.id} data-save-state={selected && isSaving ? saved ? 'saved' : 'saving' : 'idle'} className={(isSaving ? selected : draft.category === category.id) ? 'suggested' : ''} disabled={isSaving} onClick={() => { setManualCategory(true); update('category', category.id); void commit(category.id); }}><Icon size={28} /><strong>{category.label}</strong>{selected && isSaving ? <small role="status"><SaveFeedback state={saved ? 'saved' : 'saving'} label={category.label} /></small> : !isSaving && draft.category === category.id ? <small>추천</small> : null}</button>; })}</div>
         {submitError && <p role="alert" className="test-inline-error">{submitError}</p>}
@@ -597,54 +545,6 @@ export default function QuickLogComposer({
             <input id={scoreId} type="range" min="0" max="5" step="0.5" value={draft.score ?? 0} aria-valuetext={draft.score === null ? '별점 없음. 방향키로 별점을 남기세요.' : `${draft.score.toFixed(1)}점`} onChange={(event) => update('score', Number(event.target.value))} className="block h-11 w-full" />
             <div className="flex justify-between text-xs text-[var(--muted)]"><span>0.0</span><span>2.5</span><span>5.0</span></div>
           </div>
-
-          {onSuggest && (
-            <section className="quick-suggestion" aria-label="요약 제안">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  ref={suggestButtonRef}
-                  type="button"
-                  disabled={suggesting || (!draft.title.trim() && !draft.body.trim())}
-                  aria-busy={suggesting}
-                  onClick={() => void suggestSummary()}
-                  className="quick-control quick-suggest-button"
-                >
-                  <Sparkles size={16} aria-hidden="true" />
-                  {suggesting ? '요약 만드는 중…' : 'AI 요약 제안 받기'}
-                </button>
-                {!draft.title.trim() && !draft.body.trim() && (
-                  <span className="text-xs text-[var(--muted)]">제목이나 메모 입력 후 사용 가능</span>
-                )}
-              </div>
-              {suggestionError && <p role="alert" className="mt-3 text-sm leading-relaxed text-[var(--accent)]">{suggestionError}</p>}
-              {suggestion && (
-                <div className="quick-suggestion-preview">
-                  <dl>
-                    {([{ key: 'good', label: '좋았던 점' }, { key: 'bad', label: '아쉬웠던 점' }, { key: 'note', label: '다음의 나에게' }] as const).map((field) =>
-                      suggestion[field.key] ? (
-                        <div key={field.key}>
-                          <dt>{field.label}</dt>
-                          <dd>{suggestion[field.key]}</dd>
-                        </div>
-                      ) : null
-                    )}
-                  </dl>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraft((current) => ({ ...current, good: suggestion.good, bad: suggestion.bad, note: suggestion.note }));
-                      setSaved(false);
-                      setSuggestion(null);
-                      requestAnimationFrame(() => suggestButtonRef.current?.focus({ preventScroll: true }));
-                    }}
-                    className="quick-control quick-suggest-apply"
-                  >
-                    적용
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
 
           <div className="space-y-4 border-t border-[var(--line)] pt-6">
             {([{ key: 'good', label: '좋았던 점', placeholder: '다시 떠올리고 싶은 디테일' }, { key: 'bad', label: '아쉬웠던 점', placeholder: '다음에는 달라졌으면 하는 것' }, { key: 'note', label: '다음의 나에게', placeholder: '다시 방문하거나 볼 때 참고할 메모' }] as const).map((field) => <div key={field.key}><label htmlFor={field.key === 'good' ? goodId : `${id}-${field.key}`} className="mb-2 block text-sm font-semibold">{field.label}</label><textarea id={field.key === 'good' ? goodId : `${id}-${field.key}`} rows={2} maxLength={1000} value={draft[field.key]} onChange={(event) => update(field.key, event.target.value)} placeholder={field.placeholder} className={`${fieldClass} resize-y`} /></div>)}

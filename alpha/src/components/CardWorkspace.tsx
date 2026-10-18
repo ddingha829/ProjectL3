@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
-import { INITIAL_SKINS } from '@/data/initialData';
+import { PRESET_SLOTS, INITIAL_SKINS } from '@/data/initialData';
 import { getCardLayout } from '@/lib/cardLayouts';
 import { isLogGroup } from '@/lib/logGroups';
 import CardStage from './CardStage';
@@ -43,9 +43,11 @@ export default function CardWorkspace(p: Props) {
   const shareReady = p.exportState === 'ready' && !p.applying;
   const allSkins = { ...INITIAL_SKINS, ...(p.skins || {}) };
 
+  const compatible = p.presets.filter(preset => isLogGroup(p.item) ? preset.layout === 'curation' : preset.layout !== 'curation');
+  const presets = compatible.length ? compatible : PRESET_SLOTS.filter(preset => isLogGroup(p.item) ? preset.layout === 'curation' : preset.layout !== 'curation');
   const activeIndex = Math.max(
     0,
-    p.presets.findIndex(
+    presets.findIndex(
       preset =>
         p.slot.id === preset.id &&
         p.slot.skinId === preset.skinId &&
@@ -63,11 +65,11 @@ export default function CardWorkspace(p: Props) {
   }, [p.slot.id, p.slot.skinId, p.slot.layout]);
 
   const selectPresetAt = (nextIdx: number, stepDir?: number) => {
-    if (!p.presets.length || p.applying) return;
-    const wrapped = (nextIdx + p.presets.length) % p.presets.length;
+    if (!presets.length || p.applying) return;
+    const wrapped = (nextIdx + presets.length) % presets.length;
     const dir = stepDir ?? (wrapped < activeIndex ? -1 : 1);
     setDirection(dir);
-    p.onApplyPreset(p.presets[wrapped]);
+    p.onApplyPreset(presets[wrapped]);
   };
 
   return (
@@ -114,7 +116,7 @@ export default function CardWorkspace(p: Props) {
         <div className="record-preset-bar-head">
           <div className="record-preset-title-group">
             <span>프리셋</span>
-            <small>{activeIndex + 1} / {p.presets.length}</small>
+            <small>{activeIndex + 1} / {presets.length}</small>
             {p.hasPendingChange && <em className="record-pending-badge">미저장</em>}
           </div>
 
@@ -123,7 +125,7 @@ export default function CardWorkspace(p: Props) {
               <button
                 type="button"
                 aria-label="이전 프리셋"
-                disabled={p.applying || p.presets.length <= 1}
+                disabled={p.applying || presets.length <= 1}
                 onClick={() => selectPresetAt(activeIndex - 1, -1)}
               >
                 <ChevronLeft size={16} />
@@ -131,7 +133,7 @@ export default function CardWorkspace(p: Props) {
               <button
                 type="button"
                 aria-label="다음 프리셋"
-                disabled={p.applying || p.presets.length <= 1}
+                disabled={p.applying || presets.length <= 1}
                 onClick={() => selectPresetAt(activeIndex + 1, 1)}
               >
                 <ChevronRight size={16} />
@@ -147,7 +149,7 @@ export default function CardWorkspace(p: Props) {
           role="group"
           aria-label="옆으로 스와이프하여 프리셋 선택"
         >
-          {p.presets.map((preset, index) => {
+          {presets.map((preset, index) => {
             const isSelected =
               p.slot.id === preset.id &&
               p.slot.skinId === preset.skinId &&

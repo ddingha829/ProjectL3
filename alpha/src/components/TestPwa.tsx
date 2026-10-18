@@ -46,7 +46,14 @@ export default function TestPwa() {
           import('./SettingsDialog'),
           import('./LogbookMap'),
           import('leaflet'),
+          import('jszip'),
         ]);
+        const probe = document.createElement('canvas'); probe.width = probe.height = 1;
+        if (!probe.toDataURL('image/webp').startsWith('data:image/webp')) {
+          // Warm only browsers needing the local codec; include its JS/WASM in offline caching.
+          const codec = await import('@jsquash/webp/encode');
+          await codec.init({ locateFile: (name: string) => `/codecs/${name}` });
+        }
         if (canceled) return;
         const urls = [
           ...new Set(
@@ -55,7 +62,7 @@ export default function TestPwa() {
               .map((entry) => entry.name)
               .filter((url) => {
                 const parsed = new URL(url);
-                return parsed.origin === location.origin && parsed.pathname.startsWith('/_next/static/');
+                return parsed.origin === location.origin && (parsed.pathname.startsWith('/_next/static/') || parsed.pathname.startsWith('/codecs/'));
               })
           ),
         ];

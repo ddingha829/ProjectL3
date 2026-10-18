@@ -158,6 +158,12 @@ export const fileStore: L2Store = {
     }
   },
 
+  async deleteAllArchives(ownerId) {
+    const db = load();
+    for (const [id, row] of Object.entries(db.archives)) if (row.ownerId === ownerId) delete db.archives[id];
+    persist(db);
+  },
+
   async getPublicArchive(id) {
     const db = load();
     const row = db.archives[id];

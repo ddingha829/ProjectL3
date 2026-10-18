@@ -1,7 +1,7 @@
 import type { ArchiveItem, CardLayoutType, PresetSlot } from '@/types/l2';
 
 export type CardRatio = PresetSlot['ratio'];
-export type CardElement = 'showScore' | 'showProsCons' | 'showLocation' | 'showSignature' | 'showGrain' | 'showDecorations';
+export type CardElement = 'showScore' | 'showProsCons' | 'showLocation' | 'showSignature' | 'showGrain' | 'showDecorations' | 'showNumber';
 
 export interface CardLayoutDefinition {
   id: CardLayoutType;
@@ -14,7 +14,7 @@ export interface CardLayoutDefinition {
 }
 
 const ratios: readonly CardRatio[] = ['3:4', '1:1', '9:16'];
-const elements: readonly CardElement[] = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations'];
+const elements: readonly CardElement[] = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations', 'showNumber'];
 const metadataElements = elements.filter((element) => element !== 'showProsCons');
 
 export const CARD_LAYOUTS: readonly CardLayoutDefinition[] = [
@@ -43,7 +43,7 @@ export function itemHasPhoto(item: Pick<ArchiveItem, 'hasPhoto' | 'img'>): boole
 export function resolveEffectiveSlot(item: Pick<ArchiveItem, 'hasPhoto' | 'img'> & Partial<Pick<ArchiveItem, 'cat'>>, preferred: PresetSlot): PresetSlot {
   const photo = itemHasPhoto(item);
   const preferredLayout = getCardLayout(preferred.layout);
-  const layout = !photo && !preferredLayout.isNoPhoto && !(item.cat === 'GROUP' && preferred.layout === 'curation') ? getCardLayout('broadside') : preferredLayout;
+  const layout = item.cat === 'GROUP' ? getCardLayout('curation') : preferred.layout === 'curation' ? getCardLayout(photo ? 'spec' : 'broadside') : !photo && !preferredLayout.isNoPhoto ? getCardLayout('broadside') : preferredLayout;
   return {
     ...preferred,
     layout: layout.id,

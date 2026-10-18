@@ -16,11 +16,15 @@
     "test:motion": "node scripts/test_motion.mjs",
     "test:motion-defaults": "node scripts/test_motion_defaults.mjs",
     "test:save-feedback": "node scripts/test_save_feedback.mjs",
-    "test:guides-studio": "node scripts/test_guides_studio.mjs"
+    "test:guides-studio": "node scripts/test_guides_studio.mjs",
+    "test:ux-upgrade": "node scripts/test_ux_upgrade.mjs",
+    "test:card-exports": "node scripts/test_card_exports.mjs"
   },
   "dependencies": {
+    "@jsquash/webp": "^1.5.0",
     "@supabase/supabase-js": "^2.118.0",
     "html-to-image": "^1.11.11",
+    "jszip": "^3.10.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.16.0",
     "next": "16.4.2",

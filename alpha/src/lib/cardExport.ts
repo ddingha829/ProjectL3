@@ -1,3 +1,4 @@
+import { compressCardBlob } from './imageCompression';
 import { toBlob } from 'html-to-image';
 
 interface CardExportOptions { filename?: string; pixelRatio?: number }
@@ -170,10 +171,11 @@ export function prepareCardExport(node: HTMLElement, options: CardExportOptions 
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const width = Number(node.dataset.cardWidth) || node.offsetWidth;
       const height = Number(node.dataset.cardHeight) || node.offsetHeight;
-      const blob = await withTimeout(toBlob(node, { width, height, pixelRatio: options.pixelRatio ?? 2, fontEmbedCSS, preferredFontFormat: 'woff2', cacheBust: false, style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' } }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
-      if (!blob || !blob.size) throw new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.');
+      const rendered = await withTimeout(toBlob(node, { width, height, pixelRatio: Math.min(1080 / width, options.pixelRatio ?? 1080 / width), fontEmbedCSS, preferredFontFormat: 'woff2', cacheBust: false, style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' } }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
+      if (!rendered || !rendered.size) throw new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.');
+      const blob = await compressCardBlob(rendered);
       const filename = (options.filename || 'L2_card.png').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_');
-      return { blob, file: new File([blob], filename.endsWith('.png') ? filename : `${filename}.png`, { type: 'image/png' }) };
+      return { blob, file: new File([blob], `${filename.replace(/\.(png|jpe?g|webp)$/i,'')}.jpg`, { type: blob.type }) };
     } catch (error) {
       throw new Error(error instanceof Error ? `카드 저장 실패: ${error.message}` : '카드를 저장하지 못했습니다. 다시 시도해 주세요.');
     } finally { animations.forEach((animation) => animation.play()); }
