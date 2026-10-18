@@ -40,6 +40,8 @@ export interface L2Store {
   bumpUsage(ownerId: string, kind: AiUsageKind): Promise<number>;
   getUsage(ownerId: string, kind: AiUsageKind): Promise<number>;
 
+  /** Only call with a Google identity verified by Supabase Auth on the server. */
+  loginWithGoogle?(identity: { id: string; label: string }, previousDeviceId?: string | null): Promise<{ accountId: string; username: string; isNewAccount: boolean }>;
   /** Returns the username if this deviceId belongs to a registered ID/Password account. */
   getAccountUsername?(deviceId: string): Promise<string | null>;
   /** Logs in or registers an ID/Password account and migrates any anonymous device logs. */

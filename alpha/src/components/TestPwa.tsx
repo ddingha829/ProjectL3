@@ -62,7 +62,7 @@ export default function TestPwa() {
               .map((entry) => entry.name)
               .filter((url) => {
                 const parsed = new URL(url);
-                return parsed.origin === location.origin && (parsed.pathname.startsWith('/_next/static/') || parsed.pathname.startsWith('/codecs/'));
+                return parsed.origin === location.origin && (parsed.pathname.startsWith('/_next/static/') || parsed.pathname.startsWith('/codecs/') || parsed.pathname.startsWith('/fonts/'));
               })
           ),
         ];

@@ -133,7 +133,8 @@ pass('late account-A save response cannot replace account-B records; pending A w
 const legacyStorage = new MemoryStorage();
 legacyStorage.data.set('current', { ownerId: owner, archives: [item], outbox: [], serverSnapshot: { deviceId: owner, username: 'previous-account', recoveryCode: 'L2-OLD2-CODE' } });
 let restoredOwner = false, firstSession = true, logRequests = 0;
-const legacyRepository = new LocalArchiveRepository(legacyStorage, async url => {
+const legacyRepository = new LocalArchiveRepository(legacyStorage, async (url, init = {}) => {
+  if (url === '/api/session' && init.method === 'POST') { assert.equal(JSON.parse(init.body).recoveryCode,'L2-OLD2-CODE'); restoredOwner = true; return Response.json({success:true}); }
   if (url === '/api/session') { const session = { deviceId: restoredOwner ? owner : other, username: restoredOwner ? 'previous-account' : null, isNewDevice: firstSession }; firstSession = false; return Response.json(session); }
   logRequests++; return Response.json({ deviceId: owner, archives: [item] });
 });
@@ -143,10 +144,18 @@ assert.equal(legacyRepository.getView().serverSnapshot.requiresReconnect, true);
 assert.equal(legacyRepository.getView().serverSnapshot.recoveryCode, 'L2-OLD2-CODE');
 assert.equal(legacyRepository.getView().serverSnapshot.username, null);
 await legacyRepository.retrySync(); assert.equal(logRequests, 0);
-restoredOwner = true; await legacyRepository.retrySync();
+await legacyRepository.prepareForLogin();
+assert.equal(restoredOwner,true);
 assert.equal(legacyRepository.getView().serverSnapshot.requiresReconnect, undefined);
 assert.equal(legacyRepository.getView().archives[0].id, item.id);
-pass('legacy cookie upgrade preserves local diary and recovery code until explicit reconnection, including repeated refresh');
+pass('legacy cookie upgrade preserves local diary and recovery code until explicit reconnection, including repeated refresh and recovery-proven pre-login reconnection');
+
+
+const emptyLegacyStorage = new MemoryStorage();
+emptyLegacyStorage.data.set('current',{ownerId:owner,archives:[],outbox:[],serverSnapshot:{deviceId:owner,requiresReconnect:true}});
+const emptyLegacyRepository=new LocalArchiveRepository(emptyLegacyStorage,async()=>Response.json({deviceId:other,isNewDevice:true,username:null}));
+await emptyLegacyRepository.start();await emptyLegacyRepository.prepareForLogin();
+pass('empty legacy cache can still log in; no record or ownership proof is silently discarded');
 
 let count = 19;
 const quotaStore = { ensureProfile: async () => ({}), getUsage: async () => count, bumpUsage: async () => ++count };

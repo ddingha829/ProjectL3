@@ -19,7 +19,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     { label: '메뉴', hints: [
       { text: '로그 추가', selector: '.test-header nav button:nth-child(1)' },
       { text: '올린 로그 리스트', selector: '.test-header nav button:nth-child(2)' },
-      { text: '로그 카드 디자인을\n설정하는 스튜디오', selector: '.test-header nav button:nth-child(3)' },
+      { text: '본인 스타일로\n카드를 디자인하는 곳', selector: '.test-header nav button:nth-child(3)' },
       { text: '설정', selector: '.test-settings-button' },
     ] },
     { label: '찾기 · 정리', hints: [
@@ -29,34 +29,32 @@ const guides: Record<GuideScreen, GuidePage[]> = {
       { text: '그룹 만들기', detail: '여러 로그를 골라 이름을 붙여 저장해요.', selector: '.logbook-group' },
     ] },
   ],
-  card: [{ label: '로그 카드', hints: [
-    { text: '로그로 저장되는\n카드 미리 보기', selector: '.record-card-stage .fit-card-artwork' },
-    { text: '카드 프리셋 디자인 선택', detail: '편집은 상단 스튜디오에서.\n왼쪽으로 스와이프해도 이동할 수 있어요.', selector: '.record-preset-controls' },
-    { text: '카드 내용\n수정', selector: '.record-card-actions button:nth-child(1)' },
-    { text: '카드\n저장', selector: '.record-card-actions button:nth-child(2)' },
-    { text: '카카오톡·SNS\n공유하기', selector: '.record-card-actions button:nth-child(3)' },
+  card: [{ label: '이 로그만 꾸미기', hints: [
+    { text: '이 로그의 카드 미리 보기', detail: '꾸민 디자인은 이 로그에만 적용돼요.', selector: '.record-card-stage .fit-card-artwork' },
+    { text: '프리셋을 골라 시작하기', detail: '보관함의 디자인을 골라 바로 적용해 보세요.', selector: '.record-preset-controls' },
+    { text: '이 로그만 더 꾸미기', detail: '디자인·색상·비율·표시 항목을 바꿔도\n원본 프리셋은 그대로예요.', selector: '.record-design-tools .preset-tabs' },
+    { text: '내용 수정', detail: '제목·메모·사진·장소를 수정해요.', selector: '.record-card-actions button:nth-child(1)' },
+    { text: '이 카드에 변경 저장', detail: '미리 본 디자인을 로그북에 저장해요.\n변경 취소를 누르면 저장 전 모양으로 돌아가요.', selector: '.record-card-actions button:nth-child(2)' },
+    { text: '공유 · 이미지 저장', detail: '완성한 카드 이미지와 연결한 지도 주소를 공유해요.', selector: '.record-card-actions button:nth-child(3)' },
   ] }],
   studio: [
-    { label: '프리셋 목록', hints: [
-      { text: '프리셋 목록', detail: '저장한 디자인을 고르거나 +로 추가해요.\n옆의 손잡이를 드래그하면 순서를 바꿔요.', selector: '.preset-library' },
-      { text: '프리셋 이름\n설정하기', selector: '#preset-name' },
-      { text: '사진용 카드', selector: '.preset-photo-mode button:nth-child(1)' },
-      { text: '텍스트용 카드', selector: '.preset-photo-mode button:nth-child(2)' },
-      { text: '프리셋 설정 미리 보기', detail: '디자인을 바꾸면 카드도 함께 바뀌어요.', selector: '.preset-preview .fit-card-artwork' },
+    { label: '다시 쓸 프리셋 만들기', hints: [
+      { text: '프리셋 미리 보기', detail: '여기서 저장하는 것은 재사용할 디자인이에요.\n이미 올린 로그의 카드는 바뀌지 않아요.', selector: '.preset-preview .fit-card-artwork' },
+      { text: '프리셋 보관함', detail: '눌러서 썸네일로 고르세요.\n보관함의 ‘정리’로 순서를 바꾸고\n‘새 프리셋’으로 이름을 정해 만들어요.', selector: '.preset-library' },
+      { text: '이름 정하기', detail: '나중에 찾기 쉬운 이름을 붙여주세요.', selector: '#preset-name' },
+      { text: '사진용 / 텍스트용', detail: '프리셋에 맞는 예시로 디자인해요.\n그룹용은 LIST로 고정돼요.', selector: '.preset-photo-mode' },
     ] },
     { label: '편집 · 저장', hints: [
-      { text: '카드 디자인을 만드는 곳', detail: '여기서 설정하고 저장한 프리셋을\n로그 카드에 적용할 수 있어요.' },
-      { text: '디자인 / 색상 / 세부사항', selector: '.preset-tabs' },
-      { text: '원하는 디자인과 색상 선택', detail: '화살표나 목록으로 고를 수 있어요.\n색상 조합은 단어·문장으로도 만들 수 있어요.', selector: '.preset-control-panel' },
-      { text: '카드 기본 프리셋으로', detail: '전체 또는 카테고리별로 기본 디자인을 지정해요.', selector: '.preset-default' },
-      { text: '프리셋 저장', detail: '설정한 이름으로 디자인을 저장해요.', selector: '.preset-save' },
+      { text: '디자인 / 색상 / 세부사항', detail: '화살표로 넘기거나 눌러서 고르세요.\n팔레트 만들기는 색상 목록에 있어요.', selector: '.preset-tabs' },
+      { text: '새 로그의 기본 디자인', detail: '전체 또는 분류별 기본 프리셋으로 지정해요.', selector: '.preset-default' },
+      { text: '프리셋 저장', detail: '저장한 디자인은 카드 상세의\n프리셋 보관함에서 고를 수 있어요.', selector: '.preset-save' },
     ] },
   ],
   settings: [
     { label: '계정 · 화면', hints: [
-      { text: '다른 기기에서도 이어 쓰기', detail: '아이디·비밀번호로 데이터를 연동해요.\nSNS 로그인은 추후 지원 예정이에요.', selector: '.modern-settings .settings-card:nth-child(1)' },
-      { text: '화면 · 프로필', detail: '테마와 카드에 표시할 닉네임·서명을 설정해요.', selector: '.modern-settings .settings-card:nth-child(2)' },
-      { text: '환경 설정', detail: '목록 표시, 장소 추천, 모션·진동 등\n앱 이용을 위한 세부 설정이에요.', selector: '.modern-settings .settings-card:nth-child(3)' },
+      { text: '다른 기기에서도 이어 쓰기', detail: '구글 또는 아이디·비밀번호로 연결해요.\n비회원으로 쓴 로그도 함께 이어집니다.', selector: '.modern-settings .settings-card:nth-of-type(1)' },
+      { text: '화면 · 프로필', detail: '테마와 카드에 표시할 닉네임·서명을 설정해요.', selector: '.modern-settings .settings-card:nth-of-type(2)' },
+      { text: '환경 설정', detail: '목록 표시, 장소 추천, 모션·진동 등\n앱 이용을 위한 세부 설정이에요.', selector: '.modern-settings .settings-card:nth-of-type(3)' },
     ] },
     { label: '설치 · 백업', hints: [
       { text: '홈 화면에 바로 설치', detail: '홈 화면에서 앱처럼 빠르게 열어보세요.', selector: '.settings-pwa-actions' },

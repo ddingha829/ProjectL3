@@ -18,6 +18,7 @@ export function useArchiveRepository() {
     ...view,
     save: useCallback((item: ArchiveItem, isEdit = false) => repository.save(item, isEdit), [repository]),
     remove: useCallback((id: string) => repository.remove(id), [repository]),
+    prepareForLogin: useCallback(() => repository.prepareForLogin(), [repository]),
     resetAllLogs: useCallback(() => repository.resetAllLogs(), [repository]),
     retrySync: useCallback(() => repository.retrySync(), [repository]),
     refresh: useCallback(() => repository.refresh(), [repository]),

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
-const folder='C:/Users/User/Documents/Codex/2026-10-16/pets-plugin-work-pets-openai-curated/work/test-integration';
+const folder=process.env.L2_TEST_OUTPUT_DIR||'C:/Users/User/Documents/Codex/2026-10-16/pets-plugin-work-pets-openai-curated/work/test-integration';
 fs.mkdirSync(folder,{recursive:true});
 const browser=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--no-sandbox']});
 const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -25,6 +25,7 @@ try{
  assert.equal(await page.evaluate(async()=>(await(await fetch('/api/session')).json()).storeKind),'file','Never write QA fixtures into Supabase');
  await page.waitForFunction(()=>document.documentElement.dataset.offlineReady==='true',{timeout:30000});
  const cache=await page.evaluate(async()=>{const keys=await caches.keys();const requests=(await Promise.all(keys.filter(k=>k.startsWith('l2-test-shell-')).map(async k=>(await (await caches.open(k)).keys()).map(r=>r.url)))).flat();return {keys,requests};});
+ for(const font of ['sebang-gothic-regular.woff2','sebang-gothic-bold.woff2','caveat-wordmark.ttf','sebang-gothic-italic-regular.woff2','sebang-gothic-italic-bold.woff2'])assert.ok(cache.requests.some(url=>url.endsWith('/fonts/'+font)),font+' cached for offline');
  assert(cache.requests.some(url=>url.includes('/_next/static/')));assert(!cache.requests.some(url=>url.includes('/api/')));
  await page.setOfflineMode(true);await page.reload({waitUntil:'networkidle2'});await ready();
  await page.type('input[name="title"]','오프라인의 순간');await page.type('textarea','오프라인에서도 남기는 작고 선명한 순간.');await click('로그 저장');await page.waitForSelector('.quick-category-sheet');await click('기타');await page.waitForSelector('.logbook-row');

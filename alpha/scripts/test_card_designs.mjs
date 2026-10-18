@@ -54,7 +54,7 @@ async function inspect() {
     const title = e.querySelector('h3'), copy = [...e.querySelectorAll('h3,p')].filter(el => el.getBoundingClientRect().height > 0);
     const pictures = [...e.querySelectorAll('img')].map(img => img.parentElement.getBoundingClientRect().height);
     const cutLines = copy.map(el => ({ text: el.textContent.slice(0, 12), lines: el.offsetHeight / parseFloat(getComputedStyle(el).lineHeight) })).filter(item => Math.abs(item.lines - Math.round(item.lines)) > .06);
-    return { layout: e.dataset.newLayout, ratio: e.dataset.ratio, overflow: e.scrollHeight - e.clientHeight, horizontal: e.scrollWidth - e.clientWidth, titleWeight: +getComputedStyle(title).fontWeight, titleSize: parseFloat(getComputedStyle(title).fontSize), copyBeforeFooter: copy.every(el => el.getBoundingClientRect().bottom <= footer.top - 2), footerInside: footer.bottom <= rect.bottom - 5, cutLines, pictures, fontReady: document.fonts.check('900 40px "Pretendard Variable"', '천천히') };
+    return { layout: e.dataset.newLayout, ratio: e.dataset.ratio, overflow: e.scrollHeight - e.clientHeight, horizontal: e.scrollWidth - e.clientWidth, titleWeight: +getComputedStyle(title).fontWeight, titleSize: parseFloat(getComputedStyle(title).fontSize), copyBeforeFooter: copy.every(el => el.getBoundingClientRect().bottom <= footer.top - 2), footerInside: footer.bottom <= rect.bottom - 5, cutLines, pictures, fontReady: document.fonts.check('900 40px "Sebang Gothic"', '천천히') };
   });
   assert.ok(m.overflow <= 1 && m.horizontal <= 1, `card fits: ${JSON.stringify(m)}`);
   assert.ok(m.copyBeforeFooter && m.footerInside, `text cannot overlap imprint: ${JSON.stringify(m)}`);

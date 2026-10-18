@@ -125,7 +125,8 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
       const style = getComputedStyle(textarea);
       const available = textarea.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 6;
       if (available <= 0) return;
-      context.font = '900 32px "Pretendard Variable", "Inter", sans-serif';
+      const family=getComputedStyle(rootRef.current||textarea).getPropertyValue('--font-sans').trim()||style.fontFamily;
+      context.font = `900 32px ${family}`;
       const widthAt32 = context.measureText(PROMPT).width - (Array.from(PROMPT).length - 1) * 32 * 0.045;
       const size = Math.min(44, available * 32 / widthAt32);
       textarea.style.setProperty('--memo-prompt-size', `${size.toFixed(2)}px`);
@@ -143,11 +144,16 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropOpen,
     if (panel) observer.observe(panel);
     measure();
     void document.fonts.ready.then(measure);
+    const fontObserver=new MutationObserver(measure);
+    fontObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-font']});
+    document.fonts.addEventListener('loadingdone',measure);
     window.addEventListener('resize', measure);
     window.visualViewport?.addEventListener('resize', measure);
     return () => {
       disposed = true;
       observer.disconnect();
+      fontObserver.disconnect();
+      document.fonts.removeEventListener('loadingdone',measure);
       window.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('resize', measure);
     };

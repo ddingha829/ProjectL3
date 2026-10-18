@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Settings2 } from 'lucide-react';
 import type { ArchiveItem, CardAppearance, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
+import { sameCardAppearance } from '@/lib/cardStyle';
 import { createCardAppearance } from '@/lib/cardAppearance';
 import { assignDefault, defaultPresetFor, reorderPresets, type PresetDefaultScope } from '@/lib/presetDefaults';
 import { prepareCardExport, downloadCardFile } from '@/lib/cardExport';
@@ -43,6 +44,7 @@ export default function L2TestApp(){
   const pwa = usePwaInstall();
   const [tab,setTab]=useState<Tab>('log'),[light,setLight]=useState(false),[settings,setSettings]=useState(false);
   const [listDetailsOn,setListDetailsOn]=useState(true),[autoPlaceLinkOn,setAutoPlaceLinkOn]=useState(true);
+  const [font,setFont]=useState<'sebang'|'pretendard'>('sebang');
   const [slideDir,setSlideDir]=useState<'next'|'prev'|null>(null);
   const [activeId,setActiveId]=useState(''),[editingId,setEditingId]=useState<string|null>(null),[newId,setNewId]=useState<string|null>(null);
   const [pendingAppearance,setPendingAppearance]=useState<CardAppearance|null>(null);
@@ -58,16 +60,24 @@ export default function L2TestApp(){
   const dismissGuide=useCallback(()=>firstGuides.dismiss(guideScreen),[firstGuides.dismiss,guideScreen]);
 
   const notify=useCallback((title:string,actionLabel?:string,action?:()=>void,tone:Toast['tone']='info')=>{if(toastTimer.current)clearTimeout(toastTimer.current);setToast({title,actionLabel,action,tone});toastTimer.current=setTimeout(()=>setToast(null),action?8000:3000);},[]);
-  useEffect(()=>{if(repository.serverSnapshot?.requiresReconnect)notify('보안 업데이트로 다시 연결이 필요해요. 기기 기록은 유지했습니다.','다시 연결',()=>setSettings(true));},[repository.serverSnapshot?.requiresReconnect,notify]);
+  useEffect(()=>{if(repository.serverSnapshot?.requiresReconnect&&repository.error?.includes('보안 업데이트'))notify('보안 업데이트로 다시 연결이 필요해요. 기기 기록은 유지했습니다.','다시 연결',()=>setSettings(true));},[repository.serverSnapshot?.requiresReconnect,repository.error,notify]);
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);if(savedTimer.current)clearTimeout(savedTimer.current);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);},[]);
   useEffect(()=>{setCardSaved(false);},[activeId]);
   useEffect(()=>{
-    try{setLight(localStorage.getItem('l2_test_theme')==='paper');}catch{}
+    const url=new URL(window.location.href),result=url.searchParams.get('auth');
+    if(!result)return;
+    url.searchParams.delete('auth');window.history.replaceState(null,'',url.pathname+url.search+url.hash);
+    if(result==='connected')notify('구글 계정에 연결했어요. 비회원 로그도 함께 불러옵니다.',undefined,undefined,'success');
+    else {setSettings(true);notify('구글 로그인을 완료하지 못했어요. 다시 시도해 주세요.',undefined,undefined,'error');}
+  },[notify]);
+  useEffect(()=>{
+    try{setLight(localStorage.getItem('l2_test_theme')==='paper');setFont(localStorage.getItem('l2_font_family')==='pretendard'?'pretendard':'sebang');}catch{}
     try{setListDetailsOn(localStorage.getItem(LIST_DETAILS_KEY)!=='off');}catch{}
     try{setAutoPlaceLinkOn(localStorage.getItem(AUTO_PLACE_LINK_KEY)!=='off');}catch{}
     try{const raw=localStorage.getItem(INBOX_STORAGE_KEY);if(raw)setInboxPlaces(JSON.parse(raw));}catch{}
   },[]);
   useEffect(()=>{document.documentElement.classList.toggle('light',light);},[light]);
+  const changeFont=(value:'sebang'|'pretendard')=>{setFont(value);document.documentElement.dataset.font=value;try{localStorage.setItem('l2_font_family',value);}catch{}};
   const changeTheme=(value:boolean)=>{setLight(value);try{localStorage.setItem('l2_test_theme',value?'paper':'dark');}catch{}};
   const changeListDetails=(value:boolean)=>{setListDetailsOn(value);try{localStorage.setItem(LIST_DETAILS_KEY,value?'on':'off');}catch{}};
   const changeAutoPlaceLink=(value:boolean)=>{setAutoPlaceLinkOn(value);try{localStorage.setItem(AUTO_PLACE_LINK_KEY,value?'on':'off');}catch{}};
@@ -163,12 +173,13 @@ export default function L2TestApp(){
     if(!draft.title.trim())throw new Error('제목을 입력해 주세요.');
     if(logSaveLock.current)throw new Error('이미 저장 중이에요. 잠시만 기다려 주세요.');
     const photo={img:draft.img,hasPhoto:Boolean(draft.img)};
+    const retainedStyle=previous&&pendingAppearance?createCardAppearance({...photo,cat:draft.category},pendingAppearance.slot,{[pendingAppearance.skin.id]:pendingAppearance.skin},pendingAppearance.authorName):null;
     const previousAppearance=previous?.cardAppearance;
     const categoryDefault=defaultPresetFor(draft.category,preferences.presetSlots,preferences.defaultPresetId);
     const cardAppearance=previousAppearance?createCardAppearance(photo,previousAppearance.slot,{[previousAppearance.skin.id]:previousAppearance.skin},previousAppearance.authorName):createCardAppearance(photo,categoryDefault,preferences.skins,preferences.authorName);
     const payload:ArchiveItem={id:previous?.id||crypto.randomUUID(),num:previous?.num||'',cat:draft.category,sub:draft.category,title:draft.title.trim(),quote:draft.body.trim(),loc:draft.place?.loc||'',addressShort:draft.place?.short||'',fullAddress:draft.place?.fullAddress||'',date:previous?.date||dateNow(),timestamp:previous?.timestamp||Date.now(),score:draft.score===null?'':draft.score.toFixed(1),...photo,cropX:draft.cropX,cropY:draft.cropY,good:draft.good.trim(),bad:draft.bad.trim(),note:draft.note.trim(),link:draft.place?.link||'',mapX:draft.place?.x??50,mapY:draft.place?.y??50,author:cardAppearance.authorName,cardAppearance,coordinates:draft.place?.coordinates||null};
     logSaveLock.current=true;setIsSavingLog(true);
-    try{const result=await repository.save(payload,Boolean(previous));haptic.success();await acknowledge?.();logSaveLock.current=false;setPendingAppearance(null);setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);notify(previous?'수정 내용을 저장했어요':navigator.onLine?'로그북에 저장했어요':'기기에 저장했어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
+    try{const result=await repository.save(payload,Boolean(previous));haptic.success();await acknowledge?.();logSaveLock.current=false;setPendingAppearance(retainedStyle);setEditingId(null);setActiveId(result.item.id);if(previous)setTab('card');else arrived(result.item);notify(previous?'수정 내용을 저장했어요':navigator.onLine?'로그북에 저장했어요':'기기에 저장했어요',previous?undefined:'카드 보기',previous?undefined:()=>open(result.item),'success');}
     catch(error){notify('저장하지 못했어요. 입력은 그대로 남아 있어요.',undefined,undefined,'error');throw error;}
     finally{logSaveLock.current=false;setIsSavingLog(false);}
   };
@@ -202,7 +213,13 @@ export default function L2TestApp(){
     }, true);
     notify(`‘${entry.title}’ 위치를 연결했어요`, undefined, undefined, 'success');
   };
-  const applyPreset=(preset:PresetSlot)=>{if(applying||!actualItem)return;setCardSaved(false);const cardAppearance=createCardAppearance(item,preset,preferences.skins,preferences.authorName);setPendingAppearance(cardAppearance);haptic.snap();};
+  const applyPreset=(preset:PresetSlot)=>{if(applying||!actualItem)return;setCardSaved(false);const cardAppearance=createCardAppearance(item,preset,preferences.skins,preferences.authorName);setPendingAppearance(sameCardAppearance(savedAppearance,cardAppearance)?null:cardAppearance);haptic.snap();};
+  const changeCardStyle=(patch:Partial<PresetSlot>)=>{
+    if(applying||!actualItem)return;
+    const skins=patch.skinId?preferences.skins:{...preferences.skins,[appearance.skin.id]:appearance.skin};
+    const next=createCardAppearance(item,{...appearance.slot,...patch},skins,appearance.authorName);
+    setCardSaved(false);setPendingAppearance(sameCardAppearance(savedAppearance,next)?null:next);haptic.tick();
+  };
   const saveCard=async()=>{if(cardSaveLock.current||!actualItem||!pendingAppearance)return;cardSaveLock.current=true;setApplying(true);setCardSaved(false);try{await repository.save({...item,author:appearance.authorName,cardAppearance:appearance},true);setPendingAppearance(null);setCardSaved(true);if(cardSavedTimer.current)clearTimeout(cardSavedTimer.current);cardSavedTimer.current=setTimeout(()=>setCardSaved(false),1400);haptic.success();notify('로그북에 저장했어요',undefined,undefined,'success');}catch{notify('카드 모양을 저장하지 못했어요.',undefined,undefined,'error');}finally{cardSaveLock.current=false;setApplying(false);}};
   const savePreset=async(preset:PresetSlot,scope?:PresetDefaultScope,order?:string[])=>{
     preferences.update(previous=>{const exists=previous.presetSlots.some(entry=>entry.id===preset.id);if(!exists&&previous.presetSlots.length>=20)throw new Error('프리셋은 20개까지 저장할 수 있어요.');const original=previous.presetSlots.find(entry=>entry.id===preset.id);const committed={...preset,...(original?.defaultFor?{defaultFor:original.defaultFor}:{})};const slots=scope?assignDefault(previous.presetSlots,committed,scope):exists?previous.presetSlots.map(entry=>entry.id===preset.id?committed:entry):[...previous.presetSlots,committed];return {...previous,presetSlots:!scope&&order?reorderPresets(slots,order):slots,defaultPresetId:scope==='ALL'?preset.id:previous.defaultPresetId};});haptic.success();notify(scope?'기본 프리셋으로 설정했어요':'프리셋을 저장했어요',undefined,undefined,'success');
@@ -293,12 +310,12 @@ export default function L2TestApp(){
     }
   };
 
-  // Horizontal swipe navigation across + 로그 (log) <-> 로그북 (archive) <-> 스튜디오 (studio) <-> 설정 (settings)
+  // Horizontal swipe navigation across + 로그 (log) <-> 로그북 (archive) <-> 스튜디오 (studio)
   const onPointerDownShell=(e:React.PointerEvent<HTMLDivElement>)=>{
     if(editingItem||logSaveLock.current)return;
     const target=e.target as HTMLElement|null;
     if(!target)return;
-    if(target.closest('input[type="range"], .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop, .swipe-log'))return;
+    if(target.closest('input, textarea, select, button:not(.logbook-poster), a, [contenteditable="true"], .preset-library, .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop, .swipe-log'))return;
     const hScroll=target.closest<HTMLElement>('.preset-rail');
     if(hScroll&&hScroll.scrollWidth>hScroll.clientWidth+4)return;
     const inDialog=target.closest('[role="dialog"]');
@@ -328,8 +345,8 @@ export default function L2TestApp(){
       }
     }
     if(start.lockedAxis!=='x')return;
-    const atLeftBoundary=tab==='log'&&dx>0;
-    const effectiveDx=atLeftBoundary?dx*0.24:dx;
+    const atBoundary=tab==='log'&&dx>0||tab==='studio'&&dx<0;
+    const effectiveDx=atBoundary?Math.sign(dx)*Math.min(Math.abs(dx)*0.18,42):dx;
     start.dx=effectiveDx;
     if(mainRef.current){
       mainRef.current.style.transform=`translate3d(${effectiveDx.toFixed(1)}px, 0, 0)`;
@@ -390,12 +407,12 @@ export default function L2TestApp(){
       <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
         {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
         {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
-        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
+        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance)} onApplyPreset={preset=>applyPreset(preset)} onChangeStyle={changeCardStyle} onResetStyle={()=>{setPendingAppearance(null);setCardSaved(false);}} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
         {tab==='studio'&&preferences.ready&&<StudioPanel key={repository.serverSnapshot?.deviceId||'local'} presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onReorderPresets={reorderPresetList} onClearCategoryDefault={clearCategoryDefault} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
       </main>
     </div>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
+    {settings&&<SettingsDialog open font={font} onFont={changeFont} beforeLogin={async()=>{await repository.prepareForLogin();await preferences.prepareForLogin();}} onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
     {repository.ready&&preferences.ready&&firstGuides.enabled&&!firstGuides.seen[guideScreen]&&!editingItem&&!isSavingLog&&<FirstVisitGuide key={guideScreen} screen={guideScreen} onDismiss={dismissGuide}/>}

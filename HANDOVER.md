@@ -1,5 +1,18 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 최신 승인 후속 작업 (사용자 요청으로 일괄 push)
+
+- `alpha/DOCS/FRONTEND_AUTH_REVIEW_20261018.md`: 이번 11개 요청, 뒤이은 헤더 필기체·초기 문구 폰트 수정, 회귀 검증 결과와 새 Supabase 이전 계획.
+- 세방고딕 2.0 로컬 폰트 trial. 설정의 글꼴 ‘기존’으로 롤백 가능. 첫 화면 잔물결 문구의 실제 폰트 측정도 함께 교체.
+- Google OAuth + PKCE, 서버 identity 검증, signed cookie, 로그인 전 outbox/prefs drain, 비회원 로그 이전/등록 계정 간 분리. 로컬 실제 Google 로그인 성공. 사용자 승인 후 운영/localhost:3013의 `/api/auth/google/callback`만 기존 Supabase redirect 허용 목록에 추가했다. 기존 ticgle Site URL은 변경하지 않았다.
+- 스튜디오 compact name/control row, details modal, palette creation in picker, header/settings alignment, visible category filter, CINEMA auto-place exclusion, swipe boundary resistance and text-selection guards.
+- Settings `live & log!` is centred in the same header row as 설정 and close button, not a separate body row.
+- Approved preset-management mockup is now implemented: thumbnail collection, explicit tap-to-insert sort with cancel/save, and named photo/text/group creation wizard. Card detail may choose a preset OR locally change design/color/details; Card Save affects only that log. Studio edits reusable originals. See `alpha/DOCS/PRESET_COLLECTION_AND_LOCAL_DESIGN.md` for current behavior/tests. This supersedes the older preset-only detail and horizontal-rail descriptions below.
+- Matching Sebang italic WOFF2 faces are used selectively for editorial brand/magazine masthead/full-bleed short quote, not a global italic setting. PWA cache v7 includes local fonts. All first-user guides match the new separation of log-specific styling vs reusable presets.
+- `test:ui` points to the current preset-workflow fixture suite, not the historical `test_workflow.mjs` with old PNG/UI assumptions.
+- User plans to replace the temporary shared Supabase after testing. Preserve/map Google Auth UUIDs and all owner IDs, migrate photos/URLs and security policies; see report before switching env.
+
+
 ## 2026-10-18 update
 - Preset follow-up: draggable library handles with touch cancel/keyboard/tap alternatives, a fixed external + action, per-category defaults persisted as `PresetSlot.defaultFor` inside the existing JSON, 21 bundled palettes and a 3-column color picker. Existing card snapshots stay immutable. TMDB export now reloads image resources in CORS mode to avoid the CDN's non-CORS browser cache; no image proxy/upload was added. See `alpha/DOCS/PRESET_WORKFLOWS.md` for decisions, color research and regressions. Default assignment moves a preset first once; later manual order wins.
 - Latest UX/image/data follow-up is documented in `alpha/DOCS/UX_UPGRADE_REPORT.md`: target-highlight step guides, per-in-app install handoff, one-photo WebP compression (1080px / quality .8 / ≤300KiB), 1080px / ≤500KiB JPEG card export, album/camera/TMDB picker, responsive logbook/search/swipe behavior, group-only LIST, Studio number toggle, account-only AI usage, client ZIP backup and confirmed owner-only reset. Reset tests used isolated local/mocked data only. Keep reset draining in-flight sync and clearing owner outbox/cache.

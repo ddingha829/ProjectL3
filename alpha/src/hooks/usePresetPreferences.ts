@@ -21,6 +21,7 @@ export function usePresetPreferences(snapshot: PresetServerSnapshot | null) {
   return {
     ...preferences,
     update: useCallback((patch: Partial<PresetPreferences> | ((previous: PresetPreferences) => PresetPreferences)) => repository.update(patch), [repository]),
+    prepareForLogin: useCallback(() => repository.prepareForLogin(), [repository]),
     retrySync: useCallback(() => repository.retrySync(), [repository]),
   };
 }

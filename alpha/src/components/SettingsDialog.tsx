@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Trash2, Upload, Download, Copy, MapPin, Smartphone, HelpCircle, ChevronDown, UserCheck, LogOut, RefreshCw } from 'lucide-react';
 import AccessibleDialog from './AccessibleDialog';
 import type { ArchiveItem, PlaceInboxItem } from '@/types/l2';
@@ -10,6 +10,9 @@ import { exportLogbookZip, type BackupProgress } from '@/lib/logBackup';
 import type { PwaState } from './PwaInstallControl';
 
 interface Props {
+  font: 'sebang' | 'pretendard';
+  onFont: (font: 'sebang' | 'pretendard') => void;
+  beforeLogin: () => Promise<void>;
   open: boolean;
   onClose: () => void;
   light: boolean;
@@ -38,6 +41,8 @@ interface Props {
 }
 
 export default function SettingsDialog(p: Props) {
+  const [googleAvailable,setGoogleAvailable]=useState(false);
+  useEffect(()=>{const controller=new AbortController();fetch('/api/auth/google',{signal:controller.signal}).then(res=>res.json()).then(data=>setGoogleAvailable(data.available===true)).catch(()=>{});return()=>controller.abort();},[]);
   const [code, setCode] = useState('');
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
@@ -59,6 +64,7 @@ export default function SettingsDialog(p: Props) {
     setAuthBusy(true);
     setMessage('');
     try {
+      await p.beforeLogin();
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,9 +80,21 @@ export default function SettingsDialog(p: Props) {
     }
   };
 
+  const googleLogin = async () => {
+    if(authBusy)return;
+    setAuthBusy(true);setMessage('');
+    try {
+      await p.beforeLogin();
+      const response=await fetch('/api/auth/google',{method:'POST'});
+      const data=await response.json();
+      if(!response.ok||!data.url)throw new Error(data.error||'구글 로그인에 연결하지 못했어요.');
+      window.location.assign(data.url);
+    } catch(error) {setMessage(error instanceof Error?error.message:'다시 시도해 주세요.');setAuthBusy(false);}
+  };
   const handleLogout = async () => {
     setAuthBusy(true);
     try {
+      await p.beforeLogin();
       const response = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,7 +156,7 @@ export default function SettingsDialog(p: Props) {
     finally{setResetBusy(false);}
   };
   return (<>
-    <AccessibleDialog open={p.open} onClose={()=>{if(!progress&&!resetBusy)p.onClose();}} title="설정">
+    <AccessibleDialog open={p.open} onClose={()=>{if(!progress&&!resetBusy)p.onClose();}} title="설정" headerAdornment={<span className="settings-wordmark" aria-label="live and log">live &amp; log!</span>}>
       <div className="modern-settings">
         {/* 1. 계정 & 클라우드 동기화 카드 */}
         <section className="settings-card">
@@ -160,7 +178,7 @@ export default function SettingsDialog(p: Props) {
                 <UserCheck size={16} />
                 <div>
                   <strong>{p.username}</strong>
-                  <span>모든 기기에서 실시간 연동 중</span>
+                  <span>연결된 계정에 기록을 보관해요</span>
                 </div>
               </div>
               <button
@@ -175,6 +193,8 @@ export default function SettingsDialog(p: Props) {
             </div>
           ) : (
             <div className="settings-auth-box">
+              {googleAvailable&&<><button type="button" className="settings-google-login" disabled={authBusy} onClick={()=>void googleLogin()}><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.3 2.9-7.5z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.6c-.9.6-2.1.9-3.4.9-2.6 0-4.9-1.8-5.7-4.2H2.9v2.7A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.3 13.7a6 6 0 0 1 0-3.4V7.6H2.9a10 10 0 0 0 0 8.8z"/><path fill="#EA4335" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.8-2.9A9.7 9.7 0 0 0 12 2a10 10 0 0 0-9.1 5.6l3.4 2.7C7.1 7.9 9.4 6.1 12 6.1z"/></svg>{authBusy?'연결 중…':'Google로 계속하기'}</button><div className="settings-auth-divider">또는 아이디로 연결</div></>}
+
               <div className="settings-auth-inputs">
                 <input
                   value={loginId}
@@ -235,6 +255,7 @@ export default function SettingsDialog(p: Props) {
             </div>
           </div>
 
+          <div className="settings-row"><div className="settings-row-copy"><strong>글꼴</strong><span>기존 글꼴로 언제든 되돌릴 수 있어요</span></div><div className="settings-segmented" role="group" aria-label="글꼴 선택"><button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>세방고딕</button><button type="button" className={p.font==='pretendard'?'active':''} aria-pressed={p.font==='pretendard'} onClick={()=>p.onFont('pretendard')}>기존</button></div></div>
           <label className="settings-row settings-row-input">
             <div className="settings-row-copy">
               <strong>카드 서명</strong>

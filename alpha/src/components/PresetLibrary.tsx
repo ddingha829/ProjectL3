@@ -1,136 +1,69 @@
 'use client';
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
-import { GripVertical, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
-import type { PresetSlot } from '@/types/l2';
+import { useRef, useState } from 'react';
+import { Check, ChevronDown, Plus, ArrowDownToLine, Layers, Camera, Type, Copy } from 'lucide-react';
+import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
+import { INITIAL_SKINS } from '@/data/initialData';
+import { getCardLayout } from '@/lib/cardLayouts';
 import { getArchiveCategory } from '@/lib/archiveCategories';
 import { reorderPresets } from '@/lib/presetDefaults';
-import { allowsMotion } from '@/lib/motion';
-import { useDragScrollRail } from '@/hooks/useDragScrollRail';
 import AccessibleDialog from './AccessibleDialog';
+import PresetThumbnail from './PresetThumbnail';
+import './PresetLibrary.css';
 
+export type NewPreset = {name:string;kind:'photo'|'text'|'group';copy:boolean};
 interface Props {
-  presets: PresetSlot[];
-  activeId: string;
-  defaultId: string;
-  onSelect: (slot: PresetSlot, direction: number) => void;
-  onAdd: () => void;
-  onReorder: (ids: string[]) => void;
+  presets: PresetSlot[]; activeId: string; defaultId?: string;
+  skins: Record<string,SkinTheme>; authorName: string; item?:ArchiveItem;
+  currentName?:string; dirty?:boolean; disabled?:boolean;
+  onSelect:(slot:PresetSlot,direction:number)=>void;
+  onAdd?:(options:NewPreset)=>Promise<void>;
+  onReorder?:(ids:string[])=>void;
 }
-type Gesture = { pointer: number; id: string; x: number; y: number; startX: number; startY: number; before: string[]; next: string[]; moved: boolean };
 
-export default function PresetLibrary(p: Props) {
-  const railRef = useRef<HTMLDivElement>(null), railDrag = useDragScrollRail(railRef);
-  const [order, setOrder] = useState<string[] | null>(null), [dragging, setDragging] = useState<string | null>(null);
-  const [menuId, setMenuId] = useState<string | null>(null), [announcement, setAnnouncement] = useState('');
-  const gesture = useRef<Gesture | null>(null), animation = useRef(0), suppressClick = useRef(false);
-  const positions = useRef(new Map<string, number>());
-  const focusAfterMove = useRef<string | null>(null);
-  const presets = reorderPresets(p.presets, order || p.presets.map(slot => slot.id));
-  const ids = presets.map(slot => slot.id);
-  const latest = useRef(p); latest.current = p;
-  useEffect(() => () => cancelAnimationFrame(animation.current), []);
-  const defaultAssignments = [...p.presets].sort((a,b)=>a.id.localeCompare(b.id)).map(slot => `${slot.id}:${slot.defaultFor?.join(',') || ''}`).join('|');
-  const activeName = p.presets.find(slot => slot.id === p.activeId)?.name;
-  useEffect(() => { setOrder(null); railRef.current?.scrollTo({ left: 0, behavior: 'instant' }); }, [p.defaultId, defaultAssignments]);
-  useEffect(() => {
-    const rail = railRef.current, item = rail?.querySelector<HTMLElement>(`[data-preset-id="${CSS.escape(p.activeId)}"]`);
-    if (rail && item) {
-      const left = item.offsetLeft - (rail.clientWidth - item.offsetWidth) / 2;
-      // A new chip far outside the viewport must be usable immediately.
-      rail.scrollTo({ left, behavior: allowsMotion() && Math.abs(left - rail.scrollLeft) < rail.clientWidth ? 'smooth' : 'instant' });
-    }
-  }, [p.activeId, activeName]);
-  useLayoutEffect(() => {
-    const next = new Map<string, number>();
-    railRef.current?.querySelectorAll<HTMLElement>('[data-preset-id]').forEach(node => {
-      const id = node.dataset.presetId!, left = node.offsetLeft;
-      next.set(id, left);
-      const before = positions.current.get(id);
-      if (before !== undefined && before !== left && id !== dragging && allowsMotion()) node.animate([{ transform: `translateX(${before - left}px)` }, { transform: 'translateX(0)' }], { duration: 180, easing: 'ease-out' });
-    });
-    positions.current = next;
-    if (focusAfterMove.current) {
-      const item = railRef.current?.querySelector<HTMLElement>(`[data-preset-id="${CSS.escape(focusAfterMove.current)}"]`);
-      item?.querySelector<HTMLElement>('.preset-drag-handle')?.focus({ preventScroll: true });
-      focusAfterMove.current = null;
-    }
-  }, [ids.join('|'), dragging]);
-
-  const commit = (next: string[], id: string, before: string[]) => {
-    try {
-      latest.current.onReorder(next); setOrder(next);
-      const name = latest.current.presets.find(slot => slot.id === id)?.name || '프리셋';
-      setAnnouncement(`${name}, ${next.indexOf(id) + 1}번째로 이동했어요.`);
-    } catch { setOrder(before); setAnnouncement('순서를 저장하지 못했어요. 원래 위치를 유지합니다.'); }
+/** Selection is a thumbnail collection. Sorting is an explicit tap-to-insert mode. */
+export default function PresetLibrary(p:Props){
+  const [mode,setMode]=useState<'browse'|'sort'|'create'|null>(null);
+  const [order,setOrder]=useState<string[]>([]),[picked,setPicked]=useState<string|null>(null);
+  const [name,setName]=useState(''),[kind,setKind]=useState<NewPreset['kind']>('photo'),[copy,setCopy]=useState(true);
+  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[announcement,setAnnouncement]=useState('');
+  const createLock=useRef(false);
+  const active=p.presets.find(slot=>slot.id===p.activeId),editable=Boolean(p.onAdd&&p.onReorder);
+  const sorted=reorderPresets(p.presets,order);
+  const skinFor=(slot:PresetSlot)=>p.skins[slot.skinId]||INITIAL_SKINS.paper;
+  const defaults=(slot:PresetSlot)=>[...(slot.id===p.defaultId?['전체 기본']:[]),...(slot.defaultFor||[]).map(cat=>getArchiveCategory(cat).label+' 기본')].join(' · ');
+  const close=()=>{if(!busy){setMode(null);setPicked(null);setError('');}};
+  const newPreset=()=>{setName('나의 프리셋');setCopy(true);setKind(active?.layout==='curation'?'group':active&&getCardLayout(active.layout).isNoPhoto?'text':'photo');setError('');setMode('create');};
+  const insertAt=(position:number)=>{
+    if(!picked)return;
+    const ids=sorted.map(slot=>slot.id),from=ids.indexOf(picked);
+    if(from<0)return;
+    ids.splice(from,1);ids.splice(position>from?position-1:position,0,picked);
+    setOrder(ids);requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(`.preset-sort-item[data-preset-id="${picked}"]`)?.focus({preventScroll:true}));setAnnouncement(`${p.presets.find(slot=>slot.id===picked)?.name}, ${ids.indexOf(picked)+1}번째로 이동했어요.`);setPicked(null);
   };
-  const move = (id: string, step: number) => {
-    const index = ids.indexOf(id), target = index + step;
-    if (index < 0 || target < 0 || target >= ids.length) return;
-    if (!menuId) focusAfterMove.current = id;
-    const next = [...ids]; next.splice(index, 1); next.splice(target, 0, id); commit(next, id, ids);
+  const finishSort=()=>{try{p.onReorder?.(sorted.map(slot=>slot.id));setMode('browse');setPicked(null);setAnnouncement('프리셋 순서를 저장했어요.');}catch{setError('순서를 보관하지 못했어요. 다시 시도해 주세요.');}};
+  const create=async()=>{
+    if(!p.onAdd||!name.trim()||createLock.current||p.presets.length>=20)return;
+    createLock.current=true;setBusy(true);setError('');
+    try{await p.onAdd({name:name.trim(),kind,copy});setMode(null);}
+    catch(e){setError(e instanceof Error?e.message:'프리셋을 만들지 못했어요.');}
+    finally{createLock.current=false;setBusy(false);}
   };
-  const updateTarget = () => {
-    const g = gesture.current, rail = railRef.current;
-    if (!g?.moved || !rail) return;
-    const nodes = [...rail.querySelectorAll<HTMLElement>('[data-preset-id]')];
-    if (nodes.map(node=>node.dataset.presetId).join('|') !== g.next.join('|')) return;
-    const left = rail.getBoundingClientRect().left - rail.scrollLeft;
-    // Hit-test layout positions, not the transient FLIP animation rectangles.
-    const target = nodes.reduce<HTMLElement | null>((nearest, node) => {
-      return !nearest || Math.abs(g.x - (left + node.offsetLeft + node.offsetWidth / 2)) < Math.abs(g.x - (left + nearest.offsetLeft + nearest.offsetWidth / 2)) ? node : nearest;
-    }, null)?.dataset.presetId;
-    if (!target || target === g.id) return;
-    const from = g.next.indexOf(g.id), to = g.next.indexOf(target);
-    if (from < 0 || to < 0) return;
-    const next = [...g.next]; next.splice(from, 1); next.splice(to, 0, g.id); g.next = next; setOrder(next);
-  };
-  const scroll = () => {
-    const g = gesture.current, rail = railRef.current;
-    if (!g || !rail) return;
-    if (g.moved) {
-      const rect = rail.getBoundingClientRect();
-      const delta = g.x < rect.left + 32 ? -7 : g.x > rect.right - 32 ? 7 : 0;
-      if (delta) { rail.scrollLeft += delta; updateTarget(); }
-    }
-    animation.current = requestAnimationFrame(scroll);
-  };
-  const start = (event: PointerEvent<HTMLButtonElement>, id: string) => {
-    event.stopPropagation();
-    if (!event.isPrimary || event.button !== 0) return;
-    event.preventDefault(); event.currentTarget.focus({ preventScroll: true });
-    suppressClick.current = false;
-    gesture.current = { pointer: event.pointerId, id, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, before: ids, next: ids, moved: false };
-    animation.current = requestAnimationFrame(scroll);
-  };
-  const drag = (event: PointerEvent<HTMLElement>) => {
-    const g = gesture.current; if (!g || g.pointer !== event.pointerId) return;
-    event.stopPropagation(); event.preventDefault(); g.x = event.clientX; g.y = event.clientY;
-    if (!g.moved && Math.hypot(g.x - g.startX, g.y - g.startY) >= 6) { g.moved = true; suppressClick.current = true; railRef.current?.setPointerCapture(event.pointerId); setDragging(g.id); }
-    updateTarget();
-  };
-  const finish = (event: PointerEvent<HTMLElement>, cancel = false) => {
-    const g = gesture.current; if (!g || g.pointer !== event.pointerId) return;
-    event.stopPropagation(); gesture.current = null; cancelAnimationFrame(animation.current); setDragging(null);
-    if (railRef.current?.hasPointerCapture(event.pointerId)) railRef.current.releasePointerCapture(event.pointerId);
-    if (cancel) setOrder(g.before);
-    else if (g.moved) commit(g.next, g.id, g.before);
-  };
-  return <div className="preset-library" data-guide="studio-library">
-    <div className="preset-library-heading"><h2>프리셋 목록</h2><small>{presets.length} / 20</small></div>
-    <div className="preset-library-track">
-      <div ref={railRef} {...railDrag} onPointerMove={event=>gesture.current?drag(event):railDrag.onPointerMove(event)} onPointerUp={event=>gesture.current?finish(event):railDrag.onPointerUp(event)} onPointerCancel={event=>gesture.current?finish(event,true):railDrag.onPointerCancel(event)} className={`preset-rail studio-preset-rail ${dragging ? 'is-reordering' : ''}`} aria-label="카드 프리셋">
-        {presets.map((preset, index) => {
-          const categories = preset.defaultFor?.map(category => getArchiveCategory(category).label) || [];
-          const defaults = [...(p.defaultId === preset.id ? ['전체'] : []), ...categories].join('·');
-          return <div className={`preset-library-item ${dragging === preset.id ? 'is-moving' : ''}`} data-preset-id={preset.id} key={preset.id}>
-            <button type="button" className={`preset-library-chip ${p.activeId === preset.id ? 'selected' : ''} ${defaults ? 'is-default' : ''}`} aria-pressed={p.activeId === preset.id} onClick={() => p.onSelect(preset, index < ids.indexOf(p.activeId) ? -1 : 1)} title={defaults ? `${preset.name} · ${defaults} 기본 프리셋` : preset.name}><span>{preset.name}</span>{defaults && <small>{defaults}</small>}</button>
-            <button type="button" className="preset-drag-handle" aria-label={`${preset.name} 순서 변경`} title="드래그로 이동 · 눌러서 순서 변경" onPointerDown={event => start(event, preset.id)} onPointerMove={drag} onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onClick={event => { event.stopPropagation(); if (suppressClick.current) { suppressClick.current = false; return; } setMenuId(preset.id); }} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); event.stopPropagation(); move(preset.id, event.key === 'ArrowLeft' ? -1 : 1); } }}><GripVertical size={13}/></button>
-          </div>;
-        })}
-      </div>
-      <button type="button" className="preset-add" onClick={p.onAdd} disabled={presets.length >= 20} aria-label="새 프리셋 추가" title={`${presets.length}/20`}><Plus size={18}/></button>
-    </div>
+  const title=mode==='create'?'새 프리셋 만들기':mode==='sort'?'프리셋 순서 정리':editable?'내 프리셋':'카드 프리셋 선택';
+  return <div className="preset-library preset-collection-selector" data-guide={editable?'studio-library':'card-library'}>
+    <button type="button" disabled={p.disabled} className="preset-library-open" aria-haspopup="dialog" aria-label={editable?'프리셋 보관함 열기':'카드 프리셋 선택'} onClick={()=>{setError('');setMode('browse');}}>
+      <span className="preset-selector-swatch" aria-hidden="true" style={{background:active?skinFor(active).bg:'var(--surface-2)'}}>{active?<i style={{background:skinFor(active).accent}}/>:<Layers size={18}/>}</span>
+      <span className="preset-selector-copy"><small>{editable?'편집할 프리셋':'이 로그의 디자인'}</small><strong>{p.currentName||active?.name||'개별 디자인'}</strong></span>
+      {p.dirty&&<em className="record-pending-badge">미저장</em>}{active&&defaults(active)&&<small className="preset-selector-default">기본</small>}<ChevronDown size={17}/>
+    </button>
     <span className="sr-only" role="status">{announcement}</span>
-    <AccessibleDialog open={Boolean(menuId)} onClose={() => setMenuId(null)} title="프리셋 순서 변경"><div className="preset-order-actions"><button type="button" disabled={!menuId || ids.indexOf(menuId) <= 0} onClick={() => menuId && move(menuId, -1)}><ArrowLeft size={17}/>앞으로 이동</button><button type="button" disabled={!menuId || ids.indexOf(menuId) >= ids.length - 1} onClick={() => menuId && move(menuId, 1)}><ArrowRight size={17}/>뒤로 이동</button></div></AccessibleDialog>
+    <AccessibleDialog open={mode!==null} onClose={close} title={title}>
+      <div className="preset-collection">
+        {mode==='browse'&&<><div className="preset-collection-toolbar"><span>{p.presets.length}{editable?' / 20':'개'}</span>{editable&&<><button type="button" className="preset-organize" onClick={()=>{setOrder(p.presets.map(slot=>slot.id));setPicked(null);setMode('sort');}}>정리</button><button type="button" className="preset-create-open" disabled={p.presets.length>=20} onClick={newPreset}><Plus size={16}/>새 프리셋</button></>}</div>
+          <div className="preset-collection-grid">{p.presets.map((preset,index)=><button type="button" key={preset.id} className="preset-collection-card" data-preset-id={preset.id} aria-pressed={preset.id===p.activeId} onClick={()=>{p.onSelect(preset,index<p.presets.findIndex(slot=>slot.id===p.activeId)?-1:1);setMode(null);}}><PresetThumbnail preset={preset} skin={skinFor(preset)} authorName={p.authorName} item={p.item}/><span className="preset-collection-caption"><strong>{preset.name}</strong>{preset.id===p.activeId&&<Check size={16}/>}<small>{defaults(preset)|| (preset.layout==='curation'?'그룹용':getCardLayout(preset.layout).isNoPhoto?'텍스트용':'사진용')}</small></span></button>)}</div></>}
+        {mode==='sort'&&<><p className="preset-sort-hint" id="preset-sort-help">옮길 프리셋을 고른 뒤, 넣을 위치를 눌러주세요.</p><div className={`preset-sort-list ${picked?'has-pick':''}`} aria-describedby="preset-sort-help">{sorted.map((preset,index)=><div key={preset.id}><button type="button" className="preset-insert-target" disabled={!picked} aria-label={`${index+1}번째 위치에 넣기`} onClick={()=>insertAt(index)}><ArrowDownToLine size={13}/>여기로 이동</button><button type="button" className="preset-sort-item" data-preset-id={preset.id} aria-pressed={picked===preset.id} onClick={()=>setPicked(picked===preset.id?null:preset.id)}><small>{String(index+1).padStart(2,'0')}</small><strong>{preset.name}</strong><span>{picked===preset.id?'위치 선택 중':'이동'}</span></button></div>)}<button type="button" className="preset-insert-target" disabled={!picked} aria-label="마지막 위치에 넣기" onClick={()=>insertAt(sorted.length)}><ArrowDownToLine size={13}/>맨 뒤로 이동</button></div><div className="preset-collection-footer"><button type="button" onClick={()=>{setMode('browse');setPicked(null);}}>취소</button><button type="button" className="primary" onClick={finishSort}>순서 저장</button></div></>}
+        {mode==='create'&&<form className="preset-create-form" onSubmit={event=>{event.preventDefault();void create();}}><label htmlFor="new-preset-name">프리셋 이름</label><input id="new-preset-name" maxLength={24} value={name} disabled={busy} onChange={event=>setName(event.target.value)} required/><fieldset disabled={busy}><legend>카드 종류</legend><div className="preset-create-kinds">{([{id:'photo',label:'사진용',Icon:Camera},{id:'text',label:'텍스트용',Icon:Type},{id:'group',label:'그룹용',Icon:Layers}] as const).map(entry=><button type="button" key={entry.id} aria-pressed={kind===entry.id} onClick={()=>setKind(entry.id)}><entry.Icon size={17}/>{entry.label}</button>)}</div></fieldset><fieldset disabled={busy}><legend>시작할 디자인</legend><label className="preset-copy-choice"><input type="radio" name="preset-source" checked={copy} onChange={()=>setCopy(true)}/><Copy size={18}/><span><strong>현재 디자인 복제</strong><small>{active?.name||'선택한 프리셋'}에서 시작해요</small></span></label><label className="preset-copy-choice"><input type="radio" name="preset-source" checked={!copy} onChange={()=>setCopy(false)}/><Plus size={18}/><span><strong>새 디자인으로 시작</strong><small>종류에 맞는 기본 양식으로 만들어요</small></span></label></fieldset><button type="submit" className="test-button primary" disabled={busy||!name.trim()||p.presets.length>=20}>{busy?'만드는 중…':'만들고 편집하기 →'}</button></form>}
+        {error&&<p role="alert" className="preset-collection-error">{error}</p>}
+      </div>
+    </AccessibleDialog>
   </div>;
 }

@@ -38,3 +38,6 @@
 .logbook-posters{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));align-items:start}.logbook-poster{min-width:0}
 @media(max-width:600px){.logbook-posters{grid-template-columns:repeat(2,minmax(0,1fr))}.logbook-views button{padding:5px 7px}.logbook-view-label{font-size:10px}.logbook-tools-row{gap:3px}}
 @keyframes logbook-view-in{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+
+.logbook-filter{display:flex;align-items:center;justify-content:center;gap:5px;width:auto;min-width:68px;min-height:40px;height:40px;margin:4px 0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--fg);font-size:12px;font-weight:750}
+.logbook-filter.active{background:var(--accent);color:white;border-color:var(--accent)}.logbook-filter i{display:none}

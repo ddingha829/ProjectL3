@@ -272,6 +272,7 @@ network.offline(true);
 const saved = await first.save(input);
 assert.equal(saved.synced, false);
 await waitFor(() => first.getView().pendingCount === 1, 'durable offline save');
+await assert.rejects(()=>first.prepareForLogin(),/동기화|연결/);
 assert.equal((await storage.read()).archives.length, 1);
 assert.equal(first.getView().status, 'pending');
 const restarted = new LocalArchiveRepository(storage, network.transport);
@@ -285,7 +286,8 @@ await restarted.retrySync();
 assert.notEqual(restarted.getView().serverSnapshot.fromCache, true);
 assert.equal(network.rows.size, 1);
 assert.equal(restarted.getView().status, 'synced');
-console.log('PASS durable offline save, restart hydration, reconnection sync');
+await first.prepareForLogin();
+console.log('PASS durable offline save, restart hydration, reconnection sync and pre-login drain');
 
 network.loseNextResponse();
 const secondItem = createItem('응답 유실 뒤 재시도하는 기록');

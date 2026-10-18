@@ -327,7 +327,7 @@ export default function QuickLogComposer({
   const disabled = isSaving || !isRestored;
   const meaningfulInput = Boolean(draft.body.trim() || draft.title.trim());
   const fieldClass = 'w-full rounded-2xl border border-[var(--line)] bg-[var(--bg)] px-4 py-3 text-base font-normal';
-  const showPlaceHint = autoPlaceLinkOn && !draft.place && draft.title.trim().length >= 2;
+  const showPlaceHint = autoPlaceLinkOn && draft.category !== 'CINEMA' && !draft.place && draft.title.trim().length >= 2;
 
   const oneTapLinkPlace = async () => {
     const q = draft.title.trim();

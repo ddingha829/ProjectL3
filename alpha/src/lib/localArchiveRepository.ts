@@ -295,6 +295,25 @@ export class LocalArchiveRepository {
     await this.mutate(current => ({ ...current, outbox: current.outbox.map(operation => ({ ...operation, state: 'pending', error: undefined })) }));
     await this.refresh();
   }
+  /** Never switch owners while offline-only writes are still pending. */
+  async prepareForLogin(): Promise<void> {
+    await this.initializeLocal();
+    if (this.state.serverSnapshot?.requiresReconnect) {
+      // An empty legacy cache must not trap the user outside the login flow.
+      if (!this.state.archives.length && !this.state.outbox.length) return;
+      const recoveryCode = this.state.serverSnapshot.recoveryCode;
+      if (!recoveryCode) throw new Error('기존 기록의 복원 코드로 먼저 연결한 뒤 로그인해 주세요.');
+      // Prove ownership of the cached diary before syncing it or transferring
+      // anonymous logs. Never trust the old unsigned device UUID on its own.
+      const response = await this.transport('/api/session', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({recoveryCode})});
+      if (!response.ok) throw new Error('기존 기기 기록의 연결을 복원하지 못했어요. 설정에서 복원 코드를 확인해 주세요. 기록은 기기에 유지됩니다.');
+    }
+    await this.retrySync();
+    await this.mutations;
+    if (!this.sessionReady || this.state.outbox.length) {
+      throw new Error('기기 기록을 먼저 동기화하고 있어요. 인터넷 연결을 확인한 뒤 다시 로그인해 주세요.');
+    }
+  }
   async resetAllLogs(): Promise<void> {
     if (this.resetting) return;
     await this.initializeLocal();

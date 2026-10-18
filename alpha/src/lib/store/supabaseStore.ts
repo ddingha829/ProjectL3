@@ -340,9 +340,10 @@ export const supabaseStore: L2Store = {
         cacheControl: '31536000',
         upsert: false,
       });
-      if (res.error) return fileStore.uploadPhoto(ownerId, dataUrl);
+      if (res.error) throw new Error(res.error.message);
       return db().storage.from(bucket()).getPublicUrl(objectPath).data.publicUrl;
-    } catch {
+    } catch (error) {
+      if (process.env.VERCEL || process.env.NODE_ENV === 'production') throw error;
       return fileStore.uploadPhoto(ownerId, dataUrl);
     }
   },
@@ -391,14 +392,34 @@ export const supabaseStore: L2Store = {
           .eq('day', '2000-01-01')
           .limit(5)
       ) as { kind: string }[];
-      const hit = rows.find((r) => r.kind.startsWith('pwd:'));
+      const hit = rows.find((r) => r.kind.startsWith('pwd:') || r.kind.startsWith('oauth:google:'));
       if (!hit) return null;
+      if (hit.kind.startsWith('oauth:google:')) return decodeURIComponent(hit.kind.slice('oauth:google:'.length));
       const parts = hit.kind.slice(4).split(':');
       return parts.slice(1).join(':') || null;
     } catch (err) {
       if (isSchemaMissingError(err)) return fileStore.getAccountUsername?.(deviceId) ?? null;
       throw err;
     }
+  },
+
+  async loginWithGoogle(identity, previousDeviceId) {
+    const accountId = identity.id;
+    const username = `Google · ${identity.label.slice(0, 80)}`;
+    const isNewAccount = !await this.getAccountUsername?.(accountId);
+    const previousIsGuest = previousDeviceId && previousDeviceId !== accountId && !await this.getAccountUsername?.(previousDeviceId);
+    await this.ensureProfile(accountId);
+    if (isNewAccount && previousIsGuest) {
+      const guest = await this.getProfile(previousDeviceId);
+      if (guest) await this.savePrefs(accountId, {authorName: guest.authorName, presetSlots: guest.presetSlots, skins: guest.skins, defaultPresetId: guest.defaultPresetId});
+    }
+    // Mark this identity as registered before any transfer; it must never be
+    // mistaken for a guest by the ID/password sign-in migration path.
+    must(await db().from('l2_ai_usage').upsert({owner_id: accountId, kind: `oauth:google:${encodeURIComponent(username)}`, day: '2000-01-01', count: 1}, {onConflict:'owner_id,kind,day'}));
+    if (previousIsGuest) {
+      must(await db().from('l2_archives').update({owner_id:accountId, updated_at:new Date().toISOString()}).eq('owner_id',previousDeviceId));
+    }
+    return {accountId, username, isNewAccount};
   },
 
   async loginOrRegister(username, password, previousDeviceId) {

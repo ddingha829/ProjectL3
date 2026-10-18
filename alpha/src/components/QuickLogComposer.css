@@ -1,7 +1,7 @@
 .quick-form{display:flex;flex-direction:column;gap:12px;position:relative;min-width:0;border:0;padding:0;background:transparent;box-shadow:none}
 .quick-save{border:0!important;padding:0!important;box-shadow:none!important;margin-top:0!important;border-radius:15px!important}
 .quick-composer .quick-memory::placeholder{color:transparent!important;opacity:0!important}
-.memo-prompt{position:absolute;top:4px;left:0;right:0;pointer-events:none;white-space:nowrap;color:var(--fg);font-family:'Pretendard Variable',Inter,sans-serif;font-size:var(--memo-prompt-size,24px);font-weight:900;line-height:1.1;letter-spacing:-.045em;transition:opacity 150ms ease}
+.memo-prompt{position:absolute;top:4px;left:0;right:0;pointer-events:none;white-space:nowrap;color:var(--fg);font-family:var(--font-sans);font-size:var(--memo-prompt-size,24px);font-weight:900;line-height:1.1;letter-spacing:-.045em;transition:opacity 150ms ease}
 .photo-memo.has-photo .memo-prompt{top:18px;left:0;right:0}
 .photo-memo-panel:focus-within .memo-prompt{opacity:.28}
 .photo-memo-panel:focus-within .memo-prompt>span{animation-play-state:paused}

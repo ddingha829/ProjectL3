@@ -63,7 +63,7 @@ export default function ArchiveBrowser(p:Props){
   }, [p.archives]);
 
   const filtered=useMemo(()=>p.archives.filter(item=>(category==='ALL'||item.cat===category)&&(!selecting||!isLogGroup(item))&&`${item.title} ${item.quote} ${item.loc} ${item.addressShort}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(view!=='map'||hasLinkedPlace(item))).sort((a,b)=>oldest?a.timestamp-b.timestamp:b.timestamp-a.timestamp),[p.archives,category,query,oldest,view,selecting]);
-  const unlinkedMapItems=useMemo(()=>p.archives.filter(item=>!isLogGroup(item)&&!hasLinkedPlace(item)&&(category==='ALL'||item.cat===category)&&item.title.trim().length>=2),[p.archives,category]);
+  const unlinkedMapItems=useMemo(()=>p.archives.filter(item=>!isLogGroup(item)&&item.cat!=='CINEMA'&&!hasLinkedPlace(item)&&(category==='ALL'||item.cat===category)&&item.title.trim().length>=2),[p.archives,category]);
   const spotlightItem=useMemo(()=>p.archives.find(item=>item.id===spotlightId)||null,[p.archives,spotlightId]);
 
   useEffect(()=>{
@@ -98,7 +98,7 @@ export default function ArchiveBrowser(p:Props){
   };
 
   const quickLinkByTitle = async (item: ArchiveItem) => {
-    if (linkingId) return;
+    if (linkingId || item.cat === 'CINEMA') return;
     setLinkingId(item.id);
     setError('');
     try {
@@ -127,7 +127,7 @@ export default function ArchiveBrowser(p:Props){
 
   return <section className="logbook" aria-label="로그북">
     <div className="logbook-toolbar">
-      <div className="logbook-search-row"><button type="button" className={`logbook-filter ${category!=='ALL'?'active':''}`} aria-label="분류 필터" aria-haspopup="dialog" onClick={()=>setFilterOpen(true)}><SlidersHorizontal size={19}/>{category!=='ALL'&&<i/>}</button><label className="logbook-search"><Search size={18} aria-hidden="true"/><span className="sr-only">로그 검색</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="로그 검색"/></label></div>
+      <div className="logbook-search-row"><button type="button" className={`logbook-filter ${category!=='ALL'?'active':''}`} aria-label="분류 필터" aria-haspopup="dialog" onClick={()=>setFilterOpen(true)}><SlidersHorizontal size={17}/><span>{category==='ALL'?'분류':categories.find(entry=>entry.id===category)?.label}</span>{category!=='ALL'&&<i/>}</button><label className="logbook-search"><Search size={18} aria-hidden="true"/><span className="sr-only">로그 검색</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="로그 검색"/></label></div>
       <div className="logbook-tools-row"><div className="logbook-views" role="group" aria-label="보기 방식">{views.map(({id,label,Icon})=><button type="button" key={id} aria-label={label} title={label} aria-pressed={view===id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={17} aria-hidden="true"/>{view===id&&<span className="logbook-view-label">{label}</span>}</button>)}</div><button type="button" className="logbook-sort" onClick={()=>setOldest(v=>!v)}>{oldest?'오래된순 ↑':'최신순 ↓'}</button>{selecting&&<button type="button" className="logbook-cancel" aria-label="그룹 선택 취소" onClick={()=>{setSelecting(false);setSelected([]);setError('');}}><X size={16}/></button>}<button type="button" className={`logbook-group ${selecting?'active':''}`} disabled={selecting&&!selected.length} onClick={()=>{if(selecting){setNaming(true);return;}setCategory('ALL');setSelecting(true);setView('list');setError('');}}>{!selecting&&<FolderPlus size={15}/>}<span>{selecting?`다음 · ${selected.length}`:'그룹 만들기'}</span></button></div>
     </div>
     {error&&!naming&&<p className="logbook-error" role="status">{error}</p>}

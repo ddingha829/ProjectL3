@@ -2,7 +2,7 @@ import { compressCardBlob } from './imageCompression';
 import { toBlob } from 'html-to-image';
 
 interface CardExportOptions { filename?: string; pixelRatio?: number }
-interface FontRule { css: string; baseUrl: string; family: string; weight: string; range: string; src: string }
+interface FontRule { css: string; baseUrl: string; family: string; weight: string; style: string; range: string; src: string }
 
 const fontFileCache = new Map<string, Promise<string>>();
 const fontCssCache = new Map<string, Promise<string>>();
@@ -39,7 +39,7 @@ function descriptor(css: string, name: string): string {
 function parseFaces(css: string, baseUrl: string): FontRule[] {
   return Array.from(css.matchAll(/@font-face\s*\{([^}]+)\}/gi), (match) => ({
     css: match[1], baseUrl, family: descriptor(match[1], 'font-family').replace(/["']/g, '').trim(),
-    weight: descriptor(match[1], 'font-weight') || '400', range: descriptor(match[1], 'unicode-range'), src: descriptor(match[1], 'src'),
+    weight: descriptor(match[1], 'font-weight') || '400', style: descriptor(match[1], 'font-style') || 'normal', range: descriptor(match[1], 'unicode-range'), src: descriptor(match[1], 'src'),
   }));
 }
 
@@ -121,9 +121,13 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
   const usage = new Map<string, Set<number>>();
   for (const element of [node, ...Array.from(node.querySelectorAll<HTMLElement>('*'))]) {
     const style = getComputedStyle(element);
-    for (const family of style.fontFamily.split(',').map((part) => part.trim().replace(/["']/g, ''))) {
-      if (!usage.has(family)) usage.set(family, new Set());
-      usage.get(family)!.add(Number(style.fontWeight) || 400);
+    const families=style.fontFamily.split(',').map(part=>part.trim().replace(/["']/g,''));
+    // The bundled Sebang face covers Korean and Latin; do not embed unused
+    // Pretendard/Inter fallback files in every card. Mono labels stay separate.
+    for (const family of families[0]==='Sebang Gothic' ? families.slice(0,1) : families) {
+      const usageKey=`${family}|${style.fontStyle==='normal'?'normal':'italic'}`;
+      if (!usage.has(usageKey)) usage.set(usageKey, new Set());
+      usage.get(usageKey)!.add(Number(style.fontWeight) || 400);
     }
   }
   const text = Array.from(new Set(Array.from(node.textContent || ''))).sort().join('');
@@ -134,7 +138,8 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
       await withTimeout(document.fonts.ready, '글꼴 준비가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.');
       const rules = await collectFaces();
       const selected = rules.filter((rule) => {
-        const weights = usage.get(rule.family);
+        const faceStyle=rule.style==='normal'?'normal':'italic';
+        const weights = usage.get(`${rule.family}|${faceStyle}`) || (faceStyle==='normal'&&!rules.some(face=>face.family===rule.family&&face.style!=='normal')?usage.get(`${rule.family}|italic`):undefined);
         if (!weights || !includesText(rule.range, text)) return false;
         const numbers = rule.weight.split(/\s+/).map(Number);
         if (!numbers.every(Number.isFinite)) return true;

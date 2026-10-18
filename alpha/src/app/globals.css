@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-sans: "Sebang Gothic", "Pretendard Variable", Inter, sans-serif;
   --bg: #08080A;
   --surface: #111115;
   --surface-2: #18181E;
@@ -43,7 +44,7 @@ html,
 body {
   background-color: var(--bg);
   color: var(--fg);
-  font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   transition: background-color 0.25s ease, color 0.25s ease;
@@ -52,14 +53,14 @@ body {
 
 /* Sculptural Typography */
 .display-type {
-  font-family: 'Inter', 'Pretendard Variable', sans-serif;
+  font-family:var(--font-sans);
   font-weight: 900;
   letter-spacing: -0.055em;
   line-height: 0.92;
 }
 
 .kor-heavy {
-  font-family: 'Pretendard Variable', 'Inter', sans-serif;
+  font-family:var(--font-sans);
   font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 1.04;
@@ -150,7 +151,7 @@ body {
   border: none;
   outline: none;
   width: 100%;
-  font-family: 'Pretendard Variable', 'Inter', sans-serif;
+  font-family:var(--font-sans);
   font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -259,4 +260,11 @@ body {
   background-repeat: repeat-x;
 }
 
+@font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-regular.woff2') format('woff2');font-weight:100 500;font-style:normal;font-display:swap}
+@font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-bold.woff2') format('woff2');font-weight:501 1000;font-style:normal;font-display:swap}
+@font-face{font-family:"Caveat";src:url('/fonts/caveat-wordmark.ttf') format('truetype');font-weight:600;font-display:swap}
+html[data-font=pretendard]{--font-sans:"Pretendard Variable",Pretendard,Inter,sans-serif}
+button,input,textarea,select{font-family:inherit}
 
+@font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-italic-regular.woff2') format('woff2');font-weight:100 500;font-style:italic;font-display:swap}
+@font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-italic-bold.woff2') format('woff2');font-weight:501 1000;font-style:italic;font-display:swap}

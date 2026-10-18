@@ -197,10 +197,28 @@ export const fileStore: L2Store = {
   async getAccountUsername(deviceId) {
     const db = load();
     const prefix = `${deviceId}:pwd:`;
+    const oauth = Object.keys(db.usage).find(k => k.startsWith(`${deviceId}:oauth:google:`));
+    if (oauth) return decodeURIComponent(oauth.slice(`${deviceId}:oauth:google:`.length));
     const hit = Object.keys(db.usage).find((k) => k.startsWith(prefix));
     if (!hit) return null;
     const parts = hit.slice(prefix.length).split(':');
     return parts.slice(1).join(':') || null;
+  },
+
+  async loginWithGoogle(identity, previousDeviceId) {
+    const accountId = identity.id, username = `Google · ${identity.label.slice(0, 80)}`;
+    const isNewAccount = !await this.getAccountUsername?.(accountId);
+    const previousIsGuest = previousDeviceId && previousDeviceId !== accountId && !await this.getAccountUsername?.(previousDeviceId);
+    await this.ensureProfile(accountId);
+    const current = load();
+    if (isNewAccount && previousIsGuest && current.profiles[previousDeviceId]) {
+      const guest = current.profiles[previousDeviceId];
+      current.profiles[accountId] = {...current.profiles[accountId], authorName:guest.authorName, presetSlots:guest.presetSlots, skins:guest.skins, defaultPresetId:guest.defaultPresetId};
+    }
+    current.usage[`${accountId}:oauth:google:${encodeURIComponent(username)}`] = 1;
+    if (previousIsGuest) for (const row of Object.values(current.archives)) if (row.ownerId === previousDeviceId) row.ownerId = accountId;
+    persist(current);
+    return {accountId, username, isNewAccount};
   },
 
   async loginOrRegister(username, password, previousDeviceId) {

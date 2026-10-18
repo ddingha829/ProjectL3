@@ -7,6 +7,7 @@ interface AccessibleDialogProps {
   open: boolean;
   title: string;
   description?: string;
+  headerAdornment?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   initialFocusId?: string;
@@ -17,6 +18,7 @@ export default function AccessibleDialog({
   open,
   title,
   description,
+  headerAdornment,
   onClose,
   children,
   initialFocusId,
@@ -111,11 +113,12 @@ export default function AccessibleDialog({
         tabIndex={-1}
         className="quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7"
       >
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className={`quick-dialog-header mb-6 flex items-start justify-between gap-4 ${headerAdornment ? 'has-adornment' : ''}`}>
           <div>
             <h2 id={titleId} className="text-xl font-bold tracking-tight">{title}</h2>
             {description && <p id={descriptionId} className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{description}</p>}
           </div>
+          {headerAdornment}
           <button type="button" onClick={onClose} aria-label="추가 정보 닫기" className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl">×</button>
         </div>
         {children}

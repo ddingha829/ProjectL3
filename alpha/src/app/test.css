@@ -79,3 +79,16 @@ html, body { overflow-x: clip; }
 html[data-motion=off] *,html[data-motion=off] *::before,html[data-motion=off] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(prefers-reduced-motion:reduce){html:not([data-motion=on]) *,html:not([data-motion=on]) *::before,html:not([data-motion=on]) *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
 
+
+/* Keep a centred settings hit area inside the header at every width. */
+.test-header{display:grid;grid-template-columns:auto minmax(0,1fr) 44px;gap:clamp(4px,1.5vw,20px);min-width:0}
+.test-header nav{justify-self:end;min-width:0;margin-left:0}
+.test-header .test-settings-button{display:grid;place-items:center;width:44px;min-width:44px;height:44px;padding:0;line-height:1;align-self:center}
+.test-settings-button svg{display:block;flex-shrink:0}
+@media(max-width:350px){.test-header{grid-template-columns:auto minmax(0,1fr) 40px;gap:2px}.test-header .test-settings-button{width:40px;min-width:40px}.test-header nav button{padding:8px 7px;font-size:14px}}
+.settings-wordmark{font-family:Caveat,cursive;font-size:42px;font-weight:600;line-height:1.15;text-align:center;padding:0 0 8px;color:var(--fg);transform:rotate(-3deg);margin:0}
+.settings-google-login{width:100%;min-height:48px;border-radius:13px;background:#fff;color:#202124;border:1px solid #d1d1d1;font-size:14px;font-weight:650;display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:12px}
+.settings-google-login:disabled{opacity:.5}.settings-auth-divider{font-size:11px;color:var(--muted);text-align:center;margin:8px 0 12px}
+.preset-library,.preset-library *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.preset-drag-handle{touch-action:none}
+
+.quick-dialog-header.has-adornment{display:grid;grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);align-items:center;gap:8px;margin-bottom:18px}.quick-dialog-header.has-adornment>.quick-control{justify-self:end}.quick-dialog-header.has-adornment .settings-wordmark{margin:0;padding:0;font-size:clamp(28px,6vw,36px);line-height:1;justify-self:center}

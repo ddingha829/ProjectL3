@@ -161,6 +161,10 @@ export class PresetPreferenceRepository {
     });
     return this.syncing;
   }
+  async prepareForLogin(): Promise<void> {
+    await this.retrySync();
+    if (this.envelope.__l2Sync.pending) throw new Error('프리셋을 먼저 동기화한 뒤 다시 로그인해 주세요.');
+  }
   private async flush(): Promise<void> {
     while (this.envelope.__l2Sync.pending && this.envelope.__l2Sync.ownerId && this.confirmedOwner === this.envelope.__l2Sync.ownerId) {
       const captured = normalizePreferenceEnvelope(structuredClone(this.envelope));
