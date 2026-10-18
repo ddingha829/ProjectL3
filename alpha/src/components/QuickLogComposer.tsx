@@ -288,6 +288,25 @@ export default function QuickLogComposer({
     }
   };
 
+  const openPhotoPicker = (input: HTMLInputElement | null) => {
+    if (!input || disabled) return;
+    setPhotoError('');
+    input.multiple = false;
+    input.value = '';
+    input.click();
+  };
+  const selectPhoto = (input: HTMLInputElement) => {
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (!files.length) return;
+    if (files.length !== 1) {
+      setPhotoError('사진은 한 장만 선택해 주세요. 기존 사진은 그대로 유지돼요.');
+      return;
+    }
+    setPhotoError(''); setDialog(null);
+    void uploadPhoto(files[0]);
+  };
+
   const commit = async (category: ArchiveCategory) => {
     if (savingRef.current || !isReady || !isRestored || photoBusy) return;
     if (!draft.title.trim()) {
@@ -439,8 +458,8 @@ export default function QuickLogComposer({
 
             <div className="quick-actions" role="group" aria-label="기록 첨부">
               <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
-              <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if(file)setDialog(null); void uploadPhoto(file); }} />
-              <input ref={cameraRef} type="file" accept="image/*" capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if(file)setDialog(null); void uploadPhoto(file); }} />
+              <input ref={fileRef} type="file" accept="image/*" multiple={false} tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={event=>selectPhoto(event.currentTarget)} />
+              <input ref={cameraRef} type="file" accept="image/*" multiple={false} capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={event=>selectPhoto(event.currentTarget)} />
               <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
               <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
             </div>
@@ -458,7 +477,7 @@ export default function QuickLogComposer({
         </div>
       </form>
 
-      <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} onAlbum={()=>fileRef.current?.click()} onCamera={()=>cameraRef.current?.click()} onMedia={item=>{
+      <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} selectionError={photoError} onAlbum={()=>openPhotoPicker(fileRef.current)} onCamera={()=>openPhotoPicker(cameraRef.current)} onMedia={item=>{
         photoToken.current += 1;
         const reference = `[TMDB 참고] ${item.title}${item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;
         setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,cropZoom:1,photoFit:undefined,category:'CINEMA',note:[current.note,reference].filter(Boolean).join('\n\n').slice(0,1000)}));

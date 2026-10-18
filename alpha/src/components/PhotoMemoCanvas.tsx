@@ -124,6 +124,7 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropZoom,
     let disposed = false;
     let previousWidth = -1;
     let previousPanelHeight = -1;
+    let measureFrame = 0;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     const measure = () => {
@@ -144,7 +145,8 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropZoom,
       if (Math.abs(textarea.clientWidth - previousWidth) < 1 && Math.abs(panelH - previousPanelHeight) < 2) return;
       previousWidth = textarea.clientWidth;
       previousPanelHeight = panelH;
-      measure();
+      cancelAnimationFrame(measureFrame);
+      measureFrame = requestAnimationFrame(measure);
     });
     observer.observe(textarea);
     if (panel) observer.observe(panel);
@@ -157,6 +159,7 @@ export default function PhotoMemoCanvas({ id, body, img, cropX, cropY, cropZoom,
     window.visualViewport?.addEventListener('resize', measure);
     return () => {
       disposed = true;
+      cancelAnimationFrame(measureFrame);
       observer.disconnect();
       fontObserver.disconnect();
       document.fonts.removeEventListener('loadingdone',measure);

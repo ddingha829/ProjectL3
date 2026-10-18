@@ -1,5 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 단일 사진 선택 보강
+
+- Album/camera inputs explicitly use `multiple={false}` and reset to single selection immediately before opening. Existing inputs were already single-select by default. Unexpected multi-file results now show an error inside the photo modal, keep the old image, and request one photo again instead of silently taking the first.
+- PWA cannot force iOS/Android to hide Browse/Files or directly launch a specific native album app. Keep `accept=image/*` for the album and `capture=environment` only for the separate camera option. Do not claim OS picker menus were removed. Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/file
+- Chrome and real Playwright WebKit native filechooser events confirm single-file mode; injected multi-file rejection/retry and compression passed. PhotoMemo ResizeObserver measurements are scheduled on the next animation frame to avoid a WebKit resize feedback warning after insertion. `test:ux-upgrade` covers the regression; no paid API calls or live user-data writes.
+
 ## 2026-10-18 사진 맞춤/드래그 후속 수정
 
 - Card detail now offers 사진 조정: contain/cover, 1~3× zoom and direct mouse/touch drag with a live card preview. Apply stages a per-log photo draft; Card Save persists it, cancel restores it. Composer/content editing shares the same drag engine and retains axis sliders. See `alpha/DOCS/PHOTO_FRAMING.md` and `test:photo-adjust`.
