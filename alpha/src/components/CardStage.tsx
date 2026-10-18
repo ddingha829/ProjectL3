@@ -141,7 +141,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'ticket':
       treatment = styles.ticket;
       artwork = <div className={styles.artwork}>
-        {header(showNumber ? `L2 / ${number}` : 'L2.', 'ADMISSION TICKET')}{photo(photoHeight)}<div className={styles.content}>{heading()}{quote && <div className={styles.quoteBox}>{quote}</div>}{!compact && details}</div>{footer}
+        {header(showNumber ? `L2 / ${number}` : 'L2.', 'ADMISSION TICKET')}{photo('auto')}<div className={styles.content}>{heading()}{quote && <div className={styles.quoteBox}>{quote}</div>}{!compact && details}</div>{footer}
       </div>;
       break;
     case 'curation': {

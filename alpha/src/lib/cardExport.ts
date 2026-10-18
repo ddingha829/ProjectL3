@@ -1,5 +1,5 @@
 import { compressCardBlob } from './imageCompression';
-import { toBlob } from 'html-to-image';
+import { toSvg } from 'html-to-image';
 
 interface CardExportOptions { filename?: string; pixelRatio?: number }
 interface FontRule { css: string; baseUrl: string; family: string; weight: string; style: string; range: string; src: string }
@@ -156,15 +156,74 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
   return pending;
 }
 
-async function prepareImages(node: HTMLElement) {
-  await Promise.all(Array.from(node.querySelectorAll('img'), async (image) => {
-    if (image.decode) await withTimeout(image.decode(), '사진 준비가 지연되고 있습니다. 다시 시도해 주세요.');
-    else if (!image.complete) await withTimeout(new Promise<void>((resolve, reject) => {
-      image.addEventListener('load', () => resolve(), { once: true });
-      image.addEventListener('error', () => reject(new Error('사진을 불러오지 못했습니다.')), { once: true });
-    }), '사진 준비가 지연되고 있습니다.');
-    if (!image.naturalWidth) throw new Error('사진을 불러오지 못해 카드를 저장하지 않았습니다.');
+async function decodeImage(image: HTMLImageElement) {
+  await withTimeout(image.decode(), '사진 준비가 지연되고 있습니다. 다시 시도해 주세요.');
+  if (!image.naturalWidth || !image.naturalHeight) throw new Error('사진을 불러오지 못해 카드를 저장하지 않았습니다.');
+}
+
+/** Freeze one export without replacing sources or crop positions in the live preview.
+ * html-to-image's resource loader may cache an empty placeholder after a failed
+ * CORS request. Strictly embed and decode our own resources before it sees them.
+ */
+async function imageSnapshot(node: HTMLElement, width: number, height: number) {
+  const sourceImages = Array.from(node.querySelectorAll('img'));
+  const embedded = new Map<string, Promise<string>>();
+  const sources = await Promise.all(sourceImages.map(async image => {
+    await decodeImage(image);
+    const url = image.currentSrc || image.src;
+    let pending = embedded.get(url);
+    if (!pending) {
+      pending = (async () => {
+        if (url.startsWith('data:')) return url;
+        const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(url, { mode: 'cors', cache: 'reload', credentials: 'same-origin', signal: controller.signal });
+          if (!response.ok || response.type === 'opaque') throw new Error('사진 원본을 가져오지 못했어요. 네트워크 연결을 확인해 주세요.');
+          const blob = await response.blob();
+          if (!blob.size) throw new Error('사진 원본이 비어 있어요. 다시 시도해 주세요.');
+          return await blobAsDataUrl(blob);
+        } finally { clearTimeout(timer); }
+      })();
+      embedded.set(url, pending);
+    }
+    return pending;
   }));
+  const snapshot = node.cloneNode(true) as HTMLElement;
+  snapshot.removeAttribute('data-card-capture');
+  const images = Array.from(snapshot.querySelectorAll('img'));
+  images.forEach((image, index) => {
+    image.removeAttribute('srcset'); image.removeAttribute('sizes'); image.removeAttribute('crossorigin');
+    image.loading = 'eager'; image.decoding = 'sync'; image.src = sources[index];
+  });
+  const host = document.createElement('div');
+  host.setAttribute('aria-hidden', 'true'); host.inert = true;
+  Object.assign(host.style, { position: 'fixed', left: '-10000px', top: '0', width: `${width}px`, height: `${height}px`, pointerEvents: 'none' });
+  host.appendChild(snapshot); document.body.appendChild(host);
+  try { await Promise.all(images.map(decodeImage)); }
+  catch (error) { host.remove(); throw error; }
+  return { snapshot, cleanup: () => host.remove() };
+}
+
+async function renderSnapshot(snapshot: HTMLElement, width: number, height: number, fontEmbedCSS: string, pixelRatio?: number) {
+  const svg = await withTimeout(toSvg(snapshot, { width, height, fontEmbedCSS, preferredFontFormat: 'woff2',
+    style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' },
+  }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
+  const image = new Image(); image.src = svg; await decodeImage(image);
+  const ratio = Math.min(1080 / width, pixelRatio ?? 1080 / width);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width * ratio)); canvas.height = Math.max(1, Math.round(height * ratio));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  // WebKit can report a loaded SVG before its foreignObject photos are painted.
+  // Repaint the SAME decoded SVG after a warm-up; never re-fetch remote photos.
+  if (/AppleWebKit/i.test(navigator.userAgent) && !/Chrome|Chromium|Edg|Android/i.test(navigator.userAgent)) {
+    await new Promise<void>(resolve => setTimeout(resolve, 150));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  }
+  return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob?.size ? resolve(blob) : reject(new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.')), 'image/png'));
 }
 
 export function prepareCardExport(node: HTMLElement, options: CardExportOptions = {}): Promise<{ blob: Blob; file: File }> {
@@ -172,14 +231,13 @@ export function prepareCardExport(node: HTMLElement, options: CardExportOptions 
     const animations = node.getAnimations?.({ subtree: true }).filter((animation) => animation.playState === 'running') || [];
     animations.forEach((animation) => animation.pause());
     try {
-      const [fontEmbedCSS] = await Promise.all([prepareFonts(node), prepareImages(node)]);
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const width = Number(node.dataset.cardWidth) || node.offsetWidth;
       const height = Number(node.dataset.cardHeight) || node.offsetHeight;
-      // CDN images first loaded by <img> can be cached without CORS headers.
-      // Reload the resource in CORS fetch mode before embedding it into the canvas.
-      const rendered = await withTimeout(toBlob(node, { width, height, pixelRatio: Math.min(1080 / width, options.pixelRatio ?? 1080 / width), fontEmbedCSS, preferredFontFormat: 'woff2', cacheBust: false, includeQueryParams: true, fetchRequestInit: { cache: 'reload' }, style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' } }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
-      if (!rendered || !rendered.size) throw new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.');
+      const fontEmbedCSS = await prepareFonts(node);
+      const { snapshot, cleanup } = await imageSnapshot(node, width, height);
+      let rendered: Blob;
+      try { rendered = await renderSnapshot(snapshot, width, height, fontEmbedCSS, options.pixelRatio); }
+      finally { cleanup(); }
       const blob = await compressCardBlob(rendered);
       const filename = (options.filename || 'L2_card.png').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_');
       return { blob, file: new File([blob], `${filename.replace(/\.(png|jpe?g|webp)$/i,'')}.jpg`, { type: blob.type }) };

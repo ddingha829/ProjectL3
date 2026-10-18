@@ -19,6 +19,7 @@
     "test:guides-studio": "node scripts/test_guides_studio.mjs",
     "test:ux-upgrade": "node scripts/test_ux_upgrade.mjs",
     "test:card-exports": "node scripts/test_card_exports.mjs",
+    "test:ticket-export": "node scripts/test_ticket_export.mjs",
     "test:card-designs": "node scripts/test_card_designs.mjs",
     "test:preset-workflows": "node scripts/test_preset_workflows.mjs",
     "test:google-auth": "node scripts/test_google_auth.mjs",

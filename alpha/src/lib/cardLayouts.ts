@@ -20,7 +20,7 @@ const metadataElements = elements.filter((element) => element !== 'showProsCons'
 export const CARD_LAYOUTS: readonly CardLayoutDefinition[] = [
   { id: 'spec', name: 'KAKAO', sub: '에디토리얼 리뷰', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: elements },
   { id: 'cover', name: 'INSTA', sub: '풀블리드 포스터', ratio: '1:1', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
-  { id: 'ticket', name: 'TICKET', sub: '입장권 티켓 스텁', ratio: '9:16', isNoPhoto: false, supportedRatios: ratios, supportedElements: elements },
+  { id: 'ticket', name: 'TICKET', sub: '입장권 티켓 스텁', ratio: '9:16', isNoPhoto: false, supportedRatios: ['3:4', '9:16'], supportedElements: elements },
   { id: 'curation', name: 'LIST', sub: '멀티 큐레이션', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
   { id: 'receipt', name: 'RECEIPT', sub: '비스트로 감열 영수증', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: elements },
   { id: 'polaroid', name: 'POLAROID', sub: '35mm 필름 콘택트', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: elements },

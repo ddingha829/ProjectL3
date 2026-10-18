@@ -1,5 +1,10 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 티켓/공유 후속 수정
+
+- TICKET uses a flexible, contain-fit poster area and compact content/footer; only 3:4 and 9:16 are supported. The common ratio picker disables 1:1 for Ticket. Legacy square tickets resolve to 9:16.
+- Export strictly embeds and decodes photos in an isolated snapshot before SVG/canvas rendering, with a WebKit repaint warm-up. Source fetch failures produce retryable errors instead of blank success. Snapshot removal preserves the live preview. See `alpha/DOCS/TICKET_POSTER_EXPORT_FIX.md` and `test:ticket-export` for Chrome + real Playwright WebKit pixel checks, retry/long-content tests, and the remaining actual-iPhone share-sheet limitation. Supported export matrix is now 59 pairs across 20 layouts.
+
 ## 2026-10-18 최신 승인 후속 작업 (사용자 요청으로 일괄 push)
 
 - `alpha/DOCS/FRONTEND_AUTH_REVIEW_20261018.md`: 이번 11개 요청, 뒤이은 헤더 필기체·초기 문구 폰트 수정, 회귀 검증 결과와 새 Supabase 이전 계획.

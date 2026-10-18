@@ -85,3 +85,5 @@
 .preset-editor-row>.preset-name-row,.preset-editor-row>.preset-controls{grid-column:auto;grid-row:auto;align-self:stretch}
 
 @media(max-width:600px){.preset-editor-row .preset-photo-mode svg{display:none}.preset-editor-row .preset-photo-mode button{padding:3px 4px;min-width:0;flex:1}.preset-editor-row .preset-photo-mode button span{display:inline;font-size:10px}.preset-editor-row .preset-photo-mode{width:100%}}
+
+.preset-ratios button:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through}

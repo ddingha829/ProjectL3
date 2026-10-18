@@ -153,3 +153,17 @@
 
 /* Italics add an editorial accent; primary titles, forms and long copy stay upright. */
 .editorial .brand,.magazine .masthead,.fullBleed .quote{font-style:italic}
+
+/* A ticket gives remaining height to the poster, rather than a blank footer gap. */
+.ticket .artwork{display:flex;margin:0;width:100%;height:100%;padding:22px;gap:14px}
+.ticket .header{padding-bottom:10px}.ticket .brand{font-size:28px}
+.ticket .photo{flex:1 1 0;min-height:100px;max-height:none;background:color-mix(in srgb,var(--card-bg) 90%,var(--card-text))}
+.ticket .photo img{object-fit:contain}
+.ticket .content{flex:0 0 auto;gap:10px}
+.ticket .quoteBox{padding:10px 0 0}.ticket .quote{font-size:17px;line-height:1.4}
+.ticket .details{font-size:12px;gap:4px}.ticket .detail>span:last-child{-webkit-line-clamp:2}
+.ticket .title{font-size:34px}.ticket .footer{margin-top:0;padding-top:9px}
+.frame[data-card-ratio='9:16'] .ticket .artwork{padding:22px;gap:14px}
+.frame[data-card-ratio='9:16'] .ticket .title{font-size:38px}
+.frame[data-card-ratio='9:16'] .ticket .content{gap:10px}
+.frame[data-card-ratio='9:16'] .ticket .details{font-size:12px;gap:4px}
