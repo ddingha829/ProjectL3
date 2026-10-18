@@ -39,7 +39,7 @@
 /* The artwork leads, followed by its library, name and editing controls. */
 .preset-studio{max-width:none;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(90px,1fr) auto auto 154px 44px;gap:8px}
 .preset-studio>.preset-preview,.preset-studio>.preset-library,.preset-studio>.preset-name-row,.preset-studio>.preset-controls,.preset-studio>.preset-footer{grid-column:1;grid-row:auto;align-self:stretch}
-.preset-controls{height:auto}.preset-control-panel{height:110px}.preset-name-row{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 6%,var(--surface));box-shadow:inset 3px 0 var(--accent)}.preset-name-field>label{color:var(--fg);font-weight:750}.preset-name-field>input{min-height:28px;font-size:18px;color:var(--fg)}.preset-group-only{font-size:11px;color:var(--accent);font-weight:700;padding:8px}.preset-toggles{grid-template-columns:repeat(4,minmax(0,1fr))}.preset-toggles label{min-height:28px}.preset-toggles input{width:16px;height:16px}
+.preset-controls{height:auto}.preset-control-panel{height:110px}.preset-name-row{border-color:var(--line);background:color-mix(in srgb,var(--accent) 3%,var(--surface));box-shadow:none}.preset-name-field>label{color:var(--fg);font-weight:750}.preset-name-field>input{min-height:28px;font-size:18px;color:var(--fg)}.preset-group-only{font-size:11px;color:var(--accent);font-weight:700;padding:8px}.preset-toggles{grid-template-columns:repeat(4,minmax(0,1fr))}.preset-toggles label{min-height:28px}.preset-toggles input{width:16px;height:16px}
 @media(min-width:1000px){.preset-studio{grid-template-columns:minmax(0,1fr) 390px;grid-template-rows:auto auto minmax(154px,1fr) 44px;gap:14px 28px}.preset-studio>.preset-preview{grid-column:1;grid-row:1/5}.preset-studio>.preset-library{grid-column:2;grid-row:1}.preset-studio>.preset-name-row{grid-column:2;grid-row:2}.preset-studio>.preset-controls{grid-column:2;grid-row:3;align-self:start;height:190px}.preset-studio>.preset-footer{grid-column:2;grid-row:4}.preset-control-panel{height:145px}}
 @media(max-height:650px) and (max-width:999px){.preset-studio{gap:5px;grid-template-rows:minmax(80px,1fr) auto auto 136px 40px}.preset-library{padding:5px 9px}.preset-library-heading{margin-bottom:1px}.preset-library .preset-rail button{min-height:30px;padding:5px 10px}.preset-name-row{min-height:54px;padding:6px 10px}.preset-name-field>input{font-size:16px}.preset-tabs button{min-height:28px}.preset-control-panel{height:99px}.preset-footer button{min-height:40px}.preset-toggles label{min-height:24px;font-size:9px}}
 
@@ -87,3 +87,11 @@
 @media(max-width:600px){.preset-editor-row .preset-photo-mode svg{display:none}.preset-editor-row .preset-photo-mode button{padding:3px 4px;min-width:0;flex:1}.preset-editor-row .preset-photo-mode button span{display:inline;font-size:10px}.preset-editor-row .preset-photo-mode{width:100%}}
 
 .preset-ratios button:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+
+/* Quiet emphasis for the name: generous inset and a focused writing line. */
+.preset-editor-row .preset-name-row{padding:8px 14px}
+.preset-name-row:focus-within{border-color:var(--line);background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.preset-name-field>input{padding:2px 0 4px;border:0;border-bottom:1px solid color-mix(in srgb,var(--fg) 18%,transparent);border-radius:0;transition:border-color 160ms ease}
+.preset-name-field:focus-within>input{border-bottom-color:var(--accent)}
+@media(max-width:360px){.preset-editor-row .preset-name-row{padding:7px 10px}}
+.test-shell .preset-name-field>input:focus-visible{outline:none;border-bottom-color:var(--accent);box-shadow:0 1px 0 var(--accent)}
