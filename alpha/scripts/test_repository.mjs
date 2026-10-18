@@ -523,6 +523,16 @@ try {
   const ownerMismatch = await prefsApi.POST({ json: async () => ({ defaultPresetId: '04', expectedDeviceId: randomUUID() }) });
   assert.equal(ownerMismatch.status, 409);
   assert.equal((await (await prefsApi.GET()).json()).defaultPresetId, defaultId, 'a stale owner cannot overwrite the recovered profile');
+  const { assignDefault, defaultPresetFor } = load('src/lib/presetDefaults.ts');
+  const categorySlots = assignDefault(PRESET_SLOTS, PRESET_SLOTS[1], 'CINEMA').reverse();
+  const categorySave = await prefsApi.POST({ json: async () => ({ presetSlots: categorySlots }) });
+  assert.equal(categorySave.status, 200);
+  const categoryProfile = await (await prefsApi.GET()).json();
+  assert.deepEqual(categoryProfile.presetSlots.map(slot => slot.id), categorySlots.map(slot => slot.id));
+  assert.equal(defaultPresetFor('CINEMA', categoryProfile.presetSlots, categoryProfile.defaultPresetId).id, '02');
+  assert.equal((await fileStore.getProfile(activeDevice)).presetSlots.find(slot => slot.id === '02').defaultFor[0], 'CINEMA');
+  await prefsApi.POST({ json: async () => ({ presetSlots: PRESET_SLOTS }) });
+  console.log('PASS preset drag order and per-category defaults survive API, profile and disk roundtrip');
 
   const styledItem = { ...createItem('시점의 스타일을 고정', 'OTHER'), cardAppearance: structuredClone(frozenAppearance) };
   const styledPost = await logsApi.POST({ json: async () => styledItem });

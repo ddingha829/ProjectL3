@@ -18,7 +18,9 @@
     "test:save-feedback": "node scripts/test_save_feedback.mjs",
     "test:guides-studio": "node scripts/test_guides_studio.mjs",
     "test:ux-upgrade": "node scripts/test_ux_upgrade.mjs",
-    "test:card-exports": "node scripts/test_card_exports.mjs"
+    "test:card-exports": "node scripts/test_card_exports.mjs",
+    "test:card-designs": "node scripts/test_card_designs.mjs",
+    "test:preset-workflows": "node scripts/test_preset_workflows.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

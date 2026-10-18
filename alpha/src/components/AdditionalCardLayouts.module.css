@@ -1,0 +1,173 @@
+/* Always 420px wide in card coordinates. CardFrame scales the entire type system,
+   keeping the preview, ratio variants and exported image consistent. */
+.card { height:100%; width:100%; padding:26px; display:flex; flex-direction:column; gap:16px; position:relative; overflow:hidden; color:var(--card-text); font-family:'Pretendard Variable',Inter,sans-serif; }
+.card > * { min-width:0; flex-shrink:0; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:26px; }
+.headerLabel { display:flex; align-items:center; gap:12px; min-width:0; }
+.eyebrow { font-family:Inter,'Pretendard Variable',sans-serif; font-size:11px; font-weight:800; letter-spacing:.12em; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.number { font:800 12px/1.3 'JetBrains Mono',monospace; color:var(--card-sub); }
+.score { display:flex; align-items:baseline; gap:4px; font:900 28px/1 Inter,sans-serif; letter-spacing:-.06em; color:var(--card-accent); white-space:nowrap; }
+.score small { font-size:10px; font-weight:700; letter-spacing:0; color:var(--card-sub); }
+.title { margin:0; font-size:40px; line-height:1.13; font-weight:900; letter-spacing:-.055em; overflow-wrap:anywhere; word-break:keep-all; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-wrap:balance; }
+.title[data-title-length='medium'] { font-size:34px; }
+.title[data-title-length='long'] { font-size:29px; }
+.quote { margin:0; font-size:18px; font-weight:600; letter-spacing:-.025em; line-height:1.55; overflow-wrap:anywhere; word-break:keep-all; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+.location { color:var(--card-sub); margin:0; font-size:12px; font-weight:550; line-height:1.5; letter-spacing:-.01em; overflow-wrap:anywhere; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; overflow:hidden; }
+.copy { display:flex; flex-direction:column; gap:8px; }
+.details { display:flex; flex-direction:column; gap:6px; }
+.details p { display:flex; gap:9px; margin:0; font-size:12px; line-height:1.5; }
+.details b { font:800 10px/1.8 Inter,sans-serif; color:var(--card-accent); flex-shrink:0; }
+.details span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; overflow:hidden; overflow-wrap:anywhere; }
+.imprint { margin-top:auto; padding-top:2px; }
+.imprint [data-card-imprint] { gap:6px; font-size:10px; letter-spacing:-.025em; }
+.feedPhoto, .archPhoto, .orbitPhoto, .wideCut, .detailCut, .marginPhoto, .pocketPhoto { position:relative; overflow:hidden; min-height:0; background:var(--card-chip); }
+.feedPhoto > div, .archPhoto > div, .orbitPhoto > div, .wideCut > div, .detailCut > div, .marginPhoto > div, .pocketPhoto > div:first-child { border-radius:inherit; }
+
+/* 12. Quiet paper, oversized Korean headline, an imperfect underline. */
+.doodle { background-image:repeating-linear-gradient(0deg,transparent 0 30px,var(--card-border) 30px 31px); }
+.doodle .header { padding-bottom:12px; border-bottom:2px solid var(--card-text); }
+.noteBody { display:flex; flex-direction:column; justify-content:center; flex:1 1 0; min-height:0; gap:20px; }
+.noteBody > *, .dayBody > *, .paintCopy > * { flex-shrink:0; }
+.underlined { position:relative; padding-bottom:14px; }
+.underlined::after { content:''; position:absolute; bottom:0; left:0; width:100px; height:5px; border-radius:40% 10% 50% 20%; background:var(--card-accent); transform:rotate(-3deg); }
+.doodle .title { font-size:44px; line-height:1.17; letter-spacing:-.055em; }
+.doodle .title[data-title-length='medium'] { font-size:37px; }
+.doodle .title[data-title-length='long'] { font-size:30px; }
+.doodle .quote { font-size:22px; line-height:1.55; -webkit-line-clamp:4; }
+.noteDrawing { display:flex; align-items:center; justify-content:flex-end; gap:4px; color:var(--card-accent); }
+.scribble { width:104px; height:48px; flex-shrink:0; }
+.noteDrawing span { font:italic 600 12px/1.4 Inter,sans-serif; transform:rotate(-4deg); }
+
+/* 13. Familiar feed rhythm without social-network counters or branding. */
+.feed { padding:23px; gap:14px; }
+.feed .headerLabel::before { content:''; width:24px; height:24px; border:6px solid var(--card-accent); border-radius:50%; flex-shrink:0; }
+.card[data-decorations='false'] .headerLabel::before, .card[data-decorations='false'] .underlined::after { display:none; }
+.feed .eyebrow { letter-spacing:-.02em; font-size:14px; }
+.feedPhoto { flex:1 1 0; min-height:55px; border-radius:4px; }
+.feed .title { font-size:36px; }
+.feed .title[data-title-length='long'] { font-size:28px; }
+.feed .quote { font-size:17px; -webkit-line-clamp:2; }
+
+/* 14. Collectible print; the lower gradient protects type over real photos. */
+.photocard { padding:16px; gap:12px; }
+.pocketPhoto { flex:1 1 0; min-height:120px; border-radius:16px 16px 5px 5px; }
+.pocketShade { position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgb(0 0 0 / 38%),transparent 30%,rgb(0 0 0 / 25%) 45%,rgb(0 0 0 / 94%) 100%); }
+.pocketTop { position:absolute; inset:20px 20px auto; display:flex; align-items:center; justify-content:space-between; gap:8px; color:white; pointer-events:none; }
+.pocketTop .number { color:white; }
+.pocketCaption { position:absolute; bottom:22px; left:20px; right:20px; display:flex; flex-direction:column; gap:10px; color:white; pointer-events:none; }
+.pocketCaption .title { font-size:42px; font-weight:900; }
+.pocketCaption .title[data-title-length='medium'] { font-size:35px; }
+.pocketCaption .title[data-title-length='long'] { font-size:29px; }
+.pocketCaption .location { color:rgb(255 255 255 / 85%); }
+.pocketCaption .quote { font-size:17px; font-weight:650; -webkit-line-clamp:2; }
+.pocketEdition { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 4px; }
+.pocketEdition .eyebrow { font-size:10px; letter-spacing:.05em; }
+.photocard .imprint { padding:0 4px; }
+
+/* 15. Tabular date numerals balanced by a substantial Korean headline. */
+.day .header { border-bottom:2px solid var(--card-text); padding-bottom:12px; }
+.calendar { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; padding:4px 0 16px; border-bottom:1px solid var(--card-border); }
+.calendar strong { font:900 112px/.85 Inter,'Pretendard Variable',sans-serif; font-variant-numeric:tabular-nums; letter-spacing:-.085em; color:var(--card-accent); }
+.calendar > span { display:flex; flex-direction:column; align-items:center; font:700 15px/1.1 'JetBrains Mono',monospace; color:var(--card-sub); gap:5px; }
+.calendar i { font-style:normal; opacity:.5; }
+.dayBody { display:flex; flex-direction:column; gap:12px; flex:1 1 0; min-height:0; }
+.day .quote { -webkit-line-clamp:3; font-size:19px; }
+.day .details { margin-top:auto; }
+
+/* 16. Lousy pixel illustration; crisp, serious type. */
+.paint .header { border-bottom:1px dashed var(--card-border); padding-bottom:12px; }
+.paintDrawing { flex:1 1 0; min-height:60px; max-height:210px; display:flex; align-items:center; justify-content:center; padding:8px 0; color:var(--card-text); }
+.badDrawing { width:100%; height:100%; max-height:200px; image-rendering:pixelated; }
+.paintCopy { display:flex; flex-direction:column; gap:10px; min-height:0; }
+.paint .title { font-size:42px; font-weight:900; letter-spacing:-.065em; }
+.paint .title[data-title-length='medium'] { font-size:35px; }
+.paint .title[data-title-length='long'] { font-size:29px; }
+.paint .quote { font-size:19px; -webkit-line-clamp:2; }
+
+/* 17. Architectural window with centered optical alignment. */
+.arch { align-items:center; gap:15px; }
+.arch .header, .arch .imprint { width:100%; }
+.arch .eyebrow { font-size:10px; letter-spacing:.08em; }
+.archPhoto { width:74%; flex:1 1 0; min-height:80px; border-radius:160px 160px 3px 3px; }
+.archCopy { width:100%; text-align:center; display:flex; flex-direction:column; gap:9px; }
+.arch .title { font-size:36px; line-height:1.2; letter-spacing:-.045em; }
+.arch .title[data-title-length='long'] { font-size:28px; }
+.arch .quote { font-size:17px; font-weight:550; -webkit-line-clamp:2; }
+
+/* 18. Circle and note; shape is preserved at every ratio. */
+.orbit .header { border-bottom:1px solid var(--card-border); padding-bottom:10px; }
+.orbit .title { font-size:44px; letter-spacing:-.06em; line-height:1.1; }
+.orbit .title[data-title-length='medium'] { font-size:37px; }
+.orbit .title[data-title-length='long'] { font-size:30px; }
+.orbitGrid { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); align-items:center; gap:18px; flex:1 1 0; min-height:0; }
+.orbitPhoto { width:100%; aspect-ratio:1; border-radius:50%; }
+.orbitPhoto > div { position:absolute; inset:0; }
+.orbitCopy { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.orbitCopy .quote { font-size:17px; line-height:1.55; -webkit-line-clamp:6; }
+.orbitCopy .location { -webkit-line-clamp:2; }
+.orbitRule { display:flex; align-items:center; gap:12px; color:var(--card-sub); font:700 9px/1.4 Inter,sans-serif; letter-spacing:.1em; }
+.orbitRule i { height:1px; flex:1; background:var(--card-border); }
+
+/* 19. One source, two crops. The second window deliberately magnifies detail. */
+.duo .header { border-bottom:1px solid var(--card-border); padding-bottom:10px; }
+.twoPhotos { display:grid; grid-template-columns:1.2fr 1fr; gap:12px; flex:1 1 0; min-height:85px; }
+.wideCut { height:83%; align-self:end; border-radius:3px; }
+.detailCut { height:84%; border-radius:3px; }
+.detailCut img { transform:scale(1.45); }
+.duo .quote { font-size:17px; -webkit-line-clamp:2; }
+
+/* 20. Strong type at the top; an unhurried horizontal photo below. */
+.margin .header { border-top:2px solid var(--card-text); padding-top:12px; }
+.marginCopy { display:flex; flex-direction:column; gap:14px; }
+.margin .title { font-size:46px; line-height:1.08; letter-spacing:-.06em; }
+.margin .title[data-title-length='medium'] { font-size:38px; }
+.margin .title[data-title-length='long'] { font-size:30px; }
+.margin .quote { font-size:18px; -webkit-line-clamp:3; }
+.marginPhoto { flex:1 1 0; min-height:65px; border-radius:3px; }
+
+/* Square/story are content modes, independent of the device viewport. */
+.card[data-ratio='1:1'] { padding:22px; gap:12px; }
+.card[data-ratio='1:1'] .title { font-size:34px; -webkit-line-clamp:2; }
+.card[data-ratio='1:1'] .title[data-title-length='medium'] { font-size:30px; }
+.card[data-ratio='1:1'] .title[data-title-length='long'] { font-size:26px; }
+.card[data-ratio='1:1'] .quote { font-size:16px; -webkit-line-clamp:2; }
+.card[data-ratio='1:1'] .score { font-size:24px; }
+.doodle[data-ratio='1:1'] .noteBody { gap:13px; }
+.doodle[data-ratio='1:1'] .noteDrawing { height:32px; }
+.doodle[data-ratio='1:1'] .scribble { height:32px; }
+.feed[data-ratio='1:1'] .title { font-size:30px; -webkit-line-clamp:1; }
+.feed[data-ratio='1:1'] .title[data-title-length='long'] { font-size:26px; }
+.feed[data-ratio='1:1'] .quote { -webkit-line-clamp:1; }
+.photocard[data-ratio='1:1'] { padding:14px; gap:10px; }
+.photocard[data-ratio='1:1'] .pocketCaption { bottom:18px; gap:8px; }
+.day[data-ratio='1:1'] .calendar { padding-bottom:10px; }
+.day[data-ratio='1:1'] .calendar strong { font-size:78px; }
+.day[data-ratio='1:1'] .dayBody { gap:10px; }
+.day[data-ratio='1:1'] .quote { -webkit-line-clamp:2; }
+.day[data-ratio='1:1'] .details { display:none; }
+.paint[data-ratio='1:1'] .paintDrawing { min-height:60px; max-height:110px; padding:0; }
+.paint[data-ratio='1:1'] .paintCopy { gap:8px; }
+.paint[data-ratio='1:1'] .details { display:none; }
+.arch[data-ratio='1:1'] .archPhoto { width:60%; min-height:70px; }
+.arch[data-ratio='1:1'] .archCopy { gap:6px; }
+.arch[data-ratio='1:1'] .title { -webkit-line-clamp:1; font-size:30px; }
+.arch[data-ratio='1:1'] .quote { -webkit-line-clamp:1; }
+.orbit[data-ratio='1:1'] .orbitGrid { grid-template-columns:160px minmax(0,1fr); gap:16px; }
+.orbit[data-ratio='1:1'] .orbitCopy .quote { -webkit-line-clamp:4; }
+.orbit[data-ratio='1:1'] .orbitRule { display:none; }
+.margin[data-ratio='1:1'] .marginCopy { gap:10px; }
+.margin[data-ratio='1:1'] .quote { -webkit-line-clamp:2; }
+.card[data-ratio='9:16'] { gap:20px; padding:30px; }
+.card[data-ratio='9:16'] .quote { -webkit-line-clamp:4; }
+.doodle[data-ratio='9:16'] .title { font-size:48px; }
+.doodle[data-ratio='9:16'] .title[data-title-length='long'] { font-size:34px; }
+.doodle[data-ratio='9:16'] .quote { font-size:24px; -webkit-line-clamp:6; }
+.day[data-ratio='9:16'] .calendar strong { font-size:144px; }
+.day[data-ratio='9:16'] .quote { -webkit-line-clamp:8; }
+.photocard[data-ratio='9:16'] { padding:18px; gap:14px; }
+.arch[data-ratio='9:16'] .archPhoto { width:84%; }
+.orbit[data-ratio='9:16'] .orbitGrid { grid-template-columns:1.1fr 1fr; }
+.orbit[data-ratio='9:16'] .orbitCopy .quote { -webkit-line-clamp:8; }
+.duo[data-ratio='9:16'] .twoPhotos { gap:14px; }
+.paint[data-ratio='9:16'] .paintDrawing { max-height:280px; }
+.paint[data-ratio='9:16'] .quote { -webkit-line-clamp:6; }

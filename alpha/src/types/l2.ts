@@ -16,7 +16,16 @@ export type CardLayoutType =
   | 'passport' // 08 TRAVEL Passport & Visa (NO-PHOTO)
   | 'vinyl' // 09 VINYL LP Sleeve & Liner (NO-PHOTO)
   | 'library' // 10 LIBRARY Index Catalog Card (NO-PHOTO)
-  | 'broadside'; // 11 SWISS Typographic Poster (NO-PHOTO)
+  | 'broadside' // 11 SWISS Typographic Poster (NO-PHOTO)
+  | 'doodle' // 12 DOODLE NOTE (NO-PHOTO)
+  | 'feed' // 13 MINI FEED (Photo)
+  | 'photocard' // 14 POCKET PHOTO (Photo)
+  | 'day' // 15 DAY PAGE (NO-PHOTO)
+  | 'paint' // 16 PAINT BADLY (NO-PHOTO)
+  | 'arch' // 17 SLOW WINDOW (Photo)
+  | 'orbit' // 18 ORBIT NOTE (Photo)
+  | 'duo' // 19 TWO CUTS (Photo)
+  | 'margin'; // 20 OPEN MARGIN (Photo)
 
 export type OptionRowKey =
   | 'address'
@@ -71,6 +80,8 @@ export interface PresetSlot {
   showGrain?: boolean;
   showDecorations?: boolean;
   showNumber?: boolean;
+  /** Category defaults live with the preset JSON, so they sync without a schema change. */
+  defaultFor?: Exclude<ArchiveCategory, 'GROUP'>[];
 }
 
 export interface SkinTheme {

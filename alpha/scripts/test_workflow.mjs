@@ -191,6 +191,7 @@ try {
   assert.equal((await prefs()).defaultPresetId, beforePresets.defaultPresetId);
   await page.screenshot({ path: folder + '/studio-draft.png' });
   await click('기본 프리셋 지정');
+  await page.waitForSelector('.preset-default-scopes'); await click('전체 기본', '.preset-default-scopes');
   const savedPrefs = await until(prefs, value => value.presetSlots.some(slot => slot.name === '나의 밤'), 'immediate default preset save');
   const custom = savedPrefs.presetSlots.find(slot => slot.name === '나의 밤'); assert.equal(savedPrefs.defaultPresetId, custom.id);
   assert.equal(custom.showDecorations,false);

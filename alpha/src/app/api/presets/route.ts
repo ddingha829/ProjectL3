@@ -3,6 +3,7 @@ import { requireDevice } from '@/lib/session';
 import { getStore } from '@/lib/store';
 import { PresetSlot, SkinTheme } from '@/types/l2';
 import { normalizePresetSlot } from '@/lib/cardAppearance';
+import { normalizeCategoryDefaults } from '@/lib/presetDefaults';
 
 export async function GET() {
   const session = await requireDevice();
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const store = getStore();
     const updated = await store.savePrefs(deviceId, {
-      presetSlots: body.presetSlots,
+      presetSlots: body.presetSlots ? normalizeCategoryDefaults(body.presetSlots.map(slot => normalizePresetSlot(slot)!)) : undefined,
       skins: body.skins,
       authorName: body.authorName,
       replaceSkins: body.replaceSkins === true,

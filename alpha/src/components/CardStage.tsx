@@ -5,6 +5,7 @@ import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { getCardLayout, itemHasPhoto, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { CARD_GRAIN } from '@/lib/cardGrain';
 import CardFrame from './CardFrame';
+import AdditionalCardLayouts from './AdditionalCardLayouts';
 import styles from './CardStage.module.css';
 
 interface CardStageProps {
@@ -202,6 +203,17 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
         <div className={`${styles.content} ${styles.grow}`} style={{ justifyContent: 'center' }}>{heading(false)}{quote && <div className={styles.quoteBox}>{quote}</div>}{details}</div>{footer}
       </div>;
       break;
+    case 'doodle':
+    case 'feed':
+    case 'photocard':
+    case 'day':
+    case 'paint':
+    case 'arch':
+    case 'orbit':
+    case 'duo':
+    case 'margin':
+      artwork = <AdditionalCardLayouts layout={slot.layout} item={item} slot={slot} author={author} footer={footer} photo={photo}/>;
+      break;
     default:
       treatment = styles.editorial;
       artwork = <div className={styles.artwork}>{header(showNumber ? `L2 / ${number}` : 'L2.', item.sub || item.cat)}{photo(photoHeight)}<div className={styles.content}>{heading()}{quote && <div className={styles.quoteBox}>{quote}</div>}{!compact && details}</div>{footer}</div>;
@@ -210,6 +222,6 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   const variables = { '--card-bg': skin.bg, '--card-text': skin.text, '--card-sub': skin.sub, '--card-border': skin.border, '--card-accent': skin.accent, '--card-chip': skin.chipBg, '--card-accent-ink': accentInk(skin.accent), backgroundColor: skin.bg } as CSSProperties;
   return <div data-card-preview="true" className={styles.stage}>
     <CardFrame ratio={slot.ratio} layout={slot.layout} captureRef={cardCaptureRef} style={variables}><div className={`${styles.surface} ${treatment}`}>{artwork}</div>{slot.showGrain !== false && <div className={styles.grain} style={{ backgroundImage: `url("${CARD_GRAIN}")` }} aria-hidden="true" />}</CardFrame>
-    {hasPhoto && onUpdateCrop && slot.layout !== 'curation' && <div className={styles.cropToolbar}>{cropMode && <span className={styles.cropHint}>사진을 드래그해 조정하세요</span>}<button type="button" aria-pressed={cropMode} onClick={() => setCropMode((active) => !active)}>{cropMode ? '위치 조정 완료' : '사진 위치 조정'}</button></div>}
+    {hasPhoto && onUpdateCrop && !getCardLayout(slot.layout).isNoPhoto && slot.layout !== 'curation' && <div className={styles.cropToolbar}>{cropMode && <span className={styles.cropHint}>사진을 드래그해 조정하세요</span>}<button type="button" aria-pressed={cropMode} onClick={() => setCropMode((active) => !active)}>{cropMode ? '위치 조정 완료' : '사진 위치 조정'}</button></div>}
   </div>;
 }

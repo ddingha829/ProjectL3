@@ -15,6 +15,7 @@ export function normalizePresetSlot(value: unknown): PresetSlot | undefined {
   const ratio = layout.supportedRatios.find(entry => entry === value.ratio) || layout.ratio;
   const slot: PresetSlot = { id: label(value.id), name: typeof value.name === 'string' ? label(value.name) : layout.name, skinId: label(value.skinId), layout: layout.id, ratio };
   for (const key of elementKeys) if (typeof value[key] === 'boolean') slot[key] = value[key];
+  if (layout.id !== 'curation' && Array.isArray(value.defaultFor)) slot.defaultFor = [...new Set(value.defaultFor.filter((category): category is Exclude<ArchiveItem['cat'], 'GROUP'> => ['DINING', 'CINEMA', 'ART', 'OTHER'].includes(category)))];
   return slot;
 }
 
@@ -24,7 +25,7 @@ export function normalizeDefaultPresetId(value: unknown, slots: readonly PresetS
 }
 
 export function cloneCardAppearance(appearance: CardAppearance): CardAppearance {
-  return { slot: { ...appearance.slot }, skin: { ...appearance.skin }, authorName: appearance.authorName };
+  return { slot: { ...appearance.slot, ...(appearance.slot.defaultFor ? { defaultFor: [...appearance.slot.defaultFor] } : {}) }, skin: { ...appearance.skin }, authorName: appearance.authorName };
 }
 
 /** Invalid structures are rejected; CSS values are sanitized and made readable. */

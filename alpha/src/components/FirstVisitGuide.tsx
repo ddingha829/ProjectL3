@@ -38,7 +38,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
   ] }],
   studio: [
     { label: '프리셋 목록', hints: [
-      { text: '프리셋 목록', detail: '저장한 디자인을 고르거나 +로 추가해요.', selector: '.preset-library' },
+      { text: '프리셋 목록', detail: '저장한 디자인을 고르거나 +로 추가해요.\n옆의 손잡이를 드래그하면 순서를 바꿔요.', selector: '.preset-library' },
       { text: '프리셋 이름\n설정하기', selector: '#preset-name' },
       { text: '사진용 카드', selector: '.preset-photo-mode button:nth-child(1)' },
       { text: '텍스트용 카드', selector: '.preset-photo-mode button:nth-child(2)' },
@@ -48,7 +48,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
       { text: '카드 디자인을 만드는 곳', detail: '여기서 설정하고 저장한 프리셋을\n로그 카드에 적용할 수 있어요.' },
       { text: '디자인 / 색상 / 세부사항', selector: '.preset-tabs' },
       { text: '원하는 디자인과 색상 선택', detail: '화살표나 목록으로 고를 수 있어요.\n색상 조합은 단어·문장으로도 만들 수 있어요.', selector: '.preset-control-panel' },
-      { text: '카드 기본 프리셋으로', detail: '새 로그의 기본 디자인을 지정해요.', selector: '.preset-default' },
+      { text: '카드 기본 프리셋으로', detail: '전체 또는 카테고리별로 기본 디자인을 지정해요.', selector: '.preset-default' },
       { text: '프리셋 저장', detail: '설정한 이름으로 디자인을 저장해요.', selector: '.preset-save' },
     ] },
   ],

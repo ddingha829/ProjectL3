@@ -29,6 +29,15 @@ export const CARD_LAYOUTS: readonly CardLayoutDefinition[] = [
   { id: 'vinyl', name: 'VINYL LP', sub: '33⅓ RPM 자켓·트랙', ratio: '1:1', isNoPhoto: true, supportedRatios: ratios, supportedElements: elements },
   { id: 'library', name: 'LIBRARY', sub: '도서관 대출 카드', ratio: '3:4', isNoPhoto: true, supportedRatios: ratios, supportedElements: metadataElements },
   { id: 'broadside', name: 'BROADSIDE', sub: '스위스 타이포 포스터', ratio: '3:4', isNoPhoto: true, supportedRatios: ratios, supportedElements: elements },
+  { id: 'doodle', name: 'DOODLE NOTE', sub: '여백 위의 작은 낙서', ratio: '3:4', isNoPhoto: true, supportedRatios: ratios, supportedElements: elements },
+  { id: 'feed', name: 'MINI FEED', sub: '사진 한 장의 에디토리얼 피드', ratio: '1:1', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
+  { id: 'photocard', name: 'POCKET PHOTO', sub: '주머니 속 소장용 포토카드', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
+  { id: 'day', name: 'DAY PAGE', sub: '날짜로 남기는 하루의 페이지', ratio: '3:4', isNoPhoto: true, supportedRatios: ratios, supportedElements: elements },
+  { id: 'paint', name: 'PAINT BADLY', sub: '그림판으로 대충 그린 오늘', ratio: '1:1', isNoPhoto: true, supportedRatios: ratios, supportedElements: elements },
+  { id: 'arch', name: 'SLOW WINDOW', sub: '빛을 담는 아치형 사진 창', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
+  { id: 'orbit', name: 'ORBIT NOTE', sub: '원형 사진과 비대칭 활자', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
+  { id: 'duo', name: 'TWO CUTS', sub: '한 사진의 두 가지 시선', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
+  { id: 'margin', name: 'OPEN MARGIN', sub: '큰 제목과 넓은 가로 사진', ratio: '3:4', isNoPhoto: false, supportedRatios: ratios, supportedElements: metadataElements },
 ];
 
 export function getCardLayout(id: CardLayoutType): CardLayoutDefinition {

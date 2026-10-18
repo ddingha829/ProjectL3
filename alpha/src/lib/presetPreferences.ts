@@ -2,6 +2,7 @@ import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import type { PresetSlot, SkinTheme } from '@/types/l2';
 import { normalizeDefaultPresetId, normalizePresetSlot } from '@/lib/cardAppearance';
 import { upgradeBundledPresets } from '@/lib/bundledPresets';
+import { normalizeCategoryDefaults } from '@/lib/presetDefaults';
 
 export interface PresetPreferences {
   presetSlots: PresetSlot[];
@@ -19,7 +20,7 @@ export function normalizePresetPreferences(value: unknown, fallback = initialPre
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
   const source = value as Partial<PresetPreferences>;
   const slots = Array.isArray(source.presetSlots) ? source.presetSlots.map(normalizePresetSlot).filter((slot): slot is PresetSlot => Boolean(slot)) : [];
-  const presetSlots = upgradeBundledPresets(slots.length ? slots.filter((slot, index) => slots.findIndex(other => other.id === slot.id) === index).slice(0, 20) : fallback.presetSlots);
+  const presetSlots = normalizeCategoryDefaults(upgradeBundledPresets(slots.length ? slots.filter((slot, index) => slots.findIndex(other => other.id === slot.id) === index).slice(0, 20) : fallback.presetSlots));
   const skins = { ...INITIAL_SKINS, ...(source.skins && typeof source.skins === 'object' && !Array.isArray(source.skins) && Object.keys(source.skins).length ? source.skins : fallback.skins) };
   return {
     presetSlots,

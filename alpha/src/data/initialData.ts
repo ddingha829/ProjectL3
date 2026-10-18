@@ -154,6 +154,15 @@ export const PRESET_SLOTS: PresetSlot[] = [
   },
   { id: '05', name: 'TYPE', ratio: '3:4', skinId: 'paper', layout: 'broadside', showScore: true, showProsCons: true, showLocation: true, showSignature: true, showGrain: false },
   { id: '06', name: 'POSTER', ratio: '3:4', skinId: 'noir', layout: 'cover', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '12', name: 'DOODLE', ratio: '3:4', skinId: 'oat', layout: 'doodle', showScore: true, showProsCons: true, showLocation: true, showSignature: true, showGrain: false },
+  { id: '13', name: 'MINI FEED', ratio: '1:1', skinId: 'paper', layout: 'feed', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '14', name: 'POCKET', ratio: '3:4', skinId: 'lilac', layout: 'photocard', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '15', name: 'DAY PAGE', ratio: '3:4', skinId: 'rose', layout: 'day', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '16', name: 'PAINT', ratio: '1:1', skinId: 'paper', layout: 'paint', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '17', name: 'SLOW', ratio: '3:4', skinId: 'oat', layout: 'arch', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '18', name: 'ORBIT', ratio: '3:4', skinId: 'mist', layout: 'orbit', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '19', name: 'TWO CUTS', ratio: '3:4', skinId: 'oat', layout: 'duo', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
+  { id: '20', name: 'MARGIN', ratio: '3:4', skinId: 'rose', layout: 'margin', showScore: true, showProsCons: false, showLocation: true, showSignature: true, showGrain: false },
 ];
 
 export const INITIAL_SKINS: Record<string, SkinTheme> = {
@@ -161,6 +170,18 @@ export const INITIAL_SKINS: Record<string, SkinTheme> = {
   mist: { id: 'mist', name: 'SAGE MIST', bg: '#E7ECEB', text: '#263E3A', sub: '#4E6561', border: '#C5D1CD', accent: '#45665D', chipBg: '#D7E2DD', headerBg: '#D7E2DD', headerText: '#263E3A' },
   rose: { id: 'rose', name: 'DUSTY ROSE', bg: '#F2E7E5', text: '#483733', sub: '#745D57', border: '#DECBC6', accent: '#925448', chipBg: '#E8D8D3', headerBg: '#E8D8D3', headerText: '#483733' },
   lilac: { id: 'lilac', name: 'LILAC PAPER', bg: '#ECE8F1', text: '#3D354A', sub: '#655B73', border: '#D2CADF', accent: '#6C5B88', chipBg: '#DFD8E9', headerBg: '#DFD8E9', headerText: '#3D354A' },
+  // L2 compositions inspired by Pantone's warm neutrals/peach and Radix's
+  // background–ink–accent roles. These are custom sRGB palettes, not Pantone chips.
+  mocha: { id: 'mocha', name: 'MOCHA LINEN', bg: '#E7D8CB', text: '#392820', sub: '#635044', border: '#C6AF9D', accent: '#714832', chipBg: '#DDC9B9', headerBg: '#DDC9B9', headerText: '#392820' },
+  peach: { id: 'peach', name: 'PEACH VEIL', bg: '#F8DED0', text: '#482F2A', sub: '#704B43', border: '#DEB6A3', accent: '#9A4632', chipBg: '#EFCDBD', headerBg: '#EFCDBD', headerText: '#482F2A' },
+  butter: { id: 'butter', name: 'BUTTER PAPER', bg: '#FFF0B9', text: '#3D3520', sub: '#6D5C32', border: '#D9C887', accent: '#785408', chipBg: '#F2DDA0', headerBg: '#F2DDA0', headerText: '#3D3520' },
+  cloud: { id: 'cloud', name: 'CLOUD INK', bg: '#EFF0EB', text: '#253334', sub: '#556362', border: '#CDD3CC', accent: '#365B61', chipBg: '#DFE3DC', headerBg: '#DFE3DC', headerText: '#253334' },
+  sea: { id: 'sea', name: 'SEA GLASS', bg: '#DDF0EA', text: '#183D37', sub: '#3E655D', border: '#B5D3C7', accent: '#1D6657', chipBg: '#CBE3DA', headerBg: '#CBE3DA', headerText: '#183D37' },
+  peri: { id: 'peri', name: 'PERIWINKLE', bg: '#DFE6FA', text: '#2B3558', sub: '#485675', border: '#B9C5E7', accent: '#46559B', chipBg: '#CDD7F0', headerBg: '#CDD7F0', headerText: '#2B3558' },
+  terra: { id: 'terra', name: 'TERRACOTTA', bg: '#943E31', text: '#FFF4E6', sub: '#F1D3BC', border: '#B96755', accent: '#FFE1A3', chipBg: '#803126', headerBg: '#803126', headerText: '#FFF4E6' },
+  olive: { id: 'olive', name: 'OLIVE PAPER', bg: '#E8E6CE', text: '#363C23', sub: '#535C3D', border: '#C7CAA8', accent: '#56662F', chipBg: '#DAD8B9', headerBg: '#DAD8B9', headerText: '#363C23' },
+  plum: { id: 'plum', name: 'MIDNIGHT PLUM', bg: '#302337', text: '#F3E7EF', sub: '#C9AEC3', border: '#644A68', accent: '#E8B7C8', chipBg: '#3E2D46', headerBg: '#3E2D46', headerText: '#F3E7EF' },
+  petrol: { id: 'petrol', name: 'PETROL BLUE', bg: '#173C45', text: '#E6F2EC', sub: '#A6C7C3', border: '#426C73', accent: '#EFC99A', chipBg: '#214B55', headerBg: '#214B55', headerText: '#E6F2EC' },
   signal: {
     id: 'signal', name: 'L2 SIGNAL', bg: '#E12D00', text: '#FFFFFF', sub: '#FFFFFF',
     headerBg: '#E12D00', headerText: '#FFFFFF', border: '#F57B5F', accent: '#000000', chipBg: '#E12D00',
