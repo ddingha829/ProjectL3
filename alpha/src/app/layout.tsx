@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3013'
   ),
-  title: 'L2. — 기록의 맛',
+  title: 'L2 - 일상 로그하기',
   description:
     '감각적인 경험 아카이빙과 카카오톡·인스타그램 공유용 명함/포스터 카드 엔진',
   manifest: '/manifest.webmanifest',

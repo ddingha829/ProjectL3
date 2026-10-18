@@ -45,10 +45,12 @@
 .ticket .artwork { border: 1px dashed var(--card-border); margin: 10px; width: calc(100% - 20px); height: calc(100% - 20px); padding: 17px; }
 .frame[data-card-layout='ticket'] {
   /* Two overlapping halves cut real transparent notches into the export canvas. */
-  -webkit-mask: radial-gradient(circle 13px at 0 69%, transparent 12px, #000 13px) left / 51% 100% no-repeat,
-    radial-gradient(circle 13px at 100% 69%, transparent 12px, #000 13px) right / 51% 100% no-repeat;
-  mask: radial-gradient(circle 13px at 0 69%, transparent 12px, #000 13px) left / 51% 100% no-repeat,
-    radial-gradient(circle 13px at 100% 69%, transparent 12px, #000 13px) right / 51% 100% no-repeat;
+  --card-notch-radius: 13px;
+  --card-notch-y: 69%;
+  -webkit-mask: radial-gradient(circle var(--card-notch-radius) at 0 var(--card-notch-y), transparent calc(var(--card-notch-radius) - 1px), #000 var(--card-notch-radius)) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--card-notch-radius) at 100% var(--card-notch-y), transparent calc(var(--card-notch-radius) - 1px), #000 var(--card-notch-radius)) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle var(--card-notch-radius) at 0 var(--card-notch-y), transparent calc(var(--card-notch-radius) - 1px), #000 var(--card-notch-radius)) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--card-notch-radius) at 100% var(--card-notch-y), transparent calc(var(--card-notch-radius) - 1px), #000 var(--card-notch-radius)) right / 51% 100% no-repeat;
 }
 .list { display: flex; flex-direction: column; flex: 1 1 0; gap: 8px; min-height: 0; }
 .listEntry { display: flex; flex: 1 1 0; min-height: 0; align-items: center; gap: 12px; background-color: var(--card-chip); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px; }

@@ -53,9 +53,9 @@ try{
   const {p}=await makePage(webkit);
   for(let i=0;i<records.length;i++){
    await open(p,i);const result=await exportCard(p),layout=i===2?'cover':'ticket';const check=await photoPixels(p,result,layout);
-   assert.ok(check.samples>=20&&check.error<(layout==='cover'?55:30),JSON.stringify({webkit,i,...check}));assert.ok(check.width<=1080&&result.bytes<=500*1024);assert.equal(result.type,'image/jpeg');assert.equal(check.liveSource,poster,'live preview source unchanged');assert.equal(check.remainingSnapshots,0,'temporary capture removed');
+   assert.ok(check.samples>=20&&check.error<(layout==='cover'?55:30),JSON.stringify({webkit,i,...check}));assert.ok(check.width<=1080&&result.bytes<=500*1024);assert.equal(result.type,'image/png');assert.equal(check.liveSource,poster,'live preview source unchanged');assert.equal(check.remainingSnapshots,0,'temporary capture removed');
    if(layout==='ticket'){assert.ok(check.photoHeight>(i===0?350:200),JSON.stringify(check));assert.ok(check.footerGap<20);assert.equal(check.fit,'contain');await p.click('.record-design-tools .preset-tabs button:nth-child(3)');await p.waitForSelector('.preset-ratios');assert.equal(await p.$$eval('.preset-ratios button',els=>els.find(e=>e.textContent==='1:1').disabled),true);await p.keyboard.press('Escape');}
-   fs.writeFileSync(path.join(out,`${layout}-${i}-${webkit?'warmup':'standard'}.jpg`),Buffer.from(result.url.split(',')[1],'base64'));await p.screenshot({path:path.join(out,`${layout}-${i}-${webkit?'warmup':'standard'}.png`)});
+   fs.writeFileSync(path.join(out,`${layout}-${i}-${webkit?'warmup':'standard'}.png`),Buffer.from(result.url.split(',')[1],'base64'));await p.screenshot({path:path.join(out,`${layout}-${i}-${webkit?'warmup':'standard'}.png`)});
    pass(`${webkit?'WebKit warm-up branch (Chrome UA simulation)':'Chrome'} ${layout} ${records[i].cardAppearance.slot.ratio}: poster pixels present, error ${check.error.toFixed(1)}, photo ${check.photoHeight.toFixed(0)}px, ≤1080px / ≤500KiB`);
   }
   await p.close();

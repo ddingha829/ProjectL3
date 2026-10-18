@@ -41,7 +41,7 @@ export default function ShareCardViewer({
     setNotice('');
     setExporting(true);
     try {
-      const { file } = await prepareCardExport(captureRef.current, { filename: `L2_${activeSlot.name}_${item.title}.jpg` });
+      const { file } = await prepareCardExport(captureRef.current, { filename: `L2_${activeSlot.name}_${item.title}.png` });
       setPreparedFile(file);
       downloadCardFile(file);
       haptic.success();

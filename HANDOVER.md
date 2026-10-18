@@ -1,5 +1,13 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-18 공유 이미지 투명 모서리 · 사이트 제목
+
+- Shared/downloaded cards are now transparent PNG rather than white-matted JPEG. File extension and MIME agree. Keep 1080px maximum width / 500KiB maximum; lossless PNG first, then 256-color UPNG encoding in a dedicated worker. If needed shrink the dimensions down to 720px, then fail explicitly rather than flatten alpha or exceed the limit.
+- WebKit SVG foreignObject can flatten root border-radius/mask. Final canvas applies the computed card corner radii and ticket notch geometry explicitly, including the existing same-SVG warm-up repaint. Ticket CSS variables share notch radius/position with export; no live-card source or crop changes.
+- PWA warms the PNG worker online for asset caching. New dependencies: upng-js (MIT), @types/upng-js (dev). Image processing stays in the browser; photo upload compression remains WebP.
+- Header metadata / PWA manifest name: `L2 - 일상 로그하기`.
+- Chrome 20 designs / 59 layout-ratio combinations check MIME/extension, all four alpha-zero corners, opaque body, ticket cutouts, max size/dimensions and aspect ratio. Actual Playwright WebKit checks poster/crop pixels, corners, ticket notches and fetch failure/retry. Native receiving apps may re-encode files; tests inspect the file passed into Web Share, not KakaoTalk's processing.
+
 ## 2026-10-18 단일 사진 선택 보강
 
 - Album/camera inputs explicitly use `multiple={false}` and reset to single selection immediately before opening. Existing inputs were already single-select by default. Unexpected multi-file results now show an error inside the photo modal, keep the old image, and request one photo again instead of silently taking the first.

@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'L2. — 기록의 맛',
+    name: 'L2 - 일상 로그하기',
     short_name: 'L2.',
     description:
       '감각적인 경험 아카이빙과 카카오톡·인스타그램 공유용 명함/포스터 카드 엔진',

@@ -205,8 +205,12 @@ async function imageSnapshot(node: HTMLElement, width: number, height: number) {
 }
 
 async function renderSnapshot(snapshot: HTMLElement, width: number, height: number, fontEmbedCSS: string, pixelRatio?: number) {
+  const style = getComputedStyle(snapshot);
+  const corners = [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius].map(value => parseFloat(value) || 0);
+  const notchRadius = parseFloat(style.getPropertyValue('--card-notch-radius')) || 0;
+  const notchY = height * (parseFloat(style.getPropertyValue('--card-notch-y')) || 0) / 100;
   const svg = await withTimeout(toSvg(snapshot, { width, height, fontEmbedCSS, preferredFontFormat: 'woff2',
-    style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none' },
+    style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none', mask: 'none', webkitMask: 'none' },
   }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
   const image = new Image(); image.src = svg; await decodeImage(image);
   const ratio = Math.min(1080 / width, pixelRatio ?? 1080 / width);
@@ -214,14 +218,32 @@ async function renderSnapshot(snapshot: HTMLElement, width: number, height: numb
   canvas.width = Math.max(1, Math.round(width * ratio)); canvas.height = Math.max(1, Math.round(height * ratio));
   const context = canvas.getContext('2d');
   if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  // WebKit's SVG foreignObject can flatten a CSS radius/mask. Apply the card's
+  // outline on the final canvas so every engine exports actual transparent pixels.
+  const paint = () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.save();
+    context.scale(canvas.width / width, canvas.height / height);
+    context.beginPath(); context.roundRect(0, 0, width, height, corners); context.clip();
+    context.drawImage(image, 0, 0, width, height);
+    if (notchRadius > 0) {
+      context.globalCompositeOperation = 'destination-out';
+      for (const x of [0, width]) {
+        const cutout = context.createRadialGradient(x, notchY, Math.max(0, notchRadius - 1), x, notchY, notchRadius);
+        cutout.addColorStop(0, '#000'); cutout.addColorStop(1, '#0000');
+        context.fillStyle = cutout;
+        context.fillRect(x - notchRadius, notchY - notchRadius, notchRadius * 2, notchRadius * 2);
+      }
+    }
+    context.restore();
+  };
+  paint();
   // WebKit can report a loaded SVG before its foreignObject photos are painted.
   // Repaint the SAME decoded SVG after a warm-up; never re-fetch remote photos.
   if (/AppleWebKit/i.test(navigator.userAgent) && !/Chrome|Chromium|Edg|Android/i.test(navigator.userAgent)) {
     await new Promise<void>(resolve => setTimeout(resolve, 150));
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    paint();
   }
   return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob?.size ? resolve(blob) : reject(new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.')), 'image/png'));
 }
@@ -240,7 +262,7 @@ export function prepareCardExport(node: HTMLElement, options: CardExportOptions 
       finally { cleanup(); }
       const blob = await compressCardBlob(rendered);
       const filename = (options.filename || 'L2_card.png').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_');
-      return { blob, file: new File([blob], `${filename.replace(/\.(png|jpe?g|webp)$/i,'')}.jpg`, { type: blob.type }) };
+      return { blob, file: new File([blob], `${filename.replace(/\.(png|jpe?g|webp)$/i,'')}.png`, { type: blob.type }) };
     } catch (error) {
       throw new Error(error instanceof Error ? `카드 저장 실패: ${error.message}` : '카드를 저장하지 못했습니다. 다시 시도해 주세요.');
     } finally { animations.forEach((animation) => animation.play()); }

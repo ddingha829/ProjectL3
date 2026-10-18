@@ -55,20 +55,54 @@ export async function compressPhotoBlob(file: Blob, maxWidth = PHOTO_MAX_WIDTH, 
   } finally { URL.revokeObjectURL(url); }
 }
 
-/** JPEG is broadly supported by native share sheets; preserve the 1080px text grid. */
+async function encodeCardPng(canvas: HTMLCanvasElement): Promise<Blob> {
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data.buffer;
+  const worker = new Worker(new URL('../workers/cardPng.ts', import.meta.url));
+  try {
+    return await new Promise<Blob>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('카드 압축이 지연되고 있어요. 다시 시도해 주세요.')), 20000);
+      worker.onmessage = (event: MessageEvent<{ png?: ArrayBuffer; error?: string }>) => {
+        clearTimeout(timer);
+        if (event.data.png) resolve(new Blob([event.data.png], { type: 'image/png' }));
+        else reject(new Error(event.data.error || '카드를 압축하지 못했어요.'));
+      };
+      worker.onerror = () => { clearTimeout(timer); reject(new Error('카드 압축을 시작하지 못했어요. 다시 시도해 주세요.')); };
+      worker.postMessage({ pixels, width: canvas.width, height: canvas.height }, [pixels]);
+    });
+  } finally { worker.terminate(); }
+}
+
+/** Load the worker and its chunks while online so PNG exports remain usable offline. */
+export async function warmCardPngEncoder(): Promise<void> {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+  await encodeCardPng(canvas);
+}
+
+/** Preserve transparent rounded corners / cutouts in a shareable PNG.
+ * Try lossless first, then palette compression before reducing dimensions.
+ */
 export async function compressCardBlob(source: Blob): Promise<Blob> {
   const url = URL.createObjectURL(source);
   try {
     const image = new Image(); image.src = url; await image.decode();
-    const scale = Math.min(1, PHOTO_MAX_WIDTH / image.naturalWidth);
+    let scale = Math.min(1, PHOTO_MAX_WIDTH / image.naturalWidth);
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(image.naturalWidth * scale); canvas.height = Math.round(image.naturalHeight * scale);
-    const context = canvas.getContext('2d'); if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
-    context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    for (const quality of [.92, .85, .78, .7, .62, .52]) {
-      const blob = await canvasBlob(canvas, 'image/jpeg', quality);
-      if (blob.size <= CARD_MAX_BYTES) return blob;
+    const minimumScale = Math.min(scale, 720 / image.naturalWidth);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d'); if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      if (attempt === 0) {
+        const lossless = await canvasBlob(canvas, 'image/png', 1);
+        if (lossless.size <= CARD_MAX_BYTES) return lossless;
+      }
+      const compressed = await encodeCardPng(canvas);
+      if (compressed.size <= CARD_MAX_BYTES) return compressed;
+      if (scale <= minimumScale) break;
+      scale = Math.max(minimumScale, scale * Math.min(.9, Math.sqrt(CARD_MAX_BYTES / compressed.size) * .94));
     }
     throw new Error('카드를 500KB 이하로 만들지 못했어요. 질감 옵션을 끄고 다시 시도해 주세요.');
   } finally { URL.revokeObjectURL(url); }

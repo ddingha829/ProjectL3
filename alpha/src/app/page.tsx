@@ -265,7 +265,7 @@ export default function L2TestApp(){
         }
         if (canceled) return;
         if (!node) throw new Error('카드가 아직 준비되지 않았어요.');
-        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.jpg` });
+        const prepared = await prepareCardExport(node, { filename: `L2_${item.title.replace(/[<>:"/\\|?*]/g, '_')}.png` });
         if (!canceled) { exportFile.current = prepared.file; setExportState('ready'); }
       } catch (error) {
         if (!canceled) { setExportState('error'); setExportError(error instanceof Error ? error.message : '이미지를 준비하지 못했어요.'); }
@@ -280,7 +280,7 @@ export default function L2TestApp(){
     if(!node)return null;
     try{
       setExportState('preparing');
-      const prepared=await prepareCardExport(node,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.jpg`});
+      const prepared=await prepareCardExport(node,{filename:`L2_${item.title.replace(/[<>:"/\\|?*]/g,'_')}.png`});
       exportFile.current=prepared.file;
       setExportState('ready');
       return prepared.file;

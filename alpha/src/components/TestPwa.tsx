@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { warmCardPngEncoder } from '@/lib/imageCompression';
 
 export default function TestPwa() {
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function TestPwa() {
           import('./LogbookMap'),
           import('leaflet'),
           import('jszip'),
+          warmCardPngEncoder(),
         ]);
         const probe = document.createElement('canvas'); probe.width = probe.height = 1;
         if (!probe.toDataURL('image/webp').startsWith('data:image/webp')) {
