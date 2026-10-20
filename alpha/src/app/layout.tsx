@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{__html: "try{document.documentElement.dataset.font=localStorage.getItem('l2_font_family')==='pretendard'?'pretendard':'sebang'}catch{}"}} />
+        <script dangerouslySetInnerHTML={{__html: "try{var f=localStorage.getItem('l2_font_family');document.documentElement.dataset.font=f==='pretendard'||f==='gaegu'?f:'sebang'}catch{}"}} />
         <link rel="preload" href="/fonts/sebang-gothic-regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/sebang-gothic-bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

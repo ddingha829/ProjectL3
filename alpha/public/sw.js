@@ -1,6 +1,6 @@
-const CACHE = 'l2-test-shell-v7';
+const CACHE = 'l2-test-shell-v8';
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['/', '/icons/icon-192.png', '/icons/icon-512.png', '/fonts/sebang-gothic-regular.woff2', '/fonts/sebang-gothic-bold.woff2', '/fonts/caveat-wordmark.ttf', '/fonts/sebang-gothic-italic-regular.woff2', '/fonts/sebang-gothic-italic-bold.woff2'])).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['/', '/icons/icon-192.png', '/icons/icon-512.png', '/fonts/sebang-gothic-regular.woff2', '/fonts/sebang-gothic-bold.woff2', '/fonts/caveat-wordmark.ttf', '/fonts/sebang-gothic-italic-regular.woff2', '/fonts/sebang-gothic-italic-bold.woff2', '/fonts/gaegu-regular.woff2', '/fonts/gaegu-bold.woff2'])).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('l2-test-shell-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));

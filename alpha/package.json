@@ -26,7 +26,8 @@
     "test:google-auth": "node scripts/test_google_auth.mjs",
     "test:frontend-round2": "node scripts/test_frontend_round2.mjs",
     "test:oct20-api": "node scripts/test_oct20_api.mjs",
-    "test:oct20-browser": "node scripts/test_oct20_browser.mjs"
+    "test:oct20-browser": "node scripts/test_oct20_browser.mjs",
+    "test:handwriting": "node scripts/test_handwriting_font.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

@@ -122,9 +122,10 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
   for (const element of [node, ...Array.from(node.querySelectorAll<HTMLElement>('*'))]) {
     const style = getComputedStyle(element);
     const families=style.fontFamily.split(',').map(part=>part.trim().replace(/["']/g,''));
-    // The bundled Sebang face covers Korean and Latin; do not embed unused
-    // Pretendard/Inter fallback files in every card. Mono labels stay separate.
-    for (const family of families[0]==='Sebang Gothic' ? families.slice(0,1) : families) {
+    // Gaegu has 2,350 common Hangul syllables; keep Sebang for rare syllables.
+    // Avoid unused Pretendard/Inter files. Mono labels stay separate.
+    const bundled = families[0]==='Gaegu' ? families.slice(0,2) : families[0]==='Sebang Gothic' ? families.slice(0,1) : families;
+    for (const family of bundled) {
       const usageKey=`${family}|${style.fontStyle==='normal'?'normal':'italic'}`;
       if (!usage.has(usageKey)) usage.set(usageKey, new Set());
       usage.get(usageKey)!.add(Number(style.fontWeight) || 400);

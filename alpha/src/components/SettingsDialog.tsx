@@ -5,13 +5,14 @@ import { Trash2, Upload, Download, Copy, MapPin, Smartphone, HelpCircle, Chevron
 import AccessibleDialog from './AccessibleDialog';
 import type { ArchiveItem, PlaceInboxItem } from '@/types/l2';
 import type { MotionPreference } from '@/lib/motion';
+import type { AppFont } from '@/lib/fontPreference';
 import { buildGoogleMapsCsv, buildNotionMarkdown, parseGoogleTakeoutPlaces } from '@/lib/googleMapsParser';
 import { exportLogbookZip, type BackupProgress } from '@/lib/logBackup';
 import type { PwaState } from './PwaInstallControl';
 
 interface Props {
-  font: 'sebang' | 'pretendard';
-  onFont: (font: 'sebang' | 'pretendard') => void;
+  font: AppFont;
+  onFont: (font: AppFont) => void;
   beforeLogin: () => Promise<void>;
   open: boolean;
   onClose: () => void;
@@ -255,7 +256,15 @@ export default function SettingsDialog(p: Props) {
             </div>
           </div>
 
-          <div className="settings-row"><div className="settings-row-copy"><strong>글꼴</strong><span>기존 글꼴로 언제든 되돌릴 수 있어요</span></div><div className="settings-segmented" role="group" aria-label="글꼴 선택"><button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>세방고딕</button><button type="button" className={p.font==='pretendard'?'active':''} aria-pressed={p.font==='pretendard'} onClick={()=>p.onFont('pretendard')}>기존</button></div></div>
+          <div className="settings-row settings-font-row">
+            <div className="settings-row-copy"><strong>글꼴</strong><span>화면과 카드에 적용돼요 · 이 기기에 저장됩니다</span></div>
+            <div className="settings-segmented" role="group" aria-label="글꼴 선택">
+              <button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>세방고딕</button>
+              <button type="button" className={p.font==='pretendard'?'active':''} aria-pressed={p.font==='pretendard'} onClick={()=>p.onFont('pretendard')}>기존</button>
+              <button type="button" className={`settings-handwriting-choice ${p.font==='gaegu'?'active':''}`} aria-pressed={p.font==='gaegu'} onClick={()=>p.onFont('gaegu')}>손글씨</button>
+            </div>
+            <p className="settings-font-preview">오늘의 작은 순간을 로그로 남겨요.</p>
+          </div>
           <label className="settings-row settings-row-input">
             <div className="settings-row-copy">
               <strong>카드 서명</strong>

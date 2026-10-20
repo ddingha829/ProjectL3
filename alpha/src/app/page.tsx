@@ -12,6 +12,7 @@ import { cardShareData, googleMapShareUrl } from '@/lib/cardShare';
 import { getGroupMembers, isLogGroup } from '@/lib/logGroups';
 import { haptic } from '@/lib/haptics';
 import { allowsMotion } from '@/lib/motion';
+import { normalizeAppFont, type AppFont } from '@/lib/fontPreference';
 import { fallbackSkinId, visibleSkins } from '@/lib/skinLibrary';
 import { useArchiveRepository } from '@/hooks/useArchiveRepository';
 import { usePresetPreferences } from '@/hooks/usePresetPreferences';
@@ -45,7 +46,7 @@ export default function L2TestApp(){
   const pwa = usePwaInstall();
   const [tab,setTab]=useState<Tab>('log'),[light,setLight]=useState(false),[settings,setSettings]=useState(false);
   const [listDetailsOn,setListDetailsOn]=useState(true),[autoPlaceLinkOn,setAutoPlaceLinkOn]=useState(true);
-  const [font,setFont]=useState<'sebang'|'pretendard'>('sebang');
+  const [font,setFont]=useState<AppFont>('sebang');
   const [slideDir,setSlideDir]=useState<'next'|'prev'|null>(null);
   const [activeId,setActiveId]=useState(''),[editingId,setEditingId]=useState<string|null>(null),[newId,setNewId]=useState<string|null>(null);
   const [pendingAppearance,setPendingAppearance]=useState<CardAppearance|null>(null);
@@ -73,13 +74,13 @@ export default function L2TestApp(){
     else {setSettings(true);notify('구글 로그인을 완료하지 못했어요. 다시 시도해 주세요.',undefined,undefined,'error');}
   },[notify]);
   useEffect(()=>{
-    try{setLight(localStorage.getItem('l2_test_theme')==='paper');setFont(localStorage.getItem('l2_font_family')==='pretendard'?'pretendard':'sebang');}catch{}
+    try{setLight(localStorage.getItem('l2_test_theme')==='paper');setFont(normalizeAppFont(localStorage.getItem('l2_font_family')));}catch{}
     try{setListDetailsOn(localStorage.getItem(LIST_DETAILS_KEY)!=='off');}catch{}
     try{setAutoPlaceLinkOn(localStorage.getItem(AUTO_PLACE_LINK_KEY)!=='off');}catch{}
     try{const raw=localStorage.getItem(INBOX_STORAGE_KEY);if(raw)setInboxPlaces(JSON.parse(raw));}catch{}
   },[]);
   useEffect(()=>{document.documentElement.classList.toggle('light',light);},[light]);
-  const changeFont=(value:'sebang'|'pretendard')=>{setFont(value);document.documentElement.dataset.font=value;try{localStorage.setItem('l2_font_family',value);}catch{}};
+  const changeFont=(value:AppFont)=>{if(value===font)return;exportFile.current=null;setFont(value);document.documentElement.dataset.font=value;try{localStorage.setItem('l2_font_family',value);}catch{}};
   const changeTheme=(value:boolean)=>{setLight(value);try{localStorage.setItem('l2_test_theme',value?'paper':'dark');}catch{}};
   const changeListDetails=(value:boolean)=>{setListDetailsOn(value);try{localStorage.setItem(LIST_DETAILS_KEY,value?'on':'off');}catch{}};
   const changeAutoPlaceLink=(value:boolean)=>{setAutoPlaceLinkOn(value);try{localStorage.setItem(AUTO_PLACE_LINK_KEY,value?'on':'off');}catch{}};
@@ -272,7 +273,7 @@ export default function L2TestApp(){
       }
     }, 180);
     return () => { canceled = true; clearTimeout(timer); };
-  },[tab,actualItem,item,appearance,members,exportRevision]);
+  },[tab,actualItem,item,appearance,members,exportRevision,font]);
 
   const ensureExportFile=async():Promise<File|null>=>{
     if(exportFile.current)return exportFile.current;
