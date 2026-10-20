@@ -359,17 +359,17 @@ html.light .record-card-actions .record-card-save.is-dirty {
 /* Card first; the edit drawer is an explicit second state. */
 .record-card{display:flex;flex-direction:column;width:100%;max-width:640px;gap:8px}
 .record-card-stage{flex:1;min-height:100px;touch-action:pan-x pinch-zoom}
-.record-editor-handle{flex-shrink:0;display:grid;place-items:center;align-self:center;width:64px;min-height:48px;padding:4px;border:0;border-radius:14px;background:transparent;color:var(--muted);cursor:pointer}
+.record-editor-handle{flex-shrink:0;display:grid;place-items:center;align-self:center;width:88px;min-height:58px;padding:4px;border:0;border-radius:14px;background:transparent;color:var(--fg);cursor:pointer}
 .record-editor-arrows{display:flex;flex-direction:column;align-items:center;pointer-events:none}
-.record-editor-arrows svg{opacity:.24;margin:-4px 0;animation:record-arrow-rise 2s ease-in-out infinite}
-.record-editor-arrows svg:nth-child(2){animation-delay:140ms}.record-editor-arrows svg:nth-child(3){animation-delay:280ms}
+.record-editor-arrows svg{opacity:.5;margin:-5px 0;animation:record-arrow-rise 2s ease-in-out infinite;animation-delay:280ms}
+.record-editor-arrows svg:nth-child(2){animation-delay:140ms}.record-editor-arrows svg:nth-child(3){animation-delay:0ms}
 .record-editor-handle:hover .record-editor-arrows svg{opacity:.6}
 .record-editor-handle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@keyframes record-arrow-rise{0%,100%{opacity:.18;transform:translateY(3px)}45%{opacity:.5;transform:translateY(-3px)}}
-html[data-motion=off] .record-editor-arrows svg{animation:none;opacity:.35}
-@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .record-editor-arrows svg{animation:none;opacity:.35}}
+@keyframes record-arrow-rise{0%,100%{opacity:.4;transform:translateY(3px)}45%{opacity:.8;transform:translateY(-3px)}}
+html[data-motion=off] .record-editor-arrows svg{animation:none;opacity:.65}
+@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .record-editor-arrows svg{animation:none;opacity:.65}}
 .record-card.is-viewing-card .record-edit-drawer{display:none}
-.record-card.is-editing-card .record-editor-handle{min-height:32px;padding:0}.record-card.is-editing-card .record-editor-arrows svg{animation:none;opacity:.28}
+.record-card.is-editing-card .record-editor-handle{min-height:44px;padding:0}.record-card.is-editing-card .record-editor-arrows svg{animation:none;opacity:.55}
 .record-card.is-editing-card .record-design-tools,.record-card.is-editing-card .record-card-actions{flex-shrink:0;animation:record-drawer-in 260ms cubic-bezier(.2,.8,.2,1) both}
 .record-card .fit-card-artwork{transition:width 280ms cubic-bezier(.2,.8,.2,1)}
 @keyframes record-drawer-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}

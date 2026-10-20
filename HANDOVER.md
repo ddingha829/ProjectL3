@@ -2,7 +2,8 @@
 
 ## 2026-10-20 손글씨 옵션 · 서버 연결 후속 확인
 
-- Mobile card editor now uses only faint animated chevrons; tapping the open card collapses controls and restores the large preview. Drag/swipe does not trigger collapse, and desktop split layout remains. Guides match this behavior.
+- Mobile card editor uses larger 25px animated chevrons (no text). A short card tap or Enter/Space toggles the editing controls in either direction; drag/swipe is not a tap. Idle cards gently float in 3D outside the export subtree, respecting motion Off/system reduction. Desktop split layout remains. Chrome and real Playwright WebKit regressions pass, including unchanged PNG export.
+- Voice input was assessed only, not implemented. Recommend browser Web Speech API plus system keyboard dictation fallback for no paid STT API integration. Browser recognition is not universally available or guaranteed offline; validate actual iOS/PWA/Android/in-app environments before shipping. See `alpha/DOCS/VOICE_INPUT_FEASIBILITY_20261020.md`.
 - See alpha/DOCS/HANDWRITING_FONT_20261020.md. Settings font choice now includes Gaegu handwriting, with device-local persistence, local WOFF2/OFL, Sebang fallback for rare Hangul, font-aware PNG regeneration and PWA v8 offline fonts. Existing defaults and preset/log data are preserved.
 - Later provider checks supersede the earlier failure status below: the user supplied a new Gemini key, now installed locally and in Vercel Production/Preview; production summary returned 200/source=ai. Google Places now reports ready and returns actual Leeum coordinates after the user reconnected billing. Local isolated save/reload/OSM marker checks passed using that real response.
 

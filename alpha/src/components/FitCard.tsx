@@ -7,7 +7,7 @@ import { allowsMotion } from '@/lib/motion';
 import CardDepth from './CardDepth';
 import './FitCard.css';
 
-export default function FitCard({ ratio, children, animationKey, transition = 'simple', direction = 1, interactive = false }: { ratio: PresetSlot['ratio']; children: ReactNode; animationKey?: string; transition?: 'simple' | 'slide'; direction?: number; interactive?: boolean }) {
+export default function FitCard({ ratio, children, animationKey, transition = 'simple', direction = 1, interactive = false, onActivate, expanded }: { ratio: PresetSlot['ratio']; children: ReactNode; animationKey?: string; transition?: 'simple' | 'slide'; direction?: number; interactive?: boolean; onActivate?: () => void; expanded?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(180);
   const previous = useRef({ key: animationKey, children, width });
@@ -37,7 +37,7 @@ export default function FitCard({ ratio, children, animationKey, transition = 's
     return () => observer.disconnect();
   }, [ratio]);
   return <div ref={ref} className={`fit-card ${transition === 'slide' ? 'fit-card-slide' : ''}`} style={{ '--card-direction': direction < 0 ? 1 : -1 } as CSSProperties}>
-    <div key={animationKey} className="fit-card-artwork" style={{ width }}>{interactive?<CardDepth>{children}</CardDepth>:children}</div>
+    <div key={animationKey} className="fit-card-artwork" style={{ width }}>{interactive?<CardDepth onActivate={onActivate} expanded={expanded}>{children}</CardDepth>:children}</div>
     {outgoing && <div key={`out-${outgoing.key}`} className="fit-card-outgoing" aria-hidden="true" inert><div style={{ width: outgoing.width }}>{outgoing.children}</div></div>}
   </div>;
 }
