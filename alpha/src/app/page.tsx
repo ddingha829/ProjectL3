@@ -318,7 +318,7 @@ export default function L2TestApp(){
     if(editingItem||logSaveLock.current)return;
     const target=e.target as HTMLElement|null;
     if(!target)return;
-    if(target.closest('input, textarea, select, button:not(.logbook-poster), a, [contenteditable="true"], .preset-library, .leaflet-container, [data-crop-interactive], .logbook-spotlight-backdrop, .swipe-log'))return;
+    if(target.closest('input, textarea, select, button:not(.logbook-poster), a, [contenteditable="true"], .preset-library, .leaflet-container, [data-crop-interactive], [data-no-swipe], .logbook-spotlight-backdrop, .swipe-log'))return;
     const hScroll=target.closest<HTMLElement>('.preset-rail');
     if(hScroll&&hScroll.scrollWidth>hScroll.clientWidth+4)return;
     const inDialog=target.closest('[role="dialog"]');

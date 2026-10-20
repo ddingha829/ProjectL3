@@ -10,6 +10,7 @@ import PhotoCropControls from './PhotoCropControls';
 import {photoCrop,type PhotoFit} from '@/lib/photoCrop';
 import PhotoMemoCanvas from '@/components/PhotoMemoCanvas';
 import SaveFeedback from '@/components/SaveFeedback';
+import VoiceLogInput from '@/components/VoiceLogInput';
 import PhotoPickerDialog from './PhotoPickerDialog';
 import { compressUploadedImage as preparePhoto } from '@/lib/imageUtils';
 import { allowsMotion } from '@/lib/motion';
@@ -123,6 +124,7 @@ export default function QuickLogComposer({
   const [photoError, setPhotoError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
   const completedDraft = useRef<LogDraft | null>(null);
   const [committingCategory, setCommittingCategory] = useState<ArchiveCategory | null>(null);
   // Clear durable draft recovery immediately, but keep the just-saved text visible until navigation.
@@ -311,7 +313,7 @@ export default function QuickLogComposer({
   };
 
   const commit = async (category: ArchiveCategory) => {
-    if (savingRef.current || !isReady || !isRestored || photoBusy) return;
+    if (savingRef.current || !isReady || !isRestored || photoBusy || voiceActive) return;
     if (!draft.title.trim()) {
       setSubmitError('제목을 입력해 주세요.');
       titleRef.current?.focus();
@@ -346,7 +348,7 @@ export default function QuickLogComposer({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (savingRef.current || !isReady || !isRestored || photoBusy) return;
+    if (savingRef.current || !isReady || !isRestored || photoBusy || voiceActive) return;
     if (!draft.title.trim()) { setSubmitError('제목을 입력해 주세요.'); titleRef.current?.focus(); return; }
     if (editingItem) void commit(draft.category);
     else setDialog('category');
@@ -458,6 +460,10 @@ export default function QuickLogComposer({
             <PhotoMemoCanvas id={`${id}-body`} body={draft.body} img={draft.img} cropX={draft.cropX} cropY={draft.cropY} cropZoom={draft.cropZoom} photoFit={draft.photoFit} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} onCrop={crop=>setDraft(current=>({...current,...crop}))} cropOpen={cropOpen} disabled={disabled} onBody={(body) => update('body', body)} onToggleCrop={() => setCropOpen((current) => !current)} onRemovePhoto={() => { photoToken.current += 1; setPhotoBusy(false); update('img', ''); setCropOpen(false); }} />
             {draft.img && cropOpen && <><p className="photo-adjust-hint">사진을 드래그해 위치를 옮길 수 있어요.</p><PhotoCropControls value={photoCrop(draft)} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} disabled={disabled} positions onChange={crop=>setDraft(current=>({...current,...crop}))}/></>}
 
+            <VoiceLogInput blocked={disabled || !isReady || photoBusy || Boolean(dialog) || cropOpen} full={draft.body.length >= 5000} onActiveChange={setVoiceActive} onText={text => {
+              setDraft(current => ({ ...current, body: (current.body + (current.body && !/\s$/.test(current.body) ? ' ' : '') + text).slice(0, 5000) }));
+              setSubmitError(''); setSaved(false);
+            }}/>
 
             <div className="quick-actions" role="group" aria-label="기록 첨부">
               <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
@@ -475,7 +481,7 @@ export default function QuickLogComposer({
           {draftError && <p role="alert" className="mb-4 text-sm leading-relaxed text-[var(--accent)]">{draftError}</p>}
           <p aria-live="polite" role="status" className="sr-only">{isSaving ? '기록 저장 중' : saved ? '기록을 저장했습니다.' : ''}</p>
           <div className="flex justify-end">
-            <button type="submit" data-save-state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} disabled={!isReady || !isRestored || !meaningfulInput || isSaving || photoBusy} className="quick-control quick-save-button"><SaveFeedback state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} label={editingItem ? '수정 저장' : '로그 저장'} /></button>
+            <button type="submit" data-save-state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} disabled={!isReady || !isRestored || !meaningfulInput || isSaving || photoBusy || voiceActive} className="quick-control quick-save-button"><SaveFeedback state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} label={editingItem ? '수정 저장' : voiceActive ? '음성 입력을 마친 뒤 저장' : '로그 저장'} /></button>
           </div>
         </div>
       </form>

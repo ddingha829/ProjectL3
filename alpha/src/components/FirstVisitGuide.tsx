@@ -9,7 +9,7 @@ type GuidePage = { label: string; hints: Hint[] };
 const guides: Record<GuideScreen, GuidePage[]> = {
   log: [{ label: '첫 로그', hints: [
     { text: '제목 입력', selector: '.quick-title input' },
-    { text: '내용 입력', selector: '.photo-memo-panel' },
+    { text: '내용 입력', detail: '직접 쓰거나 마이크로 말해 보세요.\n음성 입력을 마친 뒤 내용을 확인하고 저장해요.', selector: '.photo-memo-panel, .voice-log-input' },
     { text: '사진 · 작품 표지 추가', detail: '앨범·카메라 또는 영화·드라마·책 검색으로 한 장을 담아요.', selector: '.quick-actions button:nth-of-type(1)' },
     { text: '장소 추가', selector: '.quick-actions button:nth-of-type(2)' },
     { text: '별점 등\n세부사항 추가', selector: '.quick-actions button:nth-of-type(3)' },
