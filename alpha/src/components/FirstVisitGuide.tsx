@@ -19,8 +19,8 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     { label: '메뉴', hints: [
       { text: '로그 추가', selector: '.test-header nav button:nth-child(1)' },
       { text: '올린 로그 리스트', selector: '.test-header nav button:nth-child(2)' },
-      { text: '날짜별로 다시 보는 일상', detail: '로그캘린더에서 날짜와 기간을 고르면\n시간별 로그와 장소의 흐름을 볼 수 있어요.', selector: '.test-header nav button:nth-child(3)' },
-      { text: '본인 스타일로\n카드를 디자인하는 곳', selector: '.test-header nav button:nth-child(4)' },
+      { text: '본인 스타일로\n카드를 디자인하는 곳', selector: '.test-header nav button:nth-child(3)' },
+      { text: '날짜별로 다시 보는 일상', detail: '달력 아이콘을 눌러 날짜와 기간별로\n로그와 장소의 흐름을 볼 수 있어요.', selector: '.test-calendar-button' },
       { text: '설정', selector: '.test-settings-button' },
     ] },
     { label: '찾기 · 정리', hints: [

@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Settings2 } from 'lucide-react';
+import { Settings2, CalendarDays } from 'lucide-react';
 import type { ArchiveItem, CardAppearance, GeoPoint, MapApiPlace, PlaceInboxItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { INITIAL_ARCHIVES, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import {photoCrop,photoCropKey,type PhotoCrop} from '@/lib/photoCrop';
@@ -36,7 +36,7 @@ import './workflow.css';
 type Tab='log'|'archive'|'calendar'|'card'|'studio';
 type Toast={title:string;actionLabel?:string;action?:()=>void;tone:'info'|'success'|'error'};
 const dateNow=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}).slice(2).replaceAll('-','.');
-const TAB_ORDER: Record<Tab, number> = { log: 0, archive: 1, card: 1, calendar: 2, studio: 3 };
+const TAB_ORDER: Record<Tab, number> = { log: 0, archive: 1, card: 1, studio: 2, calendar: 3 };
 const INBOX_STORAGE_KEY = 'l2_google_places_inbox_v1';
 const LIST_DETAILS_KEY = 'l2_list_details_on';
 const AUTO_PLACE_LINK_KEY = 'l2_auto_place_link_on';
@@ -352,7 +352,7 @@ export default function L2TestApp(){
       }
     }
     if(start.lockedAxis!=='x')return;
-    const atBoundary=tab==='log'&&dx>0||tab==='studio'&&dx<0;
+    const atBoundary=tab==='log'&&dx>0||(tab==='studio'||tab==='calendar')&&dx<0;
     const effectiveDx=atBoundary?Math.sign(dx)*Math.min(Math.abs(dx)*0.18,42):dx;
     start.dx=effectiveDx;
     if(mainRef.current){
@@ -395,13 +395,12 @@ export default function L2TestApp(){
     if(dx<0){
       haptic.tick();
       if(currentEffective==='log')go('archive','next',start.dx);
-      else if(currentEffective==='archive')go('calendar','next',start.dx);
-      else if(currentEffective==='calendar')go('studio','next',start.dx);
-      else if(currentEffective==='studio')springBackMain(start.dx);
+      else if(currentEffective==='archive')go('studio','next',start.dx);
+      else if(currentEffective==='calendar'||currentEffective==='studio')springBackMain(start.dx);
     }else if(dx>0){
       if(tab==='card'){haptic.tick();go(cardOrigin.current,'prev',start.dx);}
-      else if(currentEffective==='studio'){haptic.tick();go('calendar','prev',start.dx);}
-      else if(currentEffective==='calendar'){haptic.tick();go('archive','prev',start.dx);}
+      else if(currentEffective==='studio'){haptic.tick();go('archive','prev',start.dx);}
+      else if(currentEffective==='calendar'){haptic.tick();go('studio','prev',start.dx);}
       else if(currentEffective==='archive'){haptic.tick();go('log','prev',start.dx);}
       else springBackMain(start.dx);
     }
@@ -409,7 +408,7 @@ export default function L2TestApp(){
 
   const storageStatus=!repository.ready?'불러오는 중':failedSyncIds?'동기화 확인 필요':repository.pendingCount?`기기 보관 완료 · ${repository.pendingCount}건 동기화 대기`:preferences.pending?'스타일 동기화 대기':repository.status==='failed'?'서버 연결 대기':'동기화 완료';
   return <div className={`test-shell view-${tab} ${tab==='log'?'is-composing':''}`} onPointerDown={onPointerDownShell} onPointerMove={onPointerMoveShell} onPointerUp={onPointerUpShell} onPointerCancel={onPointerCancelShell}><TestPwa/>
-    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'calendar',label:'로그캘린더'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'page':undefined} onClick={()=>go(entry.id)} aria-label={entry.label}>{entry.id==='calendar'?<><span className="nav-calendar-prefix">로그</span>캘린더</>:entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기"><Settings2 size={20} strokeWidth={2} aria-hidden="true"/></button></header>
+    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'studio',label:'스튜디오'},{id:'calendar',label:'로그캘린더'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={`${entry.id==='calendar'?'test-calendar-button ':''}${tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'active':''}`} aria-current={tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'page':undefined} onClick={()=>go(entry.id)} aria-label={entry.label} title={entry.id==='calendar'?'로그캘린더':undefined}>{entry.id==='calendar'?<CalendarDays size={22} strokeWidth={1.7} aria-hidden="true"/>:entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기"><Settings2 size={20} strokeWidth={2} aria-hidden="true"/></button></header>
     <PwaInstallBanner pwa={pwa}/>
     <div className="test-swipe-viewport">
       <div ref={outgoingRef} className="test-outgoing-host" aria-hidden="true"/>
