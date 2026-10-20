@@ -1,3 +1,4 @@
+import type { LogMedia } from '@/lib/media';
 // ART remains the persisted ID for 장소 so existing records keep their category.
 export type ArchiveCategory = 'DINING' | 'CINEMA' | 'ART' | 'OTHER' | 'GROUP';
 
@@ -65,6 +66,7 @@ export interface ArchiveItem {
   kind?: 'log' | 'group';
   memberIds?: string[];
   coordinates?: GeoPoint | null;
+  media?: LogMedia | null;
 }
 
 export interface GeoPoint { lat: number; lng: number }
@@ -82,6 +84,9 @@ export interface PresetSlot {
   showGrain?: boolean;
   showDecorations?: boolean;
   showNumber?: boolean;
+  photoSaturation?: number;
+  photoLightness?: number;
+  photoBrightness?: number;
   /** Category defaults live with the preset JSON, so they sync without a schema change. */
   defaultFor?: Exclude<ArchiveCategory, 'GROUP'>[];
 }

@@ -1,4 +1,4 @@
-import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
+import { DEFAULT_PRESET_ID, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import type { PresetSlot, SkinTheme } from '@/types/l2';
 import { normalizeDefaultPresetId, normalizePresetSlot } from '@/lib/cardAppearance';
 import { upgradeBundledPresets } from '@/lib/bundledPresets';
@@ -12,7 +12,7 @@ export interface PresetPreferences {
 }
 
 export function initialPresetPreferences(): PresetPreferences {
-  return { presetSlots: PRESET_SLOTS.map(slot => ({ ...slot })), skins: Object.fromEntries(Object.entries(INITIAL_SKINS).map(([id, skin]) => [id, { ...skin }])), authorName: 'L2. ARCHIVE', defaultPresetId: PRESET_SLOTS[0].id };
+  return { presetSlots: PRESET_SLOTS.map(slot => ({ ...slot })), skins: Object.fromEntries(Object.entries(INITIAL_SKINS).map(([id, skin]) => [id, { ...skin }])), authorName: 'L2. ARCHIVE', defaultPresetId: DEFAULT_PRESET_ID };
 }
 
 /** Migrates local/server legacy preferences without changing saved records. */

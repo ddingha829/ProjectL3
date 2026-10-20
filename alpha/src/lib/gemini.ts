@@ -46,6 +46,8 @@ export async function callGemini(
           return { text, model };
         }
       } else {
+        // Prepayment exhaustion is project-wide; another model cannot fix it.
+        if (res.status === 402) { console.warn('[Gemini] prepayment credits exhausted; using local fallback.'); return null; }
         // If 503 (high demand) or 429, try next model in loop
         console.warn(`[Gemini ${model}] failed with ${res.status}, trying fallback...`);
       }

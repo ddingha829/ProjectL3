@@ -1,5 +1,7 @@
 import { ArchiveItem, MapApiPlace, PresetSlot, SkinTheme } from '@/types/l2';
 
+export const DEFAULT_PRESET_ID = '02';
+
 export const INITIAL_ARCHIVES: ArchiveItem[] = [
   {
     id: 'k1',

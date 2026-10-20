@@ -355,3 +355,34 @@ html.light .record-card-actions .record-card-save.is-dirty {
 .record-design-tools .preset-control-panel{height:52px}.record-design-tools .preset-tabs button{min-height:30px}
 .record-style-status{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:20px;padding:0 3px;color:var(--muted);font-size:10px}.record-style-status button{color:var(--accent);font-size:11px;min-height:28px;white-space:nowrap}
 @media(max-height:650px){.record-card{gap:6px;grid-template-rows:minmax(100px,1fr) auto 44px}.record-design-tools{gap:4px}.record-design-tools .preset-library-open{min-height:47px}.record-design-tools .preset-control-panel{height:46px}.record-style-status{font-size:9px;min-height:18px}.record-style-status button{min-height:24px}}
+
+/* Card first; the edit drawer is an explicit second state. */
+.record-card{display:flex;flex-direction:column;width:100%;max-width:640px;gap:8px}
+.record-card-stage{flex:1;min-height:100px;touch-action:pan-x pinch-zoom}
+.record-editor-handle{flex-shrink:0;display:grid;grid-template-columns:auto auto;align-items:center;justify-content:center;gap:3px 6px;min-height:62px;padding:8px 12px;color:var(--fg);border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 75%,transparent);cursor:pointer}
+.record-editor-handle>i{grid-column:1/-1;justify-self:center;width:32px;height:3px;border-radius:9px;background:var(--muted);opacity:.5;margin-bottom:3px}
+.record-editor-handle strong{font-size:13px;font-weight:800}.record-editor-handle small{grid-column:1/-1;color:var(--muted);font-size:10px}
+.record-card.is-viewing-card .record-edit-drawer{display:none}
+.record-card.is-editing-card .record-editor-handle{min-height:40px;padding:5px 12px}.record-card.is-editing-card .record-editor-handle>i,.record-card.is-editing-card .record-editor-handle>small{display:none}
+.record-card.is-editing-card .record-design-tools,.record-card.is-editing-card .record-card-actions{flex-shrink:0;animation:record-drawer-in 260ms cubic-bezier(.2,.8,.2,1) both}
+.record-card .fit-card-artwork{transition:width 280ms cubic-bezier(.2,.8,.2,1)}
+@keyframes record-drawer-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .record-card .fit-card-artwork{transition:none}html:not([data-motion=on]) .record-card.is-editing-card :is(.record-design-tools,.record-card-actions){animation:none}}
+
+.record-edit-drawer{display:grid;gap:8px;flex-shrink:0;min-width:0}.record-card .record-card-actions{min-height:48px}
+@media(min-width:760px){
+ .view-card .record-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,370px);grid-template-rows:minmax(0,1fr);max-width:none;gap:28px;align-items:center}
+ .view-card .record-card-stage{height:100%;grid-column:1;grid-row:1;min-height:0}
+ .view-card .record-editor-handle{display:none}
+ .view-card .record-card .record-edit-drawer{display:grid;grid-column:2;grid-row:1;gap:14px;align-self:center;min-width:0;padding:20px;border:1px solid var(--line);border-radius:24px;background:color-mix(in srgb,var(--surface) 75%,transparent)}
+ .view-card .record-style-status{flex-wrap:wrap;gap:7px;font-size:11px}
+ .view-card .record-card-error{position:absolute;top:0;right:0;width:calc(45% - 14px);z-index:5}
+ .view-card .record-design-tools .preset-library-open{min-height:64px}
+}
+
+/* Shared Studio controls must not create implicit desktop grid columns here. */
+.record-design-tools{grid-template-columns:minmax(0,1fr)}
+.record-design-tools>.record-preset-controls,.record-design-tools>.preset-controls,.record-design-tools>.record-style-status{grid-column:1;grid-row:auto;align-self:stretch}
+.record-design-tools .record-preset-controls>.preset-library{grid-column:1;grid-row:1}
+.record-design-tools .record-preset-controls>.record-preset-arrows{grid-column:2;grid-row:1}
+.record-style-status{line-height:1.45}

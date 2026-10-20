@@ -8,7 +8,7 @@ create table if not exists public.l2_profiles (
   author_name       text not null default '',
   preset_slots      jsonb,
   skins             jsonb not null default '{}'::jsonb,
-  default_preset_id text not null default '01',
+  default_preset_id text not null default '02',
   created_at        timestamptz not null default now()
 );
 

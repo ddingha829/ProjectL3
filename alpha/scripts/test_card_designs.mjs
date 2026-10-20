@@ -46,6 +46,7 @@ async function open(item) {
   await page.$eval('.test-header nav button:nth-child(2)', e => e.click());
   await page.waitForSelector('.logbook-row');
   await page.$eval(`#record-${item.id}`, e => e.click());
+  await page.click('.record-editor-handle');
   await page.waitForSelector('.record-card-actions button:last-child:not(:disabled)', { timeout: 30000 });
 }
 async function inspect() {

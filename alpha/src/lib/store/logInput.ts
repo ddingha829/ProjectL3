@@ -4,6 +4,7 @@ import { isArchiveCategory } from '@/lib/archiveCategories';
 import { normalizeCardAppearance } from '@/lib/cardAppearance';
 import {photoCrop} from '@/lib/photoCrop';
 import { isGeoPoint } from '@/lib/mapLocations';
+import { normalizeLogMedia } from '@/lib/media';
 
 function text(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
@@ -47,6 +48,7 @@ export function normalizeLogInput(raw: unknown, existing?: ArchiveItem): Archive
     link: text(body.link), img: image, hasPhoto: Boolean(image),
     ...photoCrop(body as Partial<ArchiveItem>), mapX: position(body.mapX), mapY: position(body.mapY), author: text(body.author),
     ...(cardAppearance ? { cardAppearance } : {}),
+    ...(normalizeLogMedia(body.media) ? { media: normalizeLogMedia(body.media) } : {}),
     ...(grouped ? { kind: 'group' as const, memberIds } : {}),
     ...(isGeoPoint(body.coordinates) ? { coordinates: { lat: body.coordinates.lat, lng: body.coordinates.lng } } : {}),
   };

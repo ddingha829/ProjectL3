@@ -1,8 +1,9 @@
 import type { ArchiveItem, CardAppearance, PresetSlot, SkinTheme } from '@/types/l2';
-import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
+import { DEFAULT_PRESET_ID, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { CARD_LAYOUTS, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { normalizeSkinTheme } from '@/lib/skinValidation';
 import { fallbackSkinId } from '@/lib/skinLibrary';
+import { photoTone } from '@/lib/photoTone';
 
 const elementKeys = ['showScore', 'showProsCons', 'showLocation', 'showSignature', 'showGrain', 'showDecorations', 'showNumber'] as const;
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -15,13 +16,15 @@ export function normalizePresetSlot(value: unknown): PresetSlot | undefined {
   const ratio = layout.supportedRatios.find(entry => entry === value.ratio) || layout.ratio;
   const slot: PresetSlot = { id: label(value.id), name: typeof value.name === 'string' ? label(value.name) : layout.name, skinId: label(value.skinId), layout: layout.id, ratio };
   for (const key of elementKeys) if (typeof value[key] === 'boolean') slot[key] = value[key];
+  const tones = photoTone(value);
+  for (const key of ['photoSaturation', 'photoLightness', 'photoBrightness'] as const) if (typeof value[key] === 'number') slot[key] = tones[key];
   if (layout.id !== 'curation' && Array.isArray(value.defaultFor)) slot.defaultFor = [...new Set(value.defaultFor.filter((category): category is Exclude<ArchiveItem['cat'], 'GROUP'> => ['DINING', 'CINEMA', 'ART', 'OTHER'].includes(category)))];
   return slot;
 }
 
 export function normalizeDefaultPresetId(value: unknown, slots: readonly PresetSlot[] = PRESET_SLOTS): string {
   if (typeof value === 'string' && slots.some(slot => slot.id === value && slot.layout !== 'curation')) return value;
-  return slots.find(slot => slot.id === PRESET_SLOTS[0].id && slot.layout !== 'curation')?.id || slots.find(slot => slot.layout !== 'curation')?.id || PRESET_SLOTS[0].id;
+  return slots.find(slot => slot.id === DEFAULT_PRESET_ID && slot.layout !== 'curation')?.id || slots.find(slot => slot.layout !== 'curation')?.id || DEFAULT_PRESET_ID;
 }
 
 export function cloneCardAppearance(appearance: CardAppearance): CardAppearance {

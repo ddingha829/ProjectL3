@@ -1,6 +1,6 @@
 'use client';
-import { useState, type RefObject } from 'react';
-import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, Crop } from 'lucide-react';
+import { useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
+import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Crop } from 'lucide-react';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { PRESET_SLOTS, INITIAL_SKINS } from '@/data/initialData';
 import { isLogGroup } from '@/lib/logGroups';
@@ -43,6 +43,20 @@ interface Props {
 }
 
 export default function CardWorkspace(p: Props) {
+  const [editorOpen,setEditorOpen]=useState(false);
+  const swipe=useRef<{id:number;x:number;y:number}|null>(null);
+  useEffect(()=>{setEditorOpen(false);swipe.current=null;},[p.item.id]);
+  useEffect(()=>{
+    const guide=(event:Event)=>setEditorOpen(Boolean((event as CustomEvent<boolean>).detail));
+    window.addEventListener('l2:card-guide-editor',guide);
+    return()=>window.removeEventListener('l2:card-guide-editor',guide);
+  },[]);
+  const startSwipe=(event:PointerEvent<HTMLElement>)=>{if(event.isPrimary&&event.button===0&&!(event.target as HTMLElement).closest('button,input,[data-crop-interactive]'))swipe.current={id:event.pointerId,x:event.clientX,y:event.clientY};};
+  const moveSwipe=(event:PointerEvent<HTMLElement>)=>{
+    const start=swipe.current;if(!start||start.id!==event.pointerId)return;
+    const dx=event.clientX-start.x,dy=event.clientY-start.y;
+    if(Math.abs(dy)>44&&Math.abs(dy)>Math.abs(dx)*1.4){event.preventDefault();event.stopPropagation();setEditorOpen(dy<0);swipe.current=null;}
+  };
   const [membersOpen, setMembersOpen] = useState(false);
   const [photoOpen,setPhotoOpen]=useState(false);
   const canAdjustPhoto=!isLogGroup(p.item)&&itemHasPhoto(p.item)&&!getCardLayout(p.slot.layout).isNoPhoto;
@@ -64,9 +78,10 @@ export default function CardWorkspace(p: Props) {
   };
 
   return (
-    <section className="record-card" aria-label="로그 카드">
-      <div className="record-card-stage">
+    <section className={`record-card ${editorOpen?'is-editing-card':'is-viewing-card'}`} aria-label="로그 카드">
+      <div className="record-card-stage" onPointerDown={startSwipe} onPointerMove={moveSwipe} onPointerUp={()=>{swipe.current=null;}} onPointerCancel={()=>{swipe.current=null;}}>
         <FitCard
+          interactive
           ratio={p.slot.ratio}
           transition="slide"
           direction={direction}
@@ -103,7 +118,11 @@ export default function CardWorkspace(p: Props) {
         </div>
       )}
 
-      <div className="record-design-tools" data-guide="card-style">
+      <button type="button" className="record-editor-handle" aria-expanded={editorOpen} aria-controls="record-design-panel" onClick={()=>setEditorOpen(value=>!value)}>
+        <i aria-hidden="true"/>{editorOpen?<ChevronDown size={17}/>:<ChevronUp size={17}/>}<strong>{editorOpen?'카드 크게 보기':'위로 밀어 카드 수정'}</strong><small>{editorOpen?'눌러서 편집 메뉴 접기':'눌러서도 열 수 있어요 · 프리셋 / 사진 보정 / 공유'}</small>
+      </button>
+      <div className="record-edit-drawer">
+      <div id="record-design-panel" className="record-design-tools" data-guide="card-style">
         <div className="record-preset-controls" aria-label="카드 프리셋 선택">
           <PresetLibrary presets={presets} activeId={customized?'':p.slot.id} currentName={customized?'개별 디자인':undefined} skins={allSkins} authorName={p.authorName} item={p.item} dirty={p.hasPendingChange} disabled={p.applying} onSelect={(preset,dir)=>{setDirection(dir);p.onApplyPreset(preset);}}/>
           <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동"><button type="button" aria-label="이전 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?0:sourceIndex)-1,-1)}><ChevronLeft size={17}/></button><button type="button" aria-label="다음 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?-1:sourceIndex)+1,1)}><ChevronRight size={17}/></button></div>
@@ -134,6 +153,7 @@ export default function CardWorkspace(p: Props) {
         </button>
       </div>
 
+      </div>
       <AccessibleDialog
         open={membersOpen}
         onClose={() => setMembersOpen(false)}

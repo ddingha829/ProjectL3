@@ -122,8 +122,8 @@ assert.equal(sanitizedAppearance.slot.showScore, undefined);
 assert.match(sanitizedAppearance.skin.bg, /^#[0-9A-F]{6}$/);
 assert.ok(skinContrast(sanitizedAppearance.skin.text, sanitizedAppearance.skin.bg) >= 4.5);
 const legacyPreferences = normalizePresetPreferences({ presetSlots: PRESET_SLOTS, skins: INITIAL_SKINS, authorName: 'legacy' });
-assert.equal(legacyPreferences.defaultPresetId, PRESET_SLOTS[0].id);
-assert.equal(normalizeDefaultPresetId('missing'), PRESET_SLOTS[0].id);
+assert.equal(legacyPreferences.defaultPresetId, PRESET_SLOTS[1].id);
+assert.equal(normalizeDefaultPresetId('missing'), PRESET_SLOTS[1].id);
 assert.equal(normalizePresetPreferences({ ...initialPresetPreferences(), defaultPresetId: PRESET_SLOTS[2].id }).defaultPresetId, PRESET_SLOTS[2].id);
 console.log('PASS immutable appearance snapshot, safe layout/ratio/colors, legacy default preset migration');
 
@@ -168,7 +168,7 @@ class PreferenceMemory {
   write(key, value) { this.values.set(key, structuredClone(value)); }
 }
 const preferenceStorage = new PreferenceMemory();
-const remotePreferences = new Map([['owner-a', initialPresetPreferences()], ['owner-b', initialPresetPreferences()]]);
+const remotePreferences = new Map([['owner-a', initialPresetPreferences()], ['owner-b', { ...initialPresetPreferences(), defaultPresetId: '01' }]]);
 let preferenceOffline = false;
 let cookieOwner = 'owner-a';
 let preferenceCalls = 0;
@@ -552,14 +552,25 @@ try {
   assert.equal(malformedStyle.status, 400);
   const styleDisk = JSON.parse(fs.readFileSync(path.join(testWork, '.test-data', 'l2_users.json'), 'utf8'));
   assert.deepEqual(styleDisk.archives[styledSaved.id].item.cardAppearance, frozenAppearance);
+  const bookMedia = { id: '9781234567890', type: 'book', title: '책 로그', authors: ['작가'], isbn: '9781234567890', url: 'https://search.daum.net/book/fixture' };
+  const tonedAppearance = { ...frozenAppearance, slot: { ...frozenAppearance.slot, photoSaturation: 65, photoLightness: 12, photoBrightness: 115 } };
+  const bookResponse = await logsApi.POST({ json: async () => ({ ...createItem('책 로그', 'OTHER'), media: bookMedia, cardAppearance: tonedAppearance }) });
+  assert.equal(bookResponse.status, 201); const bookSaved = (await bookResponse.json()).item;
+  const bookEdited = await logsApi.PATCH({ json: async () => ({ id: bookSaved.id, quote: '내용만 수정' }) });
+  const editedBook = (await bookEdited.json()).item;
+  assert.deepEqual(editedBook.media, bookMedia); assert.deepEqual(editedBook.cardAppearance, tonedAppearance);
+  const bookDisk = JSON.parse(fs.readFileSync(path.join(testWork, '.test-data', 'l2_users.json'), 'utf8'));
+  assert.deepEqual(bookDisk.archives[bookSaved.id].item.media, bookMedia);
+  assert.deepEqual(bookDisk.archives[bookSaved.id].item.cardAppearance, tonedAppearance);
+  console.log('PASS book metadata and photo tones survive API create/content-edit and disk persistence');
   const oldDevice = randomUUID();
   const oldProfile = await fileStore.ensureProfile(oldDevice);
   const legacyDisk = JSON.parse(fs.readFileSync(path.join(testWork, '.test-data', 'l2_users.json'), 'utf8'));
   delete legacyDisk.profiles[oldDevice].defaultPresetId;
   fs.writeFileSync(path.join(testWork, '.test-data', 'l2_users.json'), JSON.stringify(legacyDisk));
-  assert.equal((await fileStore.getProfile(oldDevice)).defaultPresetId, PRESET_SLOTS[0].id);
+  assert.equal((await fileStore.getProfile(oldDevice)).defaultPresetId, PRESET_SLOTS[1].id);
   const legacyRestore = await sessionApi.POST({ json: async () => ({ recoveryCode: oldProfile.recoveryCode }) });
-  assert.equal((await legacyRestore.json()).defaultPresetId, PRESET_SLOTS[0].id);
+  assert.equal((await legacyRestore.json()).defaultPresetId, PRESET_SLOTS[1].id);
   const originalProfile = await fileStore.getProfile(owner);
   const restoredStyle = await sessionApi.POST({ json: async () => ({ recoveryCode: originalProfile.recoveryCode }) });
   const restoredStyleData = await restoredStyle.json();

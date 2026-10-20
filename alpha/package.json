@@ -24,7 +24,9 @@
     "test:card-designs": "node scripts/test_card_designs.mjs",
     "test:preset-workflows": "node scripts/test_preset_workflows.mjs",
     "test:google-auth": "node scripts/test_google_auth.mjs",
-    "test:frontend-round2": "node scripts/test_frontend_round2.mjs"
+    "test:frontend-round2": "node scripts/test_frontend_round2.mjs",
+    "test:oct20-api": "node scripts/test_oct20_api.mjs",
+    "test:oct20-browser": "node scripts/test_oct20_browser.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

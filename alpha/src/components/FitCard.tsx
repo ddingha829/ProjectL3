@@ -4,9 +4,10 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import type { PresetSlot } from '@/types/l2';
 import { getCardDimensions } from '@/lib/cardLayouts';
 import { allowsMotion } from '@/lib/motion';
+import CardDepth from './CardDepth';
 import './FitCard.css';
 
-export default function FitCard({ ratio, children, animationKey, transition = 'simple', direction = 1 }: { ratio: PresetSlot['ratio']; children: ReactNode; animationKey?: string; transition?: 'simple' | 'slide'; direction?: number }) {
+export default function FitCard({ ratio, children, animationKey, transition = 'simple', direction = 1, interactive = false }: { ratio: PresetSlot['ratio']; children: ReactNode; animationKey?: string; transition?: 'simple' | 'slide'; direction?: number; interactive?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(180);
   const previous = useRef({ key: animationKey, children, width });
@@ -27,7 +28,8 @@ export default function FitCard({ ratio, children, animationKey, transition = 's
     if (!node) return;
     const measure = () => {
       const dimensions = getCardDimensions(ratio);
-      setWidth(Math.max(40, Math.min(420, node.clientWidth, node.clientHeight * dimensions.width / dimensions.height)));
+      const style=getComputedStyle(node),w=node.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),h=node.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom);
+      setWidth(Math.max(40, Math.min(420, w, h * dimensions.width / dimensions.height)));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -35,7 +37,7 @@ export default function FitCard({ ratio, children, animationKey, transition = 's
     return () => observer.disconnect();
   }, [ratio]);
   return <div ref={ref} className={`fit-card ${transition === 'slide' ? 'fit-card-slide' : ''}`} style={{ '--card-direction': direction < 0 ? 1 : -1 } as CSSProperties}>
-    <div key={animationKey} className="fit-card-artwork" style={{ width }}>{children}</div>
+    <div key={animationKey} className="fit-card-artwork" style={{ width }}>{interactive?<CardDepth>{children}</CardDepth>:children}</div>
     {outgoing && <div key={`out-${outgoing.key}`} className="fit-card-outgoing" aria-hidden="true" inert><div style={{ width: outgoing.width }}>{outgoing.children}</div></div>}
   </div>;
 }

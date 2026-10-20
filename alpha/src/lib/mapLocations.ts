@@ -10,6 +10,7 @@ export function isGeoPoint(value: unknown): value is GeoPoint {
 export function hasLinkedPlace(item: ArchiveItem): boolean {
   if (item.cat === 'GROUP') return false;
   if (isGeoPoint(item.coordinates)) return true;
+  if (item.media?.type === 'book') return false;
   // A movie's synopsis/director is not a venue address.
   if (item.link.includes('themoviedb.org')) return false;
   return Boolean(item.fullAddress || item.addressShort || item.loc);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { LogDraft } from '@/components/QuickLogComposer';
 import { isArchiveCategory } from '@/lib/archiveCategories';
+import { normalizeLogMedia } from '@/lib/media';
 import { isGeoPoint } from '@/lib/mapLocations';
 
 type DraftStatus = 'loading' | 'saved' | 'saving' | 'empty' | 'error';
@@ -18,6 +19,7 @@ export function isStoredDraft(value: unknown): value is LogDraft {
     (draft.place.coordinates === undefined || isGeoPoint(draft.place.coordinates))
   );
   return ['title', 'body', 'img', 'good', 'bad', 'note'].every((key) => typeof draft[key as keyof LogDraft] === 'string') &&
+    (draft.media===undefined||draft.media===null||Boolean(normalizeLogMedia(draft.media))) &&
     isArchiveCategory(draft.category) && draft.category !== 'GROUP' &&
     (draft.score === null || (typeof draft.score === 'number' && Number.isFinite(draft.score) && draft.score >= 0 && draft.score <= 5)) &&
     typeof draft.cropX === 'number' && Number.isFinite(draft.cropX) && draft.cropX >= 0 && draft.cropX <= 100 &&

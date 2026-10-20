@@ -1,6 +1,6 @@
 # L2 프로젝트 구조 요약
 
-기준: 2026-10-18, 로컬 코드 기준(카드 PNG 내보내기 후속 변경 포함). 실제 애플리케이션 루트는 `alpha/`입니다. 이 문서는 코드 구조 요약이며 운영 서비스 상태를 새로 검사한 결과는 아닙니다.
+기준: 2026-10-20, 로컬 코드 기준(책 검색·사진 보정·3D 미리보기 후속 변경 포함). 실제 애플리케이션 루트는 `alpha/`입니다. 이 문서는 코드 구조 요약이며 운영 서비스 상태를 새로 검사한 결과는 아닙니다.
 
 ## 1. 전체 구조
 
@@ -16,7 +16,7 @@ flowchart TD
   STORE --> DB["Supabase PostgreSQL"]
   STORE --> PHOTOS["Supabase Storage · photos"]
   API --> AUTH["Supabase Auth · Google OAuth"]
-  API --> EXT["Google Places / Gemini / TMDB"]
+  API --> EXT["Google Places / Gemini / TMDB / 카카오 책 검색"]
   APP --> MAP["Leaflet · OpenStreetMap 타일"]
   APP --> EXPORT["기기에서 카드 이미지 / ZIP 생성"]
 ```
@@ -54,7 +54,10 @@ Next.js의 `src/app/api/**/route.ts`가 HTTP API를 담당합니다. API는 세�
 | `/api/logs/reset` | 현재 사용자의 전체 로그 삭제 |
 | `/api/presets` | 프리셋·팔레트·서명·기본 프리셋 조회/저장 |
 | `/api/places/search`, `/api/places/resolve` | 장소 검색·주소/좌표 연결. Google Places 및 대체 검색 경로 |
-| `/api/media/search` | TMDB 영화 검색·포스터·소개·평점 조회 |
+| `/api/media/search` | TMDB 영화·드라마 검색·포스터·소개·평점 조회 |
+| `/api/books/search` | 카카오 책 검색·표지·저자·ISBN 조회 |
+| `/api/media/summary` | 선택한 영화·드라마·책 소개를 1~2문장으로 요약, AI 불가 시 원문 축약 |
+| `/api/media/image` | 허용된 카카오 CDN 표지의 같은 출처 이미지 프록시 |
 | `/api/ai/skin` | Gemini 기반 색상 조합 생성 |
 | `/api/ai/extract` | 기존 메모 요약 API가 남아 있음. 현재 작성 화면의 AI 요약 버튼은 제거됨 |
 

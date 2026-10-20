@@ -1,5 +1,12 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-20 카드 편집 · 책 검색 · 3D 미리보기
+
+- See `alpha/DOCS/UX_MEDIA_UPDATE_20261020.md` for the 6 original requests plus 3D depth and desktop split layout, tests, and real provider status.
+- New profile/system fallback default is INSTA (02); explicit existing preferences and record appearance snapshots are preserved. Photo saturation/lightness/brightness are optional PresetSlot fields. Book identity is optional ArchiveItem.media JSON.
+- KAKAO_REST_API_KEY is configured locally and as Vercel Production/Preview Secret. Do not print or commit its value. Real book search and image proxy returned 200. Gemini generation with both the existing local key and the subsequently supplied different key returned 402 (prepayment exhausted); the latter was tested but not installed. Vercel Secret identity was not readable. Fallback summaries are limited to two sentences. Do not report live AI generation as working until credits/key are fixed.
+- Mobile card: large preview then swipe/tap edit drawer; >=760px: left card / right controls. CardDepth is outside the capture node, follows motion preferences, and never adds a back side or depth effects to shared PNGs.
+
 ## 2026-10-18 공유 이미지 투명 모서리 · 사이트 제목
 
 - Shared/downloaded cards are now transparent PNG rather than white-matted JPEG. File extension and MIME agree. Keep 1080px maximum width / 500KiB maximum; lossless PNG first, then 256-color UPNG encoding in a dedicated worker. If needed shrink the dimensions down to 720px, then fail explicitly rather than flatten alpha or exceed the limit.

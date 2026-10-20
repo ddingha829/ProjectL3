@@ -13,6 +13,7 @@ import SaveFeedback from '@/components/SaveFeedback';
 import PhotoPickerDialog from './PhotoPickerDialog';
 import { compressUploadedImage as preparePhoto } from '@/lib/imageUtils';
 import { allowsMotion } from '@/lib/motion';
+import { normalizeLogMedia, type LogMedia } from '@/lib/media';
 import './QuickLogComposer.css';
 
 export interface LogDraft {
@@ -30,6 +31,7 @@ export interface LogDraft {
   bad: string;
   note: string;
   inboxId?: string;
+  media?: LogMedia | null;
 }
 
 export type SuggestedSummary = Pick<LogDraft, 'good' | 'bad' | 'note'>;
@@ -78,6 +80,7 @@ function draftFromItem(item: ArchiveItem | null): LogDraft {
     good: item.good || '',
     bad: item.bad || '',
     note: item.note || '',
+    media: item.media,
   };
 }
 
@@ -479,8 +482,9 @@ export default function QuickLogComposer({
 
       <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} selectionError={photoError} onAlbum={()=>openPhotoPicker(fileRef.current)} onCamera={()=>openPhotoPicker(cameraRef.current)} onMedia={item=>{
         photoToken.current += 1;
-        const reference = `[TMDB 참고] ${item.title}${item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;
-        setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,cropZoom:1,photoFit:undefined,category:'CINEMA',note:[current.note,reference].filter(Boolean).join('\n\n').slice(0,1000)}));
+        const book=item.type==='book';
+        const reference = `[${book?'책':'TMDB'} 참고] ${item.title}${book&&item.authors?.length?` · ${item.authors.slice(0,2).join(' · ')}`:item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;
+        setDraft(current=>({...current,title:current.title.trim()?current.title:item.title,img:item.poster,cropX:50,cropY:50,cropZoom:1,photoFit:undefined,category:book?'OTHER':'CINEMA',media:normalizeLogMedia(item),note:[current.note.replace(/\[(?:TMDB|책) 참고\][\s\S]*?(?=\n\n|$)/g,'').trim(),reference].filter(Boolean).join('\n\n').slice(0,1000)}));
         setManualCategory(true);setPhotoError('');setSaved(false);setDialog(null);
       }}/>
       <AccessibleDialog open={dialog === 'category'} onClose={() => { if (!isSaving) setDialog(null); }} title="어떤 로그인가요?">

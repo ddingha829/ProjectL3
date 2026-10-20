@@ -4,6 +4,7 @@ import {photoCrop,movePhoto,clampZoom,type PhotoCrop,type PhotoFit} from '@/lib/
 interface Props {
  src:string;alt:string;crop:PhotoCrop;defaultFit?:PhotoFit;editing?:boolean;disabled?:boolean;
  className?:string;style?:CSSProperties;hidden?:boolean;children?:ReactNode;
+ imageFilter?:string;
  viewportRef?:RefObject<HTMLDivElement|null>;onChange?:(crop:PhotoCrop)=>void;
 }
 export default function PhotoViewport(p:Props){
@@ -18,6 +19,6 @@ export default function PhotoViewport(p:Props){
  onPointerMove={event=>{const drag=gesture.current;if(!drag||drag.id!==event.pointerId)return;event.preventDefault();event.stopPropagation();p.onChange?.(move(drag.crop,event.clientX-drag.x,event.clientY-drag.y));}}
  onPointerUp={event=>end(event)} onPointerCancel={event=>end(event,true)} onLostPointerCapture={event=>{if(gesture.current?.id===event.pointerId)end(event,true);}}
  onKeyDown={event=>{if(!editable||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();event.stopPropagation();const step=event.shiftKey?15:4;p.onChange?.(move(crop,event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0,event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0));}}>
- {p.src&&<img ref={imageRef} src={p.src} alt={p.alt} draggable={false} style={{objectFit:fit,objectPosition:`${crop.cropX}% ${crop.cropY}%`,transform:`scale(${clampZoom(crop.cropZoom)})`,transformOrigin:`${crop.cropX}% ${crop.cropY}%`,pointerEvents:'none'}}/>}{p.children}
+ {p.src&&<img ref={imageRef} src={p.src} alt={p.alt} draggable={false} style={{filter:p.imageFilter,objectFit:fit,objectPosition:`${crop.cropX}% ${crop.cropY}%`,transform:`scale(${clampZoom(crop.cropZoom)})`,transformOrigin:`${crop.cropX}% ${crop.cropY}%`,pointerEvents:'none'}}/>}{p.children}
  </div>;
 }

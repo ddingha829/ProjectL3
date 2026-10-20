@@ -6,6 +6,7 @@ import {photoCrop,type PhotoCrop} from '@/lib/photoCrop';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { getCardLayout, itemHasPhoto, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { CARD_GRAIN } from '@/lib/cardGrain';
+import { photoToneFilter } from '@/lib/photoTone';
 import CardFrame from './CardFrame';
 import AdditionalCardLayouts from './AdditionalCardLayouts';
 import styles from './CardStage.module.css';
@@ -47,7 +48,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
 
   const photo = (height: number | string, fullBleed = false) => <PhotoViewport
     src={item.img} alt={item.title} crop={photoCrop(item)} defaultFit={slot.layout==='ticket'?'contain':'cover'}
-    editing={photoEditing} onChange={onPhotoChange}
+    editing={photoEditing} onChange={onPhotoChange} imageFilter={photoToneFilter(slot,slot.layout==='receipt'?'grayscale(1) contrast(1.15)':'')}
     className={`${styles.photo} ${fullBleed ? styles.photoCover : ''}`} style={{height}}/>;
   const label = (text: React.ReactNode, className = '') => <span className={`${styles.label} ${className}`}>{text}</span>;
   const decoration = (text: React.ReactNode, className = '') => showDecorations ? <span data-card-decoration="true" className={`${styles.label} ${className}`}>{text}</span> : null;
@@ -94,7 +95,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
       const entries = allEntries.slice(0, 20);
       artwork = <div className={styles.artwork}>{header('L2.', `CURATED LIST · ${allEntries.length}`)}<h3 className={styles.title}>{curationTitle || 'TOP PICKS.'}</h3>
         <div className={`${styles.list} ${entries.length > 4 ? styles.denseList : ''}`} style={entries.length>8?{gap:3}:undefined}>{entries.map((entry, index) => <div className={styles.listEntry} key={entry.id} style={entries.length>8?{padding:'3px 6px',gap:6}:undefined}>
-          {entries.length<=8&&(itemHasPhoto(entry) ? <img src={entry.img} alt={entry.title} style={{ objectPosition: `${entry.cropX ?? 50}% ${entry.cropY ?? 50}%` }} /> : <div className={styles.listPlaceholder}>{String(index + 1).padStart(2,'0')}</div>)}
+          {entries.length<=8&&(itemHasPhoto(entry) ? <img src={entry.img} alt={entry.title} style={{ filter:photoToneFilter(slot), objectPosition: `${entry.cropX ?? 50}% ${entry.cropY ?? 50}%` }} /> : <div className={styles.listPlaceholder}>{String(index + 1).padStart(2,'0')}</div>)}
           <div style={{ minWidth: 0, flex: 1 }}><h4 className={styles.title} style={entries.length>8?{fontSize:entries.length>12?13:16}:undefined}>{String(index + 1).padStart(2, '0')} {entry.title}</h4>{entries.length<=5&&entry.quote.trim() && <p className={styles.quote}>{entry.quote}</p>}{showLocation&&entries.length<=8&&<p className={styles.location}>{entry.addressShort || entry.loc}</p>}</div>
           {entries.length<=8&&slot.showScore !== false && entry.score !== '' && Number.isFinite(Number(entry.score)) && <span className={styles.score}>{entry.score}</span>}
         </div>)}</div>{footer}

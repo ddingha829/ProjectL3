@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt, randomUUID, scrypt, timingSafeEqual } from 'crypto';
-import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
+import { DEFAULT_PRESET_ID, INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { Profile } from './types';
 
 const UUID_RE =
@@ -86,7 +86,7 @@ export function defaultProfile(id: string, recoveryCode: string): Profile {
     authorName: '',
     presetSlots: PRESET_SLOTS.map((s) => ({ ...s })),
     skins: { ...INITIAL_SKINS },
-    defaultPresetId: PRESET_SLOTS[0].id,
+    defaultPresetId: DEFAULT_PRESET_ID,
   };
 }
 
