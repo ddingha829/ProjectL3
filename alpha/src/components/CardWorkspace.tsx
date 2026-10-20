@@ -45,17 +45,27 @@ interface Props {
 export default function CardWorkspace(p: Props) {
   const [editorOpen,setEditorOpen]=useState(false);
   const swipe=useRef<{id:number;x:number;y:number}|null>(null);
-  useEffect(()=>{setEditorOpen(false);swipe.current=null;},[p.item.id]);
+  const cardTap=useRef<{id:number;x:number;y:number;time:number}|null>(null);
+  useEffect(()=>{setEditorOpen(false);swipe.current=null;cardTap.current=null;},[p.item.id]);
   useEffect(()=>{
     const guide=(event:Event)=>setEditorOpen(Boolean((event as CustomEvent<boolean>).detail));
     window.addEventListener('l2:card-guide-editor',guide);
     return()=>window.removeEventListener('l2:card-guide-editor',guide);
   },[]);
-  const startSwipe=(event:PointerEvent<HTMLElement>)=>{if(event.isPrimary&&event.button===0&&!(event.target as HTMLElement).closest('button,input,[data-crop-interactive]'))swipe.current={id:event.pointerId,x:event.clientX,y:event.clientY};};
+  const startSwipe=(event:PointerEvent<HTMLElement>)=>{
+    if(!event.isPrimary||event.button!==0||(event.target as HTMLElement).closest('button,input,[data-crop-interactive]'))return;
+    swipe.current={id:event.pointerId,x:event.clientX,y:event.clientY};
+    cardTap.current=(event.target as HTMLElement).closest('.card-depth')?{...swipe.current,time:Date.now()}:null;
+  };
   const moveSwipe=(event:PointerEvent<HTMLElement>)=>{
+    const tap=cardTap.current;if(tap&&Math.hypot(event.clientX-tap.x,event.clientY-tap.y)>10)cardTap.current=null;
     const start=swipe.current;if(!start||start.id!==event.pointerId)return;
     const dx=event.clientX-start.x,dy=event.clientY-start.y;
     if(Math.abs(dy)>44&&Math.abs(dy)>Math.abs(dx)*1.4){event.preventDefault();event.stopPropagation();setEditorOpen(dy<0);swipe.current=null;}
+  };
+  const endSwipe=(event:PointerEvent<HTMLElement>)=>{
+    const tap=cardTap.current;cardTap.current=null;swipe.current=null;
+    if(editorOpen&&tap&&tap.id===event.pointerId&&Date.now()-tap.time<650&&Math.hypot(event.clientX-tap.x,event.clientY-tap.y)<10)setEditorOpen(false);
   };
   const [membersOpen, setMembersOpen] = useState(false);
   const [photoOpen,setPhotoOpen]=useState(false);
@@ -79,7 +89,7 @@ export default function CardWorkspace(p: Props) {
 
   return (
     <section className={`record-card ${editorOpen?'is-editing-card':'is-viewing-card'}`} aria-label="로그 카드">
-      <div className="record-card-stage" onPointerDown={startSwipe} onPointerMove={moveSwipe} onPointerUp={()=>{swipe.current=null;}} onPointerCancel={()=>{swipe.current=null;}}>
+      <div className="record-card-stage" onPointerDown={startSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={()=>{swipe.current=null;cardTap.current=null;}} onKeyDown={event=>{if(editorOpen&&(event.key==='Enter'||event.key===' ')&&(event.target as HTMLElement).closest('.card-depth'))setEditorOpen(false);}}>
         <FitCard
           interactive
           ratio={p.slot.ratio}
@@ -118,8 +128,8 @@ export default function CardWorkspace(p: Props) {
         </div>
       )}
 
-      <button type="button" className="record-editor-handle" aria-expanded={editorOpen} aria-controls="record-design-panel" onClick={()=>setEditorOpen(value=>!value)}>
-        <i aria-hidden="true"/>{editorOpen?<ChevronDown size={17}/>:<ChevronUp size={17}/>}<strong>{editorOpen?'카드 크게 보기':'위로 밀어 카드 수정'}</strong><small>{editorOpen?'눌러서 편집 메뉴 접기':'눌러서도 열 수 있어요 · 프리셋 / 사진 보정 / 공유'}</small>
+      <button type="button" className="record-editor-handle" aria-label={editorOpen?'카드 수정 메뉴 접기':'카드 수정 메뉴 열기'} aria-expanded={editorOpen} aria-controls="record-design-panel" onClick={()=>setEditorOpen(value=>!value)}>
+        <span className="record-editor-arrows" aria-hidden="true">{[0,1,2].map(index=>editorOpen?<ChevronDown key={index} size={17}/>:<ChevronUp key={index} size={17}/>)}</span>
       </button>
       <div className="record-edit-drawer">
       <div id="record-design-panel" className="record-design-tools" data-guide="card-style">

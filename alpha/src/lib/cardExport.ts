@@ -239,13 +239,11 @@ async function renderSnapshot(snapshot: HTMLElement, width: number, height: numb
     context.restore();
   };
   paint();
-  // WebKit can report a loaded SVG before its foreignObject photos are painted.
-  // Repaint the SAME decoded SVG after a warm-up; never re-fetch remote photos.
-  if (/AppleWebKit/i.test(navigator.userAgent) && !/Chrome|Chromium|Edg|Android/i.test(navigator.userAgent)) {
-    await new Promise<void>(resolve => setTimeout(resolve, 150));
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-    paint();
-  }
+  // Decoded SVGs can precede foreignObject photo/font painting (including Chrome
+  // when a new font family loads). Repaint the SAME SVG without re-fetching photos.
+  await new Promise<void>(resolve => setTimeout(resolve, 150));
+  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  paint();
   return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob?.size ? resolve(blob) : reject(new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.')), 'image/png'));
 }
 
