@@ -1,14 +1,30 @@
-.card-depth{position:relative;width:100%;transform:perspective(1200px) rotateX(var(--depth-x,0deg)) rotateY(var(--depth-y,0deg));transform-style:preserve-3d;transform-origin:50% 55%;transition:transform 240ms cubic-bezier(.2,.8,.2,1),filter 240ms ease;isolation:isolate;filter:drop-shadow(0 8px 12px #0002);border-radius:22px;outline-offset:6px}
-.card-depth[data-active=true]{will-change:transform;filter:drop-shadow(0 16px 14px #0003)}
-.card-depth-light{position:absolute;inset:15px;z-index:8;border-radius:20px;pointer-events:none;background:radial-gradient(ellipse at var(--depth-light-x,35%) var(--depth-light-y,25%),#ffffff21,transparent 65%);opacity:.22;transition:opacity 220ms ease;mix-blend-mode:screen}
-.card-depth[data-active=true] .card-depth-light{opacity:.8}
-.fit-card:has(.card-depth){padding:12px}
-html[data-motion=off] .card-depth{transform:none!important;filter:none!important;transition:none}.card-depth:focus-visible{outline:2px solid var(--accent)}
-@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .card-depth{transform:none!important;filter:none!important;transition:none}html:not([data-motion=on]) .card-depth-light{display:none}}
-
-.card-depth-float{position:relative;width:100%;transform-style:preserve-3d;transform-origin:50% 55%;will-change:transform;animation:card-depth-idle 8s ease-in-out infinite}
-@keyframes card-depth-idle{0%,100%{transform:perspective(1200px) translateY(0) rotateX(-1deg) rotateY(-1.8deg)}25%{transform:perspective(1200px) translateY(-2px) rotateX(1.2deg) rotateY(.8deg)}50%{transform:perspective(1200px) translateY(-3px) rotateX(.6deg) rotateY(2deg)}75%{transform:perspective(1200px) translateY(-1px) rotateX(-1.2deg) rotateY(.6deg)}}
-.card-depth[data-pressed=true] .card-depth-float,.card-depth[data-paused=true] .card-depth-float{animation-play-state:paused}
+/* Keep grouping filters/opacity off 3D ancestors so WebKit retains the edge layers. */
+.card-depth{position:relative;width:100%;transform:rotateX(var(--depth-x,0deg)) rotateY(var(--depth-y,0deg));transform-style:preserve-3d;transform-origin:50% 55%;transition:transform 300ms cubic-bezier(.2,.8,.2,1);border-radius:22px;outline-offset:6px}
+.card-depth[data-active=true]{will-change:transform}
+.card-depth [data-card-edge]{display:block}
+.card-depth-light{position:absolute;inset:1px;z-index:8;border-radius:22px;pointer-events:none;transform:translateZ(1px);background:linear-gradient(115deg,transparent 15%,#ffffff05 33%,#ffffff28 47%,#ffffff08 58%,transparent 76%);background-size:240% 100%;opacity:.42;animation:card-depth-sheen 9s ease-in-out infinite;transition:opacity 220ms ease;mix-blend-mode:screen}
+.card-depth:has([data-card-layout=ticket]) .card-depth-light{inset:10px}
+.card-depth[data-active=true] .card-depth-light{opacity:.7;background:radial-gradient(ellipse at var(--depth-light-x,35%) var(--depth-light-y,25%),#ffffff32,transparent 65%)}
+.fit-card:has(.card-depth){padding:clamp(22px,5dvh,46px) 24px}
+.fit-card-artwork:has(.card-depth){perspective:1100px}
+.card-depth:focus-visible{outline:2px solid var(--accent)}
+.card-depth-float{position:relative;width:100%;transform-style:preserve-3d;transform-origin:50% 55%;will-change:transform;animation:card-depth-idle 9s ease-in-out infinite}
+@keyframes card-depth-idle{
+  0%,100%{transform:translateY(0) rotateX(-3deg) rotateY(-10deg)}
+  25%{transform:translateY(-5px) rotateX(4deg) rotateY(3deg)}
+  52%{transform:translateY(-7px) rotateX(2deg) rotateY(14deg)}
+  76%{transform:translateY(-3px) rotateX(-4deg) rotateY(4deg)}
+}
+@keyframes card-depth-sheen{0%,100%{background-position:100% 0}52%{background-position:0 0}}
+.card-depth[data-active=true] .card-depth-float,
+.card-depth[data-pressed=true] .card-depth-float,
+.card-depth[data-paused=true] .card-depth-float,
+.card-depth[data-paused=true] .card-depth-light{animation-play-state:paused}
+html[data-motion=off] .card-depth{transform:none!important;transition:none}
 html[data-motion=off] .card-depth-float{animation:none;transform:none;will-change:auto}
-html[data-motion=off] .card-depth-light{opacity:0}
-@media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .card-depth-float{animation:none;transform:none;will-change:auto}}
+html[data-motion=off] .card-depth-light,html[data-motion=off] .card-depth [data-card-edge]{display:none}
+@media(prefers-reduced-motion:reduce){
+ html:not([data-motion=on]) .card-depth{transform:none!important;transition:none}
+ html:not([data-motion=on]) .card-depth-float{animation:none;transform:none;will-change:auto}
+ html:not([data-motion=on]) .card-depth-light,html:not([data-motion=on]) .card-depth [data-card-edge]{display:none}
+}

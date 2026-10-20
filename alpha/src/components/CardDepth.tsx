@@ -12,7 +12,7 @@ export default function CardDepth({ children, onActivate, expanded }: { children
   const tap=()=>{
     const el=ref.current;if(!el||!allowsMotion())return;
     animation.current?.cancel();reset();el.dataset.active='true';
-    animation.current=el.animate([{transform:'perspective(1200px) rotateX(0deg) rotateY(0deg) scale(1)'},{transform:'perspective(1200px) rotateX(-4deg) rotateY(6deg) scale(1.018)',offset:.24},{transform:'perspective(1200px) rotateX(2deg) rotateY(-2deg) scale(1.006)',offset:.64},{transform:'perspective(1200px) rotateX(0deg) rotateY(0deg) scale(1)'}],{duration:720,easing:'cubic-bezier(.2,.75,.2,1)'});
+    animation.current=el.animate([{transform:'rotateX(0deg) rotateY(0deg) scale(1)'},{transform:'rotateX(-5deg) rotateY(24deg) scale(1.025)',offset:.28},{transform:'rotateX(3deg) rotateY(-7deg) scale(1.008)',offset:.7},{transform:'rotateX(0deg) rotateY(0deg) scale(1)'}],{duration:980,easing:'cubic-bezier(.22,.7,.2,1)'});
     animation.current.id='card-depth-tap';animation.current.onfinish=reset;
   };
   const activate=()=>{tap();onActivate?.();};
@@ -29,7 +29,7 @@ export default function CardDepth({ children, onActivate, expanded }: { children
       if(event.pointerType!=='mouse'||!allowsMotion())return;
       const el=ref.current;if(!el||animation.current?.playState==='running')return;
       const r=el.getBoundingClientRect(),x=Math.max(-1,Math.min(1,(event.clientX-r.left)/r.width*2-1)),y=Math.max(-1,Math.min(1,(event.clientY-r.top)/r.height*2-1));
-      cancelAnimationFrame(frame.current);frame.current=requestAnimationFrame(()=>{el.dataset.active='true';el.style.setProperty('--depth-x',`${-y*5}deg`);el.style.setProperty('--depth-y',`${x*6}deg`);el.style.setProperty('--depth-light-x',`${(x+1)*50}%`);el.style.setProperty('--depth-light-y',`${(y+1)*50}%`);});
+      cancelAnimationFrame(frame.current);frame.current=requestAnimationFrame(()=>{el.dataset.active='true';el.style.setProperty('--depth-x',`${-y*7}deg`);el.style.setProperty('--depth-y',`${x*13}deg`);el.style.setProperty('--depth-light-x',`${(x+1)*50}%`);el.style.setProperty('--depth-light-y',`${(y+1)*50}%`);});
     }}
     onPointerUp={event=>{const p=start.current;start.current=null;event.currentTarget.dataset.pressed='false';clickReady.current=Boolean(event.isPrimary&&p&&Math.hypot(event.clientX-p.x,event.clientY-p.y)<10&&Date.now()-p.time<650);}}
     // Activate on the native click, after pointerup: resizing on pointerup can retarget

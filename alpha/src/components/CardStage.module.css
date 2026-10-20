@@ -1,6 +1,7 @@
-.stage { width: 100%; max-width: 420px; }
-.viewport { width: 100%; max-width: 420px; position: relative; flex-shrink: 0; }
-.previewPlane { position: absolute; left: 0; top: 0; transform-origin: top left; }
+.stage { width: 100%; max-width: 420px; transform-style: preserve-3d; }
+.viewport { width: 100%; max-width: 420px; position: relative; flex-shrink: 0; transform-style: preserve-3d; }
+.previewPlane { position: absolute; left: 0; top: 0; transform-origin: top left; transform-style: preserve-3d; }
+.depthSlice { display: none; position: absolute; inset: 0; border-radius: 24px; pointer-events: none; transform: translateZ(calc(var(--depth-layer) * -1px)); background: linear-gradient(135deg, color-mix(in srgb, var(--card-bg) 72%, #fff), color-mix(in srgb, var(--card-bg) 65%, #18181b)); border: 1px solid color-mix(in srgb, var(--card-border) 65%, #fff); }
 .frame { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--card-border); border-radius: 24px; color: var(--card-text); background-color: var(--card-bg); box-shadow: 0 24px 54px -24px rgb(0 0 0 / 45%); font-family:var(--font-sans); font-size: 14px; line-height: 1.5; --card-pad: 24px; }
 .artwork { width: 100%; height: 100%; display: flex; flex-direction: column; gap: 16px; padding: var(--card-pad); position: relative; z-index: 1; min-height: 0; }
 .surface { width: 100%; height: 100%; position: relative; }
@@ -43,7 +44,7 @@
 .vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgb(0 0 0 / 45%), rgb(0 0 0 / 12%) 25%, rgb(0 0 0 / 87%) 100%); }
 .masthead { font-family:var(--font-sans); font-size: 28px; font-weight: 900; letter-spacing: -.045em; line-height: 1.05; }
 .ticket .artwork { border: 1px dashed var(--card-border); margin: 10px; width: calc(100% - 20px); height: calc(100% - 20px); padding: 17px; }
-.frame[data-card-layout='ticket'] {
+.frame[data-card-layout='ticket'], .depthSlice[data-card-layout='ticket'] {
   /* Two overlapping halves cut real transparent notches into the export canvas. */
   --card-notch-radius: 13px;
   --card-notch-y: 69%;

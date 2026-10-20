@@ -32,6 +32,8 @@ export default function CardFrame({ ratio, layout, captureRef, style, children }
   return (
     <div ref={viewportRef} data-card-preview="true" className={styles.viewport} style={{ aspectRatio: `${width} / ${height}` }}>
       <div className={styles.previewPlane} style={{ width, height, transform: `scale(${scale})` }}>
+        {/* Physical preview only: these solid edge layers are siblings of the export node. */}
+        {[1, 2, 3, 4, 5, 6].map(layer => <span key={layer} aria-hidden="true" data-card-edge="true" data-card-layout={layout} className={styles.depthSlice} style={{ ...style, '--depth-layer': layer } as CSSProperties} />)}
         <div
           ref={captureRef}
           className={styles.frame}

@@ -1,5 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 카드 입체감 강화
+
+- Interactive card previews now idle through -10° to +14° yaw, with a 24° tap turn/rebound, stronger mouse tilt and a slow surface sheen. Six theme-colored edge slices at canonical 1–6px depth give the front a physical edge/backing. These are decorative preview siblings of the capture node; no editable back face or full flip was added.
+- The 3D ancestor chain retains preserve-3d without flattening filters, including WebKit. Ticket slices share the front's transparent notch mask. Preview padding accommodates the stronger rotation. Motion Off/system reduction hides the edge/light layers and stops movement; hidden pages pause idle animation. Native click-after-pointerup activation remains intact.
+- `test:oct20-browser` covers Chrome and real Playwright WebKit: fixed idle extremes and viewport bounds, native touch/keyboard/drawer gestures, motion preferences, tall ticket masks/light theme, tablet/desktop split layout and real transparent PNG exports. Paid APIs and production user data are not exercised.
+
 ## 2026-10-21 로그캘린더 · 음성 제목 · 최근 프리셋
 
 - Map theme follow-up: the shared LogbookMap now follows html.light in both logbook and calendar. Light mode uses warm grayscale OSM tiles without inversion, bright translucent panels, dark labels and a deeper orange route; dark mode retains its existing palette. CSS variables recolor existing markers/SVG paths without rebuilding the map or resetting pan/zoom. Chrome/WebKit theme-switch checks and real OSM screenshots pass.
