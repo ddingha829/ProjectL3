@@ -1,5 +1,13 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 로그캘린더 · 음성 제목 · 최근 프리셋
+
+- New top navigation: + 로그 / 로그북 / 로그캘린더 / 스튜디오; settings remains an overlay. Mobile abbreviates the calendar label while retaining its full accessible name. Calendar -> card -> calendar preserves the selected month/date range/timeline. Existing row delete/second-left-swipe-to-Studio remains.
+- `alpha/DOCS/LOG_CALENDAR_20261021.md` describes the responsive photo calendar, inclusive day/range timeline overlay and shared dark Leaflet/OSM map with chronological route/light animation. Only saved coordinates are connected; no GPS tracking, road-routing API, geocoding sweep or paid call was added. Groups are excluded to avoid counting their member logs twice. Date/time follow the existing Asia/Seoul convention.
+- Voice control is now a translucent icon only. Confirmed speech offers a local first-sentence title suggestion when the title is empty; choosing it never changes the body or overwrites a manual title. No AI call. Card detail has three thumbnail shortcuts with owner-scoped, device-local recent selection history; all presets remain in the existing library.
+- A native touch regression appeared when the larger editing drawer moved its handle under the finger: resizing on pointerup retargeted the compatibility click to the handle and immediately closed the menu. CardDepth now activates on the native click after its short-tap check; native touch open/close and swipe/keyboard/export regressions pass.
+- `test:calendar` covers Chrome + real Playwright WebKit, dates/ranges/timezone/leap year, timeline navigation/restoration, SVG animation/replay/reduction, history pagination, responsive/light/dark layout, first-user guide and recent shortcuts. Tests use isolated API fixtures; actual OSM tiles were also visually checked. `test:voice` and `test:oct20-browser` regressions pass. Production user data is unchanged.
+
 ## 2026-10-20 손글씨 옵션 · 서버 연결 후속 확인
 
 - Mobile card editor uses larger 25px animated chevrons (no text). A short card tap or Enter/Space toggles the editing controls in either direction; drag/swipe is not a tap. Idle cards gently float in 3D outside the export subtree, respecting motion Off/system reduction. Desktop split layout remains. Chrome and real Playwright WebKit regressions pass, including unchanged PNG export.

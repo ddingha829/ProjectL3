@@ -92,3 +92,6 @@ html[data-motion=off] *,html[data-motion=off] *::before,html[data-motion=off] *:
 .preset-library,.preset-library *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.preset-drag-handle{touch-action:none}
 
 .quick-dialog-header.has-adornment{display:grid;grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);align-items:center;gap:8px;margin-bottom:18px}.quick-dialog-header.has-adornment>.quick-control{justify-self:end}.quick-dialog-header.has-adornment .settings-wordmark{margin:0;padding:0;font-size:clamp(28px,6vw,36px);line-height:1;justify-self:center}
+.test-header nav{display:flex;align-items:center;gap:3px}.test-header nav button{white-space:nowrap;min-height:44px}
+@media(max-width:640px){.test-header{grid-template-columns:42px minmax(0,1fr) 40px;gap:3px}.test-header .test-brand{font-size:33px}.test-header nav{gap:1px}.test-header nav button{font-size:14px;padding:8px 7px}.test-header .test-settings-button{width:40px;min-width:40px}.nav-calendar-prefix{display:none}}
+@media(max-width:350px){.test-header{grid-template-columns:36px minmax(0,1fr) 36px;gap:2px}.test-header .test-brand{font-size:30px}.test-header nav button{font-size:12px;padding:8px 5px;min-width:40px}.test-header .test-settings-button{width:36px;min-width:36px}}

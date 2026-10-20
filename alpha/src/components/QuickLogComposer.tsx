@@ -15,6 +15,7 @@ import PhotoPickerDialog from './PhotoPickerDialog';
 import { compressUploadedImage as preparePhoto } from '@/lib/imageUtils';
 import { allowsMotion } from '@/lib/motion';
 import { normalizeLogMedia, type LogMedia } from '@/lib/media';
+import { voiceTitleCandidate } from '@/lib/voiceTitle';
 import './QuickLogComposer.css';
 
 export interface LogDraft {
@@ -125,6 +126,8 @@ export default function QuickLogComposer({
   const [submitError, setSubmitError] = useState('');
   const [saved, setSaved] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
+  const [spokenText, setSpokenText] = useState('');
+  const suggestedTitle = voiceTitleCandidate(spokenText);
   const completedDraft = useRef<LogDraft | null>(null);
   const [committingCategory, setCommittingCategory] = useState<ArchiveCategory | null>(null);
   // Clear durable draft recovery immediately, but keep the just-saved text visible until navigation.
@@ -203,6 +206,7 @@ export default function QuickLogComposer({
     setSubmitError('');
     setSaved(false);
     setManualCategory(Boolean(editingItem));
+    setSpokenText('');
     setSearchQuery('');
     setPlaceResults([]);
     setDialog(null);
@@ -432,6 +436,7 @@ export default function QuickLogComposer({
               <input ref={titleRef} id={`${id}-title`} name="title" value={draft.title} placeholder={titleFocused ? '제목을 입력해 주세요' : ''} disabled={disabled} onFocus={() => setTitleFocused(true)} onBlur={() => setTitleFocused(false)} onChange={(event) => update('title', event.target.value)} maxLength={120} required aria-required="true" aria-invalid={Boolean(submitError && !draft.title.trim())} aria-describedby={submitError && !draft.title.trim() ? `${id}-save-error` : undefined} />
             </div>
 
+            {!draft.title.trim() && suggestedTitle && <button type="button" className="voice-title-suggestion" disabled={disabled || voiceActive} onClick={() => update('title', suggestedTitle)}><small>제목 제안</small><span>{suggestedTitle}</span><span aria-hidden="true">↗</span></button>}
             {(showPlaceHint || (!editingItem && inboxPlaces.length > 0)) && (
               <div className="quick-smart-chips" role="group" aria-label="빠른 장소 연결">
                 {showPlaceHint && (
@@ -461,6 +466,7 @@ export default function QuickLogComposer({
             {draft.img && cropOpen && <><p className="photo-adjust-hint">사진을 드래그해 위치를 옮길 수 있어요.</p><PhotoCropControls value={photoCrop(draft)} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} disabled={disabled} positions onChange={crop=>setDraft(current=>({...current,...crop}))}/></>}
 
             <VoiceLogInput blocked={disabled || !isReady || photoBusy || Boolean(dialog) || cropOpen} full={draft.body.length >= 5000} onActiveChange={setVoiceActive} onText={text => {
+              setSpokenText(current => (current + ' ' + text).trim().slice(0, 600));
               setDraft(current => ({ ...current, body: (current.body + (current.body && !/\s$/.test(current.body) ? ' ' : '') + text).slice(0, 5000) }));
               setSubmitError(''); setSaved(false);
             }}/>

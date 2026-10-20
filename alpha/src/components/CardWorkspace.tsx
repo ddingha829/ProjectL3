@@ -11,6 +11,8 @@ import SaveFeedback from './SaveFeedback';
 import { createCardAppearance } from '@/lib/cardAppearance';
 import { cardStyleKey } from '@/lib/cardStyle';
 import PresetLibrary from './PresetLibrary';
+import PresetThumbnail from './PresetThumbnail';
+import { useRecentPresets } from '@/hooks/useRecentPresets';
 import CardStyleControls from './CardStyleControls';
 import './CardWorkspace.css';
 import PhotoAdjustDialog from './PhotoAdjustDialog';
@@ -19,6 +21,7 @@ import type {PhotoCrop} from '@/lib/photoCrop';
 
 interface Props {
   item: ArchiveItem;
+  recentScope?: string;
   slot: PresetSlot;
   skin: SkinTheme;
   authorName: string;
@@ -43,6 +46,7 @@ interface Props {
 }
 
 export default function CardWorkspace(p: Props) {
+  const recent = useRecentPresets(p.recentScope || 'device');
   const [editorOpen,setEditorOpen]=useState(false);
   const [wide,setWide]=useState(false);
   const swipe=useRef<{id:number;x:number;y:number}|null>(null);
@@ -74,12 +78,13 @@ export default function CardWorkspace(p: Props) {
   const sourceIndex=presets.findIndex(preset=>preset.id===p.slot.id);
   const activeIndex=presets.findIndex(preset=>{const appearance=createCardAppearance(p.item,preset,allSkins,p.authorName);return preset.id===p.slot.id&&cardStyleKey(appearance.slot,appearance.skin)===cardStyleKey(p.slot,p.skin);});
   const customized=activeIndex<0;
+  const quickPresets = [...recent.ids.map(id => presets.find(preset => preset.id === id)).filter((preset):preset is PresetSlot => Boolean(preset)),...presets].filter((preset,index,list) => list.findIndex(value => value.id === preset.id) === index).slice(0,3);
+  const select = (preset:PresetSlot, dir=1) => { if(p.applying)return;recent.remember(preset.id);setDirection(dir);p.onApplyPreset(preset); };
   const selectPresetAt = (nextIdx: number, stepDir?: number) => {
     if (!presets.length || p.applying) return;
     const wrapped = (nextIdx + presets.length) % presets.length;
     const dir = stepDir ?? (wrapped < sourceIndex ? -1 : 1);
-    setDirection(dir);
-    p.onApplyPreset(presets[wrapped]);
+    select(presets[wrapped],dir);
   };
 
   return (
@@ -130,8 +135,9 @@ export default function CardWorkspace(p: Props) {
       </button>
       <div className="record-edit-drawer">
       <div id="record-design-panel" className="record-design-tools" data-guide="card-style">
+        <div className="recent-presets" aria-label="최근 프리셋 빠른 선택" data-no-swipe><small>{recent.ids.length?'최근 사용':'빠른 선택'}</small><div>{quickPresets.map(preset => <button type="button" key={preset.id} disabled={p.applying} aria-label={`${preset.name} 프리셋 빠른 선택`} aria-pressed={!customized && p.slot.id === preset.id} onClick={() => select(preset)}><PresetThumbnail preset={preset} skin={allSkins[preset.skinId] || INITIAL_SKINS.paper} item={p.item} authorName={p.authorName}/><span>{preset.name}</span></button>)}</div></div>
         <div className="record-preset-controls" aria-label="카드 프리셋 선택">
-          <PresetLibrary presets={presets} activeId={customized?'':p.slot.id} currentName={customized?'개별 디자인':undefined} skins={allSkins} authorName={p.authorName} item={p.item} dirty={p.hasPendingChange} disabled={p.applying} onSelect={(preset,dir)=>{setDirection(dir);p.onApplyPreset(preset);}}/>
+          <PresetLibrary presets={presets} activeId={customized?'':p.slot.id} currentName={customized?'개별 디자인':undefined} skins={allSkins} authorName={p.authorName} item={p.item} dirty={p.hasPendingChange} disabled={p.applying} onSelect={select}/>
           <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동"><button type="button" aria-label="이전 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?0:sourceIndex)-1,-1)}><ChevronLeft size={17}/></button><button type="button" aria-label="다음 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?-1:sourceIndex)+1,1)}><ChevronRight size={17}/></button></div>
         </div>
         <CardStyleControls slot={p.slot} skin={p.skin} item={p.item} skins={allSkins} disabled={p.applying} onChange={(patch,dir)=>{setDirection(dir||1);p.onChangeStyle(patch);}}/>

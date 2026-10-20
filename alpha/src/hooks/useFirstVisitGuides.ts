@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 
-export type GuideScreen = 'log' | 'archive' | 'card' | 'studio' | 'settings';
+export type GuideScreen = 'log' | 'archive' | 'calendar' | 'card' | 'studio' | 'settings';
 export const GUIDE_STORAGE_KEY = 'l2_first_visit_guides_v1';
 interface GuideState { eligible: boolean; seen: Partial<Record<GuideScreen, boolean>> }
 

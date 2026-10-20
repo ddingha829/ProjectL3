@@ -19,7 +19,8 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     { label: '메뉴', hints: [
       { text: '로그 추가', selector: '.test-header nav button:nth-child(1)' },
       { text: '올린 로그 리스트', selector: '.test-header nav button:nth-child(2)' },
-      { text: '본인 스타일로\n카드를 디자인하는 곳', selector: '.test-header nav button:nth-child(3)' },
+      { text: '날짜별로 다시 보는 일상', detail: '로그캘린더에서 날짜와 기간을 고르면\n시간별 로그와 장소의 흐름을 볼 수 있어요.', selector: '.test-header nav button:nth-child(3)' },
+      { text: '본인 스타일로\n카드를 디자인하는 곳', selector: '.test-header nav button:nth-child(4)' },
       { text: '설정', selector: '.test-settings-button' },
     ] },
     { label: '찾기 · 정리', hints: [
@@ -29,10 +30,15 @@ const guides: Record<GuideScreen, GuidePage[]> = {
       { text: '그룹 만들기', detail: '여러 로그를 골라 이름을 붙여 저장해요.', selector: '.logbook-group' },
     ] },
   ],
+  calendar: [{ label: '일상을 다시 펼치기', hints: [
+    { text: '사진으로 채워지는 달력', detail: '사진이 있는 날은 대표 사진이 보여요.\n날짜를 누르면 시간순 로그가 펼쳐져요.', selector: '.calendar-days' },
+    { text: '하루 또는 원하는 기간', detail: '기간을 선택해 여러 날의 로그를 한 번에 모아보세요.', selector: '.calendar-range-button' },
+    { text: '기록한 장소를 따라가기', detail: '로그에 연결한 장소를 시간순으로 이어요.\n경로 재생으로 다시 따라가 볼 수 있어요.', selector: '.calendar-map-panel' },
+  ] }],
   card: [{ label: '이 로그만 꾸미기', hints: [
     { text: '이 로그의 카드 미리 보기', detail: '카드가 천천히 움직이며 입체감을 보여줘요.\n모바일에서는 카드를 눌러 수정 메뉴를 열고 닫을 수 있어요.\n꾸민 디자인은 이 로그에만 적용돼요.', selector: '.record-card-stage .fit-card-artwork' },
     { text: '카드 수정 메뉴 열기', detail: '모바일에서는 카드를 누르거나 아래 화살표를 눌러 편집해요. 위로 밀어도 열려요.\n넓은 화면에서는 오른쪽 메뉴를 사용해요.', selector: '.record-editor-handle, .record-edit-drawer' },
-    { text: '프리셋을 골라 시작하기', detail: '보관함의 디자인을 골라 바로 적용해 보세요.', selector: '.record-preset-controls' },
+    { text: '프리셋을 골라 시작하기', detail: '최근 사용한 디자인 3개를 먼저 골라보세요.\n전체 디자인은 아래 프리셋 보관함에서 열어요.', selector: '.recent-presets' },
     { text: '이 로그만 더 꾸미기', detail: '디자인·색상·비율·사진 채도·명도·밝기를 바꿔도\n원본 프리셋은 그대로예요.', selector: '.record-design-tools .preset-tabs' },
     { text: '내용 수정', detail: '제목·메모·사진·장소를 수정해요.', selector: '.record-card-actions button:nth-child(1)' },
     { text: '이 카드에 변경 저장', detail: '미리 본 디자인을 로그북에 저장해요.\n변경 취소를 누르면 저장 전 모양으로 돌아가요.', selector: '.record-card-actions button:nth-child(2)' },
@@ -82,7 +88,7 @@ export default function FirstVisitGuide({ screen, onDismiss }: Props) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const check = () => {
-      const competing = document.querySelector('.pwa-top-popup') || Array.from(document.querySelectorAll('[data-dialog-overlay]')).some(element => screen !== 'settings' || !element.querySelector('.modern-settings'));
+      const competing = document.querySelector('.pwa-top-popup') || screen==='calendar'&&document.querySelector('.calendar-timeline') || Array.from(document.querySelectorAll('[data-dialog-overlay]')).some(element => screen !== 'settings' || !element.querySelector('.modern-settings'));
       if (competing || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || '')) {
         clearTimeout(timer); timer = undefined; setVisible(false); return;
       }

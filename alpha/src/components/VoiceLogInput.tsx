@@ -19,8 +19,8 @@ export default function VoiceLogInput({ blocked, full, onText, onActiveChange }:
   return <div ref={scope} className="voice-log-input" data-active={speech.active} data-no-swipe>
     <div className="voice-log-toolbar">
       <span id={`${id}-status`} role="status" aria-live="polite">{speech.active ? speech.phase === 'starting' ? '마이크를 연결하고 있어요' : speech.phase === 'stopping' ? '마지막 문구를 반영하고 있어요' : '듣고 있어요 · 한국어' : ''}</span>
-      <button type="button" className="quick-control voice-log-button" aria-label={label} aria-pressed={speech.active} aria-describedby={`${id}-help`} disabled={speech.phase === 'stopping' || (!speech.active && (blocked || full))} onClick={speech.active ? speech.stop : speech.start}>
-        {speech.active ? <Square size={14} fill="currentColor" aria-hidden="true"/> : <Mic size={17} aria-hidden="true"/>}<span>{label}</span>
+      <button type="button" className="quick-control voice-log-button" title={label} aria-label={label} aria-pressed={speech.active} aria-describedby={`${id}-help`} disabled={speech.phase === 'stopping' || (!speech.active && (blocked || full))} onClick={speech.active ? speech.stop : speech.start}>
+        {speech.active ? <Square size={15} fill="currentColor" aria-hidden="true"/> : <Mic size={22} strokeWidth={1.7} aria-hidden="true"/>}
       </button>
     </div>
     <p id={`${id}-help`} className={speech.active || speech.supported === false || full ? 'voice-log-help' : 'sr-only'}>{full ? '내용은 최대 5,000자까지 입력할 수 있어요.' : speech.supported === false ? `이 브라우저에서 지원하지 않을 수 있어요. ${SPEECH_FALLBACK}` : '확정된 문구가 내용 뒤에 추가돼요. 브라우저 서비스로 음성이 전달될 수 있어요.'}</p>

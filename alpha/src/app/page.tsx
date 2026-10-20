@@ -21,6 +21,8 @@ import { useFirstVisitGuides, type GuideScreen } from '@/hooks/useFirstVisitGuid
 import FirstVisitGuide from '@/components/FirstVisitGuide';
 import QuickLogComposer, { type LogDraft } from '@/components/QuickLogComposer';
 import ArchiveBrowser from '@/components/ArchiveBrowser';
+import LogCalendar from '@/components/LogCalendar';
+import { initialCalendarView } from '@/lib/logCalendar';
 import StudioPanel from '@/components/StudioPanel';
 import CardWorkspace from '@/components/CardWorkspace';
 import SettingsDialog from '@/components/SettingsDialog';
@@ -31,10 +33,10 @@ import { usePwaInstall, PwaInstallBanner, PwaInstallGuideDialog, PwaFirstLaunchL
 import './test.css';
 import './workflow.css';
 
-type Tab='log'|'archive'|'card'|'studio';
+type Tab='log'|'archive'|'calendar'|'card'|'studio';
 type Toast={title:string;actionLabel?:string;action?:()=>void;tone:'info'|'success'|'error'};
 const dateNow=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}).slice(2).replaceAll('-','.');
-const TAB_ORDER: Record<Tab, number> = { log: 0, archive: 1, card: 1, studio: 2 };
+const TAB_ORDER: Record<Tab, number> = { log: 0, archive: 1, card: 1, calendar: 2, studio: 3 };
 const INBOX_STORAGE_KEY = 'l2_google_places_inbox_v1';
 const LIST_DETAILS_KEY = 'l2_list_details_on';
 const AUTO_PLACE_LINK_KEY = 'l2_auto_place_link_on';
@@ -46,6 +48,8 @@ export default function L2TestApp(){
   const pwa = usePwaInstall();
   const [tab,setTab]=useState<Tab>('log'),[light,setLight]=useState(false),[settings,setSettings]=useState(false);
   const [listDetailsOn,setListDetailsOn]=useState(true),[autoPlaceLinkOn,setAutoPlaceLinkOn]=useState(true);
+  const [calendarView,setCalendarView]=useState(initialCalendarView);
+  const cardOrigin=useRef<'archive'|'calendar'>('archive');
   const [font,setFont]=useState<AppFont>('sebang');
   const [slideDir,setSlideDir]=useState<'next'|'prev'|null>(null);
   const [activeId,setActiveId]=useState(''),[editingId,setEditingId]=useState<string|null>(null),[newId,setNewId]=useState<string|null>(null);
@@ -168,7 +172,7 @@ export default function L2TestApp(){
     );
   },[tab,activeId]);
 
-  const open=(entry:ArchiveItem)=>{setToast(null);setPendingAppearance(null);setPendingPhoto(null);setActiveId(entry.id);go('card','next');};
+  const open=(entry:ArchiveItem)=>{if(tab==='calendar')cardOrigin.current='calendar';else if(tab!=='card')cardOrigin.current='archive';setToast(null);setPendingAppearance(null);setPendingPhoto(null);setActiveId(entry.id);go('card','next');};
   const arrived=(entry:ArchiveItem)=>{setPendingAppearance(null);setPendingPhoto(null);setActiveId(entry.id);setNewId(entry.id);go('archive','next');if(savedTimer.current)clearTimeout(savedTimer.current);savedTimer.current=setTimeout(()=>setNewId(null),1600);};
 
   const saveLog=async(draft:LogDraft,acknowledge?:()=>Promise<void>)=>{
@@ -391,11 +395,13 @@ export default function L2TestApp(){
     if(dx<0){
       haptic.tick();
       if(currentEffective==='log')go('archive','next',start.dx);
-      else if(currentEffective==='archive')go('studio','next',start.dx);
+      else if(currentEffective==='archive')go('calendar','next',start.dx);
+      else if(currentEffective==='calendar')go('studio','next',start.dx);
       else if(currentEffective==='studio')springBackMain(start.dx);
     }else if(dx>0){
-      if(tab==='card'){haptic.tick();go('archive','prev',start.dx);}
-      else if(currentEffective==='studio'){haptic.tick();go('archive','prev',start.dx);}
+      if(tab==='card'){haptic.tick();go(cardOrigin.current,'prev',start.dx);}
+      else if(currentEffective==='studio'){haptic.tick();go('calendar','prev',start.dx);}
+      else if(currentEffective==='calendar'){haptic.tick();go('archive','prev',start.dx);}
       else if(currentEffective==='archive'){haptic.tick();go('log','prev',start.dx);}
       else springBackMain(start.dx);
     }
@@ -403,14 +409,15 @@ export default function L2TestApp(){
 
   const storageStatus=!repository.ready?'불러오는 중':failedSyncIds?'동기화 확인 필요':repository.pendingCount?`기기 보관 완료 · ${repository.pendingCount}건 동기화 대기`:preferences.pending?'스타일 동기화 대기':repository.status==='failed'?'서버 연결 대기':'동기화 완료';
   return <div className={`test-shell view-${tab} ${tab==='log'?'is-composing':''}`} onPointerDown={onPointerDownShell} onPointerMove={onPointerMoveShell} onPointerUp={onPointerUpShell} onPointerCancel={onPointerCancelShell}><TestPwa/>
-    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={tab===entry.id||tab==='card'&&entry.id==='archive'?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id==='archive'?'page':undefined} onClick={()=>go(entry.id)}>{entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기"><Settings2 size={20} strokeWidth={2} aria-hidden="true"/></button></header>
+    <header className="test-header"><button className="test-brand" disabled={isSavingLog} onClick={()=>go('log','prev')} aria-label="L2 로그 작성으로">L2<span>.</span></button><nav aria-label="주요 화면">{([{id:'log',label:'+ 로그'},{id:'archive',label:'로그북'},{id:'calendar',label:'로그캘린더'},{id:'studio',label:'스튜디오'}] as const).map(entry=><button key={entry.id} disabled={isSavingLog} className={tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'active':''} aria-current={tab===entry.id||tab==='card'&&entry.id===cardOrigin.current?'page':undefined} onClick={()=>go(entry.id)} aria-label={entry.label}>{entry.id==='calendar'?<><span className="nav-calendar-prefix">로그</span>캘린더</>:entry.label}</button>)}</nav><button className="test-settings-button" disabled={isSavingLog} onClick={()=>setSettings(true)} aria-label="설정 열기"><Settings2 size={20} strokeWidth={2} aria-hidden="true"/></button></header>
     <PwaInstallBanner pwa={pwa}/>
     <div className="test-swipe-viewport">
       <div ref={outgoingRef} className="test-outgoing-host" aria-hidden="true"/>
       <main ref={mainRef} key={tab} className={`test-main ${slideDir?`slide-${slideDir}`:''}`}>
         {tab==='log'&&<QuickLogComposer editingItem={null} onSave={saveLog} onCancelEdit={()=>{}} isReady={repository.ready&&preferences.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}
         {tab==='archive'&&<ArchiveBrowser archives={archives} newId={newId} onOpen={open} onEdit={entry=>{setToast(null);setActiveId(entry.id);setEditingId(entry.id);}} onWrite={()=>go('log','prev')} onBrowseDesign={()=>go('studio','next')} onCreateGroup={createGroup} onDelete={remove} onCoordinates={saveCoordinates} onAutoLinkPlace={autoLinkPlace} fallbackAppearance={fallbackAppearance} listDetailsOn={listDetailsOn} onToggleListDetails={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onToggleAutoPlaceLink={changeAutoPlaceLink}/>}
-        {tab==='card'&&actualItem&&<CardWorkspace item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance||pendingPhoto)} onApplyPreset={preset=>applyPreset(preset)} onChangeStyle={changeCardStyle} onChangePhoto={crop=>{if(applying||!actualItem)return;setPendingPhoto(photoCropKey(crop)===photoCropKey(actualItem)?null:photoCrop(crop));setCardSaved(false);}} onResetStyle={()=>{setPendingAppearance(null);setPendingPhoto(null);setCardSaved(false);}} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
+        {tab==='calendar'&&<LogCalendar items={archives} view={calendarView} onView={setCalendarView} onOpen={open}/>}
+        {tab==='card'&&actualItem&&<CardWorkspace recentScope={repository.serverSnapshot?.deviceId||'device'} item={item} slot={appearance.slot} skin={appearance.skin} authorName={appearance.authorName} members={members} presets={preferences.presetSlots} skins={preferences.skins} captureRef={captureRef} exportState={exportState} exportError={exportError} applying={applying} saved={cardSaved} hasPendingChange={Boolean(pendingAppearance||pendingPhoto)} onApplyPreset={preset=>applyPreset(preset)} onChangeStyle={changeCardStyle} onChangePhoto={crop=>{if(applying||!actualItem)return;setPendingPhoto(photoCropKey(crop)===photoCropKey(actualItem)?null:photoCrop(crop));setCardSaved(false);}} onResetStyle={()=>{setPendingAppearance(null);setPendingPhoto(null);setCardSaved(false);}} onEdit={()=>{setToast(null);setEditingId(item.id);}} onSaveCard={()=>void saveCard()} onShare={()=>void share()} onRetryExport={()=>setExportRevision(v=>v+1)} onOpenMember={open}/>}
         {tab==='studio'&&preferences.ready&&<StudioPanel key={repository.serverSnapshot?.deviceId||'local'} presets={preferences.presetSlots} skins={preferences.skins} defaultPresetId={preferences.defaultPresetId} authorName={preferences.authorName} onSavePreset={savePreset} onReorderPresets={reorderPresetList} onClearCategoryDefault={clearCategoryDefault} onDeletePreset={deletePreset} onGenerate={generateSkin} onDeleteSkin={deleteSkin}/>}
       </main>
     </div>
