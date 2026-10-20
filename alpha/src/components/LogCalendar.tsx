@@ -66,7 +66,7 @@ export default function LogCalendar({items,view,onView,onOpen}:{items:ArchiveIte
         <footer><button type="button" onClick={openRange}>기간 변경</button><span>아래 지도에서 장소의 흐름을 따라가 보세요</span></footer>
       </section>}
     </div>
-    <div className="calendar-map-panel"><LogbookMap items={selected} onOpen={onOpen} route/><p className="calendar-route-note">{view.start?title:`${Number(view.month.slice(5))}월`} · 기록한 장소를 시간순으로 연결한 경로</p></div>
+    <div className="calendar-map-panel"><LogbookMap items={selected} onOpen={onOpen} route/></div>
     <AccessibleDialog open={rangeOpen} onClose={()=>setRangeOpen(false)} title="기간으로 로그 보기"><form className="calendar-range-form" onSubmit={event=>{event.preventDefault();applyRange();}}><label>시작일<input type="date" min="1900-01-01" max="9999-12-31" value={from} onChange={event=>setFrom(event.target.value)} required/></label><label>종료일<input type="date" min="1900-01-01" max="9999-12-31" value={to} onChange={event=>setTo(event.target.value)} required/></label><p>선택한 기간의 로그와 장소를 시간순으로 모아봐요.</p>{error&&<p role="alert">{error}</p>}<button type="submit" className="test-button primary">이 기간 펼쳐보기</button></form></AccessibleDialog>
     <AccessibleDialog open={monthOpen} onClose={()=>setMonthOpen(false)} title="보고 싶은 달"><form className="calendar-range-form" onSubmit={event=>{event.preventDefault();if(validDay(monthInput+'-01')){changeMonth(monthInput);setMonthOpen(false);}}}><label>연월<input type="month" min="1900-01" max="9999-12" value={monthInput} onChange={event=>setMonthInput(event.target.value)} required/></label><button type="submit" className="test-button primary">이 달 보기</button></form></AccessibleDialog>
   </section>;
