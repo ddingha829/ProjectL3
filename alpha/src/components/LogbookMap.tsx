@@ -113,7 +113,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
     // Chronological logged coordinates, not a road-routing or GPS tracking request.
     const points=[...located].sort((a,b)=>a.timestamp-b.timestamp||a.id.localeCompare(b.id)).map(item=>L.latLng(item.coordinates.lat,item.coordinates.lng));
     const renderer=L.svg({padding:.5});
-    const glow=L.polyline(points,{renderer,color:'#ff672c',weight:11,opacity:.13,interactive:false,lineCap:'round',lineJoin:'round'}).addTo(layer);
+    const glow=L.polyline(points,{renderer,color:'#ff672c',weight:11,opacity:.13,interactive:false,lineCap:'round',lineJoin:'round',className:'calendar-route-glow'}).addTo(layer);
     const line=L.polyline(points,{renderer,color:'#ff743d',weight:3,opacity:.95,interactive:false,lineCap:'round',lineJoin:'round',className:'calendar-route-line'}).addTo(layer);
     const path=line.getElement() as SVGPathElement|null;
     let frame=0,animation:Animation|undefined,head:Leaflet.CircleMarker|undefined,disposed=false;

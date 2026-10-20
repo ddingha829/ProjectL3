@@ -2,6 +2,8 @@
 
 ## 2026-10-21 로그캘린더 · 음성 제목 · 최근 프리셋
 
+- Map theme follow-up: the shared LogbookMap now follows html.light in both logbook and calendar. Light mode uses warm grayscale OSM tiles without inversion, bright translucent panels, dark labels and a deeper orange route; dark mode retains its existing palette. CSS variables recolor existing markers/SVG paths without rebuilding the map or resetting pan/zoom. Chrome/WebKit theme-switch checks and real OSM screenshots pass.
+
 - Follow-up header: + 로그 / 로그북 / 스튜디오 / calendar icon (44px, Lucide CalendarDays); settings remains an overlay. The calendar icon has no visible text, retains the full accessible name/tooltip and active state. Calendar -> card -> calendar preserves the selected month/date range/timeline. Existing row delete/second-left-swipe-to-Studio and Studio's left boundary remain.
 - `alpha/DOCS/LOG_CALENDAR_20261021.md` describes the responsive photo calendar, inclusive day/range timeline overlay and shared dark Leaflet/OSM map with chronological route/light animation. Only saved coordinates are connected; no GPS tracking, road-routing API, geocoding sweep or paid call was added. Groups are excluded to avoid counting their member logs twice. Date/time follow the existing Asia/Seoul convention.
 - Voice control is now a translucent icon only. Confirmed speech offers a local first-sentence title suggestion when the title is empty; choosing it never changes the body or overwrites a manual title. No AI call. Card detail has three thumbnail shortcuts with owner-scoped, device-local recent selection history; all presets remain in the existing library.
