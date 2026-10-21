@@ -6,6 +6,7 @@ import {photoCrop,type PhotoCrop} from '@/lib/photoCrop';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { getCardLayout, itemHasPhoto, resolveEffectiveSlot } from '@/lib/cardLayouts';
 import { CARD_GRAIN } from '@/lib/cardGrain';
+import { experienceDate } from '@/lib/logDate';
 import { photoToneFilter } from '@/lib/photoTone';
 import CardFrame from './CardFrame';
 import AdditionalCardLayouts from './AdditionalCardLayouts';
@@ -32,6 +33,7 @@ function accentInk(color: string): string {
 }
 
 export default function CardStage({ item, slot: preferredSlot, skin, authorName, selectedItems, curationTitle, cardCaptureRef, photoEditing=false, onPhotoChange }: CardStageProps) {
+  const displayDate=experienceDate(item);
   const slot = resolveEffectiveSlot(item, preferredSlot);
   const showScore = slot.showScore !== false && item.score !== '' && Number.isFinite(Number(item.score));
   const showLocation = slot.showLocation !== false;
@@ -62,7 +64,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   </div> : null;
   const footer = <div className={styles.footer}>
     <div className={styles.imprint} data-card-imprint="true">
-      <span data-imprint-field="date">{item.date}</span>
+      <span data-imprint-field="date">{displayDate}</span>
       {showSignature && <span data-imprint-field="author" className={styles.imprintAuthor} title={author}>— {author}</span>}
       <span data-imprint-field="design">{getCardLayout(slot.layout).name}</span>
       <span data-imprint-field="ratio">{slot.ratio}</span>
@@ -105,7 +107,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'receipt':
       treatment = styles.receipt;
       artwork = <><div className={styles.tear} style={{ top: 0 }} /><div className={styles.artwork}>
-        {showDecorations && <div data-card-decoration="true" className={styles.header}><div className={styles.brand}>L2. RECEIPT</div>{label(`${showNumber ? `ORDER #${number} · ` : ''}${item.date}`, styles.muted)}</div>}
+        {showDecorations && <div data-card-decoration="true" className={styles.header}><div className={styles.brand}>L2. RECEIPT</div>{label(`${showNumber ? `ORDER #${number} · ` : ''}${displayDate}`, styles.muted)}</div>}
         {heading(false)}{photo(compact ? 87 : story ? 220 : 140)}{(showDecorations || showScore) && <div className={styles.row}>{decoration(`${showNumber ? `${number}. ` : ''}${item.cat}`)}{showScore && label(`★ ${item.score} / 5`, styles.accent)}</div>}
         {details}{quote && <div className={styles.quoteBox}>{quote}</div>}<div className={styles.barcode} aria-hidden="true" />{footer}
       </div><div className={styles.tear} style={{ bottom: 0, transform: 'rotate(180deg)' }} /></>;
@@ -113,14 +115,14 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'polaroid':
       treatment = styles.polaroid;
       artwork = <><div className={styles.tape} /><div className={styles.artwork}>
-        <div className={styles.film} style={{ height: compact ? 185 : story ? 380 : 270 }}>{showDecorations && <div data-card-decoration="true" className={styles.row}>{label('L2. FILM ARCHIVE')}{showNumber && label(`FRAME ${number}`)}</div>}{photo('100%')}{showDecorations && <div data-card-decoration="true" className={styles.row}>{label(item.date)}{label(item.cat)}</div>}</div>
+        <div className={styles.film} style={{ height: compact ? 185 : story ? 380 : 270 }}>{showDecorations && <div data-card-decoration="true" className={styles.row}>{label('L2. FILM ARCHIVE')}{showNumber && label(`FRAME ${number}`)}</div>}{photo('100%')}{showDecorations && <div data-card-decoration="true" className={styles.row}>{label(displayDate)}{label(item.cat)}</div>}</div>
         {heading()}<div className={styles.content}>{quote}{!compact && details}</div>{footer}
       </div></>;
       break;
     case 'passport':
       treatment = styles.passport;
       artwork = <div className={styles.artwork}>{header('L2 PASSPORT', showNumber ? `NO. ${number}` : '')}
-        <div className={styles.stamps}><div className={styles.stamp}>{showDecorations && <span data-card-decoration="true">★ VISITED ★<br /></span>}{showLocation && item.loc && <>{item.loc}<br /></>}{item.date}</div>{showScore && <div className={`${styles.stamp} ${styles.stampRound}`}>{showDecorations && <span data-card-decoration="true">ADMITTED<br /></span>}SCORE {item.score}</div>}</div>
+        <div className={styles.stamps}><div className={styles.stamp}>{showDecorations && <span data-card-decoration="true">★ VISITED ★<br /></span>}{showLocation && item.loc && <>{item.loc}<br /></>}{displayDate}</div>{showScore && <div className={`${styles.stamp} ${styles.stampRound}`}>{showDecorations && <span data-card-decoration="true">ADMITTED<br /></span>}SCORE {item.score}</div>}</div>
         <div className={`${styles.dataBox} ${styles.grow}`}>{decoration(`RECORD ENTRY · ${item.cat}`, styles.accent)}{heading(false)}{quote}</div>
         {showDecorations && <div data-card-decoration="true" className={styles.mrz} aria-hidden="true">P&lt;KORARCHIVE&lt;&lt;L2&lt;{item.cat}&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>}{footer}
       </div>;
@@ -138,14 +140,14 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
       treatment = styles.library;
       artwork = <div className={styles.artwork}>{header('L2 PUBLIC ARCHIVE', showNumber ? `CAT. ${number}` : '')}<div className={styles.catalogField}>{decoration('TITLE OF RECORD', styles.muted)}{heading(false)}</div>
         <div className={`${styles.catalogField} ${styles.grow}`}>{decoration('CURATOR’S SUMMARY', styles.muted)}{quote}</div>
-        <table className={styles.catalogTable}><thead><tr><th>DATE ISSUED</th>{showSignature && <th>CURATOR</th>}{showScore && <th>SCORE</th>}</tr></thead><tbody><tr><td>{item.date}</td>{showSignature && <td>{author}</td>}{showScore && <td className={styles.accent}>★ {item.score}</td>}</tr></tbody></table>
+        <table className={styles.catalogTable}><thead><tr><th>DATE ISSUED</th>{showSignature && <th>CURATOR</th>}{showScore && <th>SCORE</th>}</tr></thead><tbody><tr><td>{displayDate}</td>{showSignature && <td>{author}</td>}{showScore && <td className={styles.accent}>★ {item.score}</td>}</tr></tbody></table>
         {decoration(`ARCHIVED & PRESERVED · ${item.cat}`, styles.accent)}{footer}
       </div>;
       break;
     case 'broadside':
       treatment = styles.broadside;
       artwork = <div className={styles.artwork}>{showDecorations && <div data-card-decoration="true" className={styles.header}><div className={styles.number} data-card-number="true" hidden={!showNumber}>{number}</div><span className={styles.brand}>L2<br />ARCHIV.</span></div>}
-        <div className={styles.metadata}>{showLocation && <div>{label('01 PLACE', styles.muted)}<div className={styles.truncate}>{item.loc}</div></div>}<div>{label('02 DATE', styles.muted)}<div>{item.date}</div></div>{showScore && <div>{label('03 SCORE', styles.muted)}<div className={styles.accent}>★ {item.score}</div></div>}</div>
+        <div className={styles.metadata}>{showLocation && <div>{label('01 PLACE', styles.muted)}<div className={styles.truncate}>{item.loc}</div></div>}<div>{label('02 DATE', styles.muted)}<div>{displayDate}</div></div>{showScore && <div>{label('03 SCORE', styles.muted)}<div className={styles.accent}>★ {item.score}</div></div>}</div>
         <div className={`${styles.content} ${styles.grow}`} style={{ justifyContent: 'center' }}>{heading(false)}{quote && <div className={styles.quoteBox}>{quote}</div>}{details}</div>{footer}
       </div>;
       break;
@@ -158,7 +160,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'orbit':
     case 'duo':
     case 'margin':
-      artwork = <AdditionalCardLayouts layout={slot.layout} item={item} slot={slot} author={author} footer={footer} photo={photo}/>;
+      artwork = <AdditionalCardLayouts layout={slot.layout} item={{...item,date:displayDate}} slot={slot} author={author} footer={footer} photo={photo}/>;
       break;
     default:
       treatment = styles.editorial;

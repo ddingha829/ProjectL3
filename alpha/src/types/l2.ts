@@ -47,6 +47,7 @@ export interface ArchiveItem {
   fullAddress?: string;
   date: string;
   timestamp: number;
+  occurredAt?: number | null;
   score: string;
   quote: string;
   good: string;

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import dynamic from 'next/dynamic';
 import { Search, SlidersHorizontal, List, LayoutGrid, MapPin, FolderPlus, X, Utensils, Clapperboard, Shapes, Layers, Check, PencilLine, Trash2, Sparkles, LoaderCircle } from 'lucide-react';
 import type { ArchiveCategory, ArchiveItem, CardAppearance, GeoPoint, MapApiPlace } from '@/types/l2';
@@ -8,6 +8,8 @@ import { createCardAppearance } from '@/lib/cardAppearance';
 import { INITIAL_SKINS, PRESET_SLOTS } from '@/data/initialData';
 import { getGroupMembers, isLogGroup, MAX_GROUP_MEMBERS } from '@/lib/logGroups';
 import { hasLinkedPlace } from '@/lib/mapLocations';
+import { experienceDate, experienceTime } from '@/lib/logDate';
+import type { ArchiveViewState } from '@/lib/archiveView';
 import { haptic } from '@/lib/haptics';
 import { useElasticBoundary } from '@/hooks/useElasticBoundary';
 import CardStage from './CardStage';
@@ -16,6 +18,8 @@ import SwipeLogRow from './SwipeLogRow';
 import './ArchiveBrowser.css';
 
 interface Props {
+  viewState: ArchiveViewState;
+  onViewState: Dispatch<SetStateAction<ArchiveViewState>>;
   archives: ArchiveItem[];
   newId: string | null;
   onOpen: (item: ArchiveItem) => void;
@@ -46,8 +50,11 @@ export default function ArchiveBrowser(p:Props){
     update(); viewport?.addEventListener('scroll', update); viewport?.addEventListener('resize', update);
     return () => { viewport?.removeEventListener('scroll', update); viewport?.removeEventListener('resize', update); };
   }, []);
-  const [category,setCategory]=useState<'ALL'|ArchiveCategory>('ALL');
-  const [query,setQuery]=useState('');const [view,setView]=useState<'list'|'grid'|'map'>('list');const [oldest,setOldest]=useState(false);
+  const {category,query,view,oldest}=p.viewState;
+  const setCategory=(value:ArchiveViewState['category'])=>p.onViewState(prev=>({...prev,category:value}));
+  const setQuery=(value:string)=>p.onViewState(prev=>({...prev,query:value}));
+  const setView=(value:ArchiveViewState['view'])=>p.onViewState(prev=>({...prev,view:value}));
+  const setOldest=(value:boolean|((previous:boolean)=>boolean))=>p.onViewState(prev=>({...prev,oldest:typeof value==='function'?value(prev.oldest):value}));
   const [filterOpen,setFilterOpen]=useState(false);const [selecting,setSelecting]=useState(false);const [selected,setSelected]=useState<string[]>([]);
   const [naming,setNaming]=useState(false);const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const [spotlightId,setSpotlightId]=useState<string|null>(null);
@@ -69,7 +76,7 @@ export default function ArchiveBrowser(p:Props){
     );
   }, [p.archives]);
 
-  const filtered=useMemo(()=>p.archives.filter(item=>(category==='ALL'||item.cat===category)&&(!selecting||!isLogGroup(item))&&`${item.title} ${item.quote} ${item.loc} ${item.addressShort}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(view!=='map'||hasLinkedPlace(item))).sort((a,b)=>oldest?a.timestamp-b.timestamp:b.timestamp-a.timestamp),[p.archives,category,query,oldest,view,selecting]);
+  const filtered=useMemo(()=>p.archives.filter(item=>(category==='ALL'||item.cat===category)&&(!selecting||!isLogGroup(item))&&`${item.title} ${item.quote} ${item.loc} ${item.addressShort}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(view!=='map'||hasLinkedPlace(item))).sort((a,b)=>oldest?experienceTime(a)-experienceTime(b):experienceTime(b)-experienceTime(a)),[p.archives,category,query,oldest,view,selecting]);
   const unlinkedMapItems=useMemo(()=>p.archives.filter(item=>!isLogGroup(item)&&item.cat!=='CINEMA'&&!hasLinkedPlace(item)&&(category==='ALL'||item.cat===category)&&item.title.trim().length>=2),[p.archives,category]);
   const spotlightItem=useMemo(()=>p.archives.find(item=>item.id===spotlightId)||null,[p.archives,spotlightId]);
 
@@ -160,7 +167,7 @@ export default function ArchiveBrowser(p:Props){
         id={`record-${item.id}`}
         key={item.id}
         className={`logbook-poster ${p.newId===item.id?'just-added':''} ${isSpotlit?'is-spotlit':''}`}
-        aria-label={`${item.title}, ${item.date}`}
+        aria-label={`${item.title}, ${experienceDate(item)}`}
         onPointerDown={e=>startPress(item,e.clientX,e.clientY)}
         onPointerMove={e=>movePress(e.clientX,e.clientY)}
         onPointerUp={clearPress}
@@ -175,7 +182,7 @@ export default function ArchiveBrowser(p:Props){
       const picked=selected.includes(item.id),group=isLogGroup(item),place=view==='map'?item.fullAddress||item.addressShort||item.loc:item.addressShort||item.loc;
       const catLabel=group?'그룹':getArchiveCategory(item.cat).label;
       const logNumber=group?'그룹':(chronologicalNumbers.get(item.id)||item.num||String(filtered.length-index).padStart(2,'0'));
-      return <SwipeLogRow key={item.id} title={item.title} entering={p.newId===item.id} disabled={selecting} onDelete={()=>p.onDelete(item)} onBrowseDesign={p.onBrowseDesign}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{logNumber}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{item.date}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
+      return <SwipeLogRow key={item.id} title={item.title} entering={p.newId===item.id} disabled={selecting} onDelete={()=>p.onDelete(item)} onBrowseDesign={p.onBrowseDesign}><button type="button" id={`record-${item.id}`} className={`logbook-row ${picked?'picked':''} ${p.newId===item.id?'just-added':''}`} aria-pressed={selecting?picked:undefined} onClick={()=>open(item)}><span className={`logbook-number ${group?'is-group':''}`}>{logNumber}</span><span className="logbook-row-body"><span className="logbook-title">{item.title}</span><time>{experienceDate(item)}</time>{place&&<span className="logbook-location">{place}</span>}{group&&<span className="logbook-location">로그 {getGroupMembers(item,p.archives).length}개</span>}{listDetailsOn&&<span className="logbook-meta-badges"><span className="logbook-cat-badge">{catLabel}</span>{item.score&&<span className="logbook-score-badge">★ {item.score}</span>}</span>}{listDetailsOn&&item.quote&&<span className="logbook-quote-preview">{item.quote}</span>}</span>{selecting&&<span className={`logbook-check ${picked?'checked':''}`}>{picked&&<Check size={15}/>}</span>}</button></SwipeLogRow>;
     })}</div>}
     </div>
     {spotlightItem&&(()=>{

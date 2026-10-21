@@ -19,6 +19,7 @@ import { allowsMotion } from '@/lib/motion';
 import { normalizeLogMedia, type LogMedia } from '@/lib/media';
 import { voiceTitleCandidate } from '@/lib/voiceTitle';
 import { isGeoPoint } from '@/lib/mapLocations';
+import { dateTimeInput, parseExperienceInput } from '@/lib/logDate';
 import './QuickLogComposer.css';
 const LocationPickerMap=dynamic(()=>import('./LocationPickerMap'),{ssr:false,loading:()=> <div className="location-picker-map-loading" role="status">지도 불러오는 중…</div>});
 
@@ -27,6 +28,7 @@ export interface LogDraft {
   body: string;
   category: ArchiveCategory;
   score: number | null;
+  occurredAt?: number | null;
   img: string;
   cropX: number;
   cropY: number;
@@ -56,7 +58,7 @@ interface QuickLogComposerProps {
 const CATEGORY_ICONS = { dining: Utensils, cinema: Clapperboard, place: MapPin, other: Shapes };
 
 export function emptyLogDraft(): LogDraft {
-  return { title: '', body: '', category: 'DINING', score: null, img: '', cropX: 50, cropY: 50, cropZoom:1, place: null, good: '', bad: '', note: '' };
+  return { title: '', body: '', category: 'DINING', score: null, occurredAt:null, img: '', cropX: 50, cropY: 50, cropZoom:1, place: null, good: '', bad: '', note: '' };
 }
 
 function draftFromItem(item: ArchiveItem | null): LogDraft {
@@ -68,6 +70,7 @@ function draftFromItem(item: ArchiveItem | null): LogDraft {
     body: item.quote || '',
     category: item.cat,
     score: Number.isFinite(parsedScore) ? Math.max(0, Math.min(5, parsedScore)) : null,
+    occurredAt:item.occurredAt??null,
     img: item.hasPhoto === false ? '' : item.img || '',
     cropX: item.cropX ?? 50,
     cropY: item.cropY ?? 50,
@@ -492,7 +495,7 @@ export default function QuickLogComposer({
               <input ref={fileRef} type="file" accept="image/*" multiple={false} tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={event=>selectPhoto(event.currentTarget)} />
               <input ref={cameraRef} type="file" accept="image/*" multiple={false} capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={event=>selectPhoto(event.currentTarget)} />
               <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
-              <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
+              <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.occurredAt!=null || draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
             </div>
             {photoError && <p role="alert" className="text-sm leading-relaxed text-[var(--accent)]">{photoError}</p>}
           </div>
@@ -581,6 +584,7 @@ export default function QuickLogComposer({
 
       <AccessibleDialog open={dialog === 'details'} onClose={() => setDialog(null)} title="세부 설정" initialFocusId={scoreId}>
         <fieldset disabled={isSaving} className="space-y-6 border-0 p-0">
+          <label className="quick-experience-date">일어난 날짜·시간 <small>한국 시간 · 비워두면 저장한 시간</small><input type="datetime-local" min="1900-01-01T00:00" max="9999-12-31T23:59" value={dateTimeInput(draft.occurredAt)} onChange={event=>{try{update('occurredAt',parseExperienceInput(event.target.value));}catch{setSubmitError('날짜와 시간을 확인해 주세요.');}}}/>{draft.occurredAt!=null&&<button type="button" onClick={()=>update('occurredAt',null)}>저장한 시간으로</button>}</label>
           {editingItem && <div className="quick-edit-categories">{ARCHIVE_CATEGORIES.map((category) => <button type="button" key={category.id} aria-pressed={draft.category === category.id} className={draft.category === category.id ? 'selected' : ''} onClick={() => update('category', category.id)}>{category.label}</button>)}</div>}
           <div>
             <div className="mb-3 flex items-center justify-between gap-3">

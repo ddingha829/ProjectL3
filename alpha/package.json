@@ -8,6 +8,8 @@
     "start": "next start -H 127.0.0.1 -p 3013",
     "typecheck": "tsc --noEmit --incremental false",
     "test:repository": "node scripts/test_repository.mjs",
+    "test:context-restore": "node scripts/test_context_restore.mjs",
+    "test:context-browser": "node scripts/test_context_browser.mjs",
     "test:stability": "node scripts/test_stability.mjs",
     "test:session-http": "node scripts/test_session_http.mjs",
     "test:ui": "node scripts/test_preset_workflows.mjs",

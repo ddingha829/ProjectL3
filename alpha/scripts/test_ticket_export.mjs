@@ -31,7 +31,7 @@ async function makePage(webkit=false,fail=false){
  await p.goto(base,{waitUntil:'networkidle2'});return {p,state};
 }
 async function open(p,index){await p.$eval('.test-header nav button:nth-child(2)',e=>e.click());await p.waitForSelector('.logbook-row');await p.$eval('#record-'+records[index].id,e=>e.click());await p.waitForSelector('.record-card-stage [data-card-capture]');}
-async function exportCard(p){if(await p.$eval('.record-editor-handle',e=>e.getAttribute('aria-expanded')==='false'))await p.click('.record-editor-handle');await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await p.evaluate(()=>{window.__export=null;});await p.click('.record-card-actions button:last-child');await p.waitForFunction(()=>window.__export);return p.evaluate(()=>window.__export);}
+async function exportCard(p){if(await p.$eval('.record-editor-handle',e=>e.getAttribute('aria-expanded')==='false'))await p.click('.record-editor-handle');await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await p.evaluate(()=>{window.__export=null;});await p.click('.record-card-actions button:last-child');await p.waitForSelector('.share-card-submit:not(:disabled)',{timeout:45000});await p.click('.share-card-submit');await p.waitForFunction(()=>window.__export);return p.evaluate(()=>window.__export);}
 async function photoPixels(p,result,layout){return p.evaluate(async(result,layout)=>{
  const frame=document.querySelector('.record-card-stage [data-card-capture]'),img=frame.querySelector('img'),photo=img.parentElement;
  const b=frame.getBoundingClientRect(),r=photo.getBoundingClientRect(),logical=420/b.width;

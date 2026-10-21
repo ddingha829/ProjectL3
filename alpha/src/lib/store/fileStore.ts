@@ -133,10 +133,11 @@ export const fileStore: L2Store = {
     return row && row.ownerId === ownerId ? row.item : null;
   },
 
-  async saveArchive(ownerId, item) {
+  async saveArchive(ownerId, item, insertOnly = false) {
     const db = load();
     const existing = db.archives[item.id];
     if (existing && existing.ownerId !== ownerId) return null;
+    if (existing && insertOnly) return existing.item;
     const largestNumber = Math.max(0, ...Object.values(db.archives)
       .filter(row => row.ownerId === ownerId)
       .map(row => Number(row.item.num) || 0));

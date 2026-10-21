@@ -179,6 +179,26 @@ assert.equal((await supabaseStore.listArchives(owner)).length, 1201);
 assert.deepEqual(pages, [[0, 499], [500, 999], [1000, 1499]]);
 pass('Supabase archive pagination retains all 1,201 records across three pages');
 
+let restoreExists=true, restoreUpdates=0;
+const restoreRemote={...item,num:'01',title:'서버의 최신 수정'};
+const restoreDb={from:()=>({
+  select(){return this;},eq(){return this;},
+  maybeSingle:async()=>({data:restoreExists?{owner_id:owner,id:item.id,data:restoreRemote}:null,error:null}),
+  update(){restoreUpdates++;throw new Error('restore must not update');},
+  insert:async()=>{restoreExists=true;return {data:null,error:{code:'23505',message:'duplicate ID'}};},
+})};
+const restoreLoad=loader({
+  '@/lib/env':{getRuntimeEnvKey:key=>key==='SUPABASE_URL'?'https://fixture.invalid':key==='SUPABASE_SERVICE_ROLE_KEY'?'test-only-server-key':undefined},
+  '@supabase/supabase-js':{createClient:()=>restoreDb},
+});
+const restoreStore=restoreLoad('src/lib/store/supabaseStore.ts').supabaseStore;
+restoreStore.ensureProfile=async()=>({});
+assert.equal((await restoreStore.saveArchive(owner,{...item,num:'01',title:'오래된 백업'},true)).title,restoreRemote.title);
+restoreExists=false;
+assert.equal((await restoreStore.saveArchive(owner,{...item,num:'01',title:'동시 복원'},true)).title,restoreRemote.title);
+assert.equal(restoreUpdates,0);
+pass('Supabase append-only restore keeps newer records, including a concurrent insert collision');
+
 const previousNodeEnv = process.env.NODE_ENV;
 process.env.NODE_ENV = 'production';
 try {

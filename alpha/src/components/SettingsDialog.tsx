@@ -10,6 +10,8 @@ import type { ThemePreference } from '@/lib/themePreference';
 import { buildGoogleMapsCsv, buildNotionMarkdown, parseGoogleTakeoutPlaces } from '@/lib/googleMapsParser';
 import { exportLogbookZip, type BackupProgress } from '@/lib/logBackup';
 import type { PwaState } from './PwaInstallControl';
+import BackupRestoreDialog from './BackupRestoreDialog';
+import type { BackupRestorePlan } from '@/lib/backupRestore';
 
 interface Props {
   font: AppFont;
@@ -40,6 +42,8 @@ interface Props {
   username?: string | null;
   onReplayGuide?: () => void;
   onResetLogs: () => Promise<void>;
+  restoreScope: string;
+  onImportArchives: (plan:BackupRestorePlan)=>Promise<{added:number;skipped:number}>;
 }
 
 export default function SettingsDialog(p: Props) {
@@ -51,6 +55,7 @@ export default function SettingsDialog(p: Props) {
   const [authBusy, setAuthBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [backupOpen,setBackupOpen]=useState(false);
   const [progress,setProgress] = useState<BackupProgress|null>(null);
   const exportLock = useRef(false);
   const [resetOpen,setResetOpen] = useState(false),[resetBusy,setResetBusy] = useState(false),[resetWord,setResetWord] = useState(''),[resetError,setResetError] = useState('');
@@ -423,6 +428,7 @@ export default function SettingsDialog(p: Props) {
                   <Download size={14} />
                   <span>JSON 백업</span>
                 </button>
+                <button type="button" className="settings-secondary-btn" disabled={!p.restoreScope} onClick={()=>setBackupOpen(true)}><Upload size={14}/><span>백업 파일 복원</span></button>
               </div>
 
               <button type="button" className="settings-reset-button" disabled={!p.archives?.length} onClick={()=>{setResetWord('');setResetError('');setResetOpen(true);}}><Trash2 size={16}/>모든 로그 초기화</button>
@@ -462,6 +468,7 @@ export default function SettingsDialog(p: Props) {
         <p className="settings-footer-meta">Made by Team L2 · v1.0.0 alpha</p>
       </div>
     </AccessibleDialog>
+    <BackupRestoreDialog open={backupOpen} onClose={()=>setBackupOpen(false)} scope={p.restoreScope} archives={p.archives||[]} onRestore={p.onImportArchives}/>
     <AccessibleDialog open={resetOpen} onClose={()=>{if(!resetBusy)setResetOpen(false);}} title="모든 로그를 지울까요?" description="로그와 그룹이 서버 및 이 기기에서 삭제되며 되돌릴 수 없어요. 계정과 프리셋은 유지됩니다. 먼저 ZIP 백업을 권장해요.">
       <form className="settings-reset-form" onSubmit={event=>{event.preventDefault();void resetLogs();}}><label htmlFor="reset-confirmation">확인하려면 ‘초기화’를 입력해 주세요.</label><input id="reset-confirmation" value={resetWord} onChange={event=>setResetWord(event.target.value)} autoComplete="off" disabled={resetBusy}/>{resetError&&<p role="alert">{resetError}</p>}<button type="submit" className="settings-reset-button" disabled={resetBusy||resetWord!=='초기화'}>{resetBusy?'삭제 중…':'모든 로그 영구 삭제'}</button></form>
     </AccessibleDialog>

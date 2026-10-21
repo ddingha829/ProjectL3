@@ -11,6 +11,7 @@ interface AccessibleDialogProps {
   onClose: () => void;
   children: ReactNode;
   initialFocusId?: string;
+  panelClassName?: string;
 }
 
 /** A small modal primitive shared by the optional composer controls. */
@@ -22,6 +23,7 @@ export default function AccessibleDialog({
   onClose,
   children,
   initialFocusId,
+  panelClassName = '',
 }: AccessibleDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -111,7 +113,7 @@ export default function AccessibleDialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className="quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7"
+        className={`quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7 ${panelClassName}`}
       >
         <div className={`quick-dialog-header mb-6 flex items-start justify-between gap-4 ${headerAdornment ? 'has-adornment' : ''}`}>
           <div>

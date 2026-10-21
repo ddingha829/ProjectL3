@@ -28,6 +28,8 @@ async function save(req: NextRequest, editing: boolean) {
     if (editing && !isUuid(raw.id)) return NextResponse.json({ error: 'INVALID_ID', detail: '수정할 기록을 확인해주세요.' }, { status: 400 });
     const existing = isUuid(raw.id) ? await store.getOwnedArchive(deviceId, raw.id) : null;
     if (editing && !existing) return NextResponse.json({ error: 'NOT_FOUND', detail: '수정할 기록을 찾을 수 없습니다.' }, { status: 404 });
+    const appendOnly = !editing && raw.appendOnly === true;
+    if (appendOnly && existing) return NextResponse.json({ item: existing, archives: await store.listArchives(deviceId) });
     let item;
     try {
       // One browser-generated UUID remains the same across network retries.
@@ -42,7 +44,7 @@ async function save(req: NextRequest, editing: boolean) {
       }
     }
     if (item.img.startsWith('data:') && item.img !== existing?.img) item.img = await store.uploadPhoto(deviceId, item.img);
-    const saved = await store.saveArchive(deviceId, item);
+    const saved = await store.saveArchive(deviceId, item, appendOnly);
     if (!saved) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     return NextResponse.json({ item: saved, archives: await store.listArchives(deviceId) }, { status: existing || editing ? 200 : 201 });
   } catch (error) {

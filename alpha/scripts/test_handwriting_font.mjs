@@ -22,7 +22,7 @@ const settings=async()=>{await page.getByRole('button',{name:'설정 열기',exa
 const choose=async label=>page.getByRole('group',{name:'글꼴 선택',exact:true}).getByRole('button',{name:label,exact:true}).click();
 const close=async()=>{await page.getByRole('dialog',{name:'설정',exact:true}).getByRole('button',{name:'추가 정보 닫기'}).click();};
 const ready=()=>page.locator('.test-main .record-card-actions button:last-child:not(:disabled)').waitFor({timeout:45000});
-const share=async()=>{await ready();await page.evaluate(()=>window.__shared=null);await page.locator('.test-main .record-card-actions button:last-child').click();await page.waitForFunction(()=>window.__shared);return page.evaluate(()=>window.__shared);};
+const share=async()=>{await ready();await page.evaluate(()=>window.__shared=null);await page.locator('.test-main .record-card-actions button:last-child').click();await page.locator('.share-card-submit:not(:disabled)').waitFor({timeout:45000});await page.locator('.share-card-submit').click();await page.waitForFunction(()=>window.__shared);return page.evaluate(()=>window.__shared);};
 try{
  await page.goto(base,{waitUntil:'networkidle'});await page.locator('input[name=title]:not(:disabled)').waitFor();await settings();await choose('손글씨');await page.evaluate(()=>document.fonts.ready);
  assert.equal(await page.evaluate(()=>document.documentElement.dataset.font),'gaegu');assert.equal(await page.evaluate(()=>localStorage.getItem('l2_font_family')),'gaegu');assert.match(await page.locator('.settings-font-preview').evaluate(e=>getComputedStyle(e).fontFamily),/Gaegu/);

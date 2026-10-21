@@ -1,5 +1,14 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 로그북 복귀 · 실제 날짜 · 백업 복원 · 공유 공개 범위
+
+- Approved proposals 1/2/3/5 are implemented. See `alpha/DOCS/CONTEXT_BACKUP_PRIVACY_20261021.md` for flows, compatibility and limits.
+- Archive search/category/view/sort live in the parent; card return restores scroll/focus. New-log arrival resets to the default list. This is in-session state, not reload persistence or Leaflet viewport retention.
+- Optional `occurredAt` is independent of immutable creation `timestamp`/`date`. Composer details, card dates, archive ordering, calendar and chronological map routes use the event time when supplied. Existing logs fall back unchanged. Supabase stores the added field in existing JSONB; no SQL migration.
+- Settings can preview/append ZIP or JSON backups. IDs are destination-owner scoped/deterministic; existing/repeated IDs skip, group members remap, photos re-compress locally. One durable local transaction precedes normal-before-group outbox replay. Owner switches/storage failures reject without overwriting existing logs. Missing/corrupt photos retain usable text/URLs and are reported.
+- Share opens per-export map/location/signature controls, renders a privacy-specific PNG and preserves original logs/presets. Free text and photo contents are not automatically redacted. Native share stays on an explicit user click after image preparation.
+- New unit and Chrome/Playwright WebKit workflows plus repository/stability/card/calendar regressions pass using isolated stores/API fixtures; no live user writes or paid calls. Older card-share tests now confirm the export options before their native-share stub.
+
 ## 2026-10-21 현재 위치 확인 · 지점/이름 선택
 
 - GPS now opens a staged location picker rather than immediately changing the draft. Users move/tap the shared-theme Leaflet/OSM map, enter a place name and explicitly choose 이 위치로 적용. 검색으로/back/close discards the candidate. Existing linked coordinates have 위치·이름 수정. The applied label is stored in the existing loc field and restored when editing; log title/body remain independent.

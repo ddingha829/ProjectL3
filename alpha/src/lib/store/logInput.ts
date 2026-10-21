@@ -1,5 +1,6 @@
 import type { ArchiveCategory, ArchiveItem } from '@/types/l2';
-import { isUuid, newId } from './util';
+import { isUuid, newId } from '@/lib/logIdentity';
+import { validExperienceTime } from '@/lib/logDate';
 import { isArchiveCategory } from '@/lib/archiveCategories';
 import { normalizeCardAppearance } from '@/lib/cardAppearance';
 import {photoCrop} from '@/lib/photoCrop';
@@ -30,6 +31,7 @@ export function normalizeLogInput(raw: unknown, existing?: ArchiveItem): Archive
   const timestamp = existing?.timestamp || (typeof body.timestamp === 'number' && Number.isFinite(body.timestamp) ? body.timestamp : Date.now());
   const date = existing?.date || text(body.date) || new Date(timestamp).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(2).replaceAll('-', '.');
   const cat = body.cat as ArchiveCategory;
+  if(body.occurredAt !== undefined && body.occurredAt !== null && !validExperienceTime(body.occurredAt))throw new Error('일어난 날짜와 시간을 확인해주세요.');
   const loc = text(body.loc);
   if (body.coordinates !== undefined && body.coordinates !== null && !isGeoPoint(body.coordinates)) throw new Error('장소의 지도 좌표를 확인해주세요.');
   const grouped = body.kind === 'group' || cat === 'GROUP';
@@ -44,6 +46,7 @@ export function normalizeLogInput(raw: unknown, existing?: ArchiveItem): Archive
     id: existing?.id || (isUuid(body.id) ? body.id : newId()), num: existing?.num || '', cat,
     sub: loc ? `${cat} · ${loc}` : cat, title, loc,
     addressShort: text(body.addressShort), fullAddress: text(body.fullAddress), date, timestamp,
+    ...(body.occurredAt !== undefined ? {occurredAt:validExperienceTime(body.occurredAt)?body.occurredAt:null} : {}),
     score, quote, good: text(body.good), bad: text(body.bad), note: text(body.note),
     link: text(body.link), img: image, hasPhoto: Boolean(image),
     ...photoCrop(body as Partial<ArchiveItem>), mapX: position(body.mapX), mapY: position(body.mapY), author: text(body.author),

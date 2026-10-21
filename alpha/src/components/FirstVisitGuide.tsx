@@ -12,7 +12,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     { text: '내용 입력', detail: '직접 쓰거나 마이크로 말해 보세요.\n음성 입력을 마친 뒤 내용을 확인하고 저장해요.', selector: '.photo-memo-panel, .voice-log-input' },
     { text: '사진 · 작품 표지 추가', detail: '앨범·카메라 또는 영화·드라마·책 검색으로 한 장을 담아요.', selector: '.quick-actions button:nth-of-type(1)' },
     { text: '장소 추가', selector: '.quick-actions button:nth-of-type(2)' },
-    { text: '별점 등\n세부사항 추가', selector: '.quick-actions button:nth-of-type(3)' },
+    { text: '별점 · 일어난 날짜', detail: '실제 일어난 날짜와 시간을 정할 수 있어요.\n비워두면 저장한 시간을 사용해요.', selector: '.quick-actions button:nth-of-type(3)' },
     { text: '로그 저장하기', selector: '.quick-save-button' },
   ] }],
   archive: [
@@ -42,7 +42,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     { text: '이 로그만 더 꾸미기', detail: '디자인·색상·비율·사진 채도·명도·밝기를 바꿔도\n원본 프리셋은 그대로예요.', selector: '.record-design-tools .preset-tabs' },
     { text: '내용 수정', detail: '제목·메모·사진·장소를 수정해요.', selector: '.record-card-actions button:nth-child(1)' },
     { text: '이 카드에 변경 저장', detail: '미리 본 디자인을 로그북에 저장해요.\n변경 취소를 누르면 저장 전 모양으로 돌아가요.', selector: '.record-card-actions button:nth-child(2)' },
-    { text: '공유 · 이미지 저장', detail: '완성한 카드 이미지와 연결한 지도 주소를 공유해요.', selector: '.record-card-actions button:nth-child(3)' },
+    { text: '공유 · 이미지 저장', detail: '위치 문구·지도 링크·서명을 고른 뒤 공유해요.\n이번 공유에만 적용되고 원본은 유지돼요.', selector: '.record-card-actions button:nth-child(3)' },
   ] }],
   studio: [
     { label: '다시 쓸 프리셋 만들기', hints: [
@@ -65,7 +65,7 @@ const guides: Record<GuideScreen, GuidePage[]> = {
     ] },
     { label: '설치 · 백업', hints: [
       { text: '홈 화면에 바로 설치', detail: '홈 화면에서 앱처럼 빠르게 열어보세요.', selector: '.settings-pwa-actions' },
-      { text: '데이터 백업 · 구글 지도 연동', detail: '구글 지도 데이터를 가져오고 내보내요.\n로그와 사진을 ZIP으로 보관할 수 있어요.', selector: '.settings-accordion-trigger' },
+      { text: '백업 · 복원 · 지도 연동', detail: '로그와 사진을 ZIP으로 보관하고\nZIP·JSON 백업을 다시 불러올 수 있어요.\n복원 전 중복과 누락 사진을 확인해요.', selector: '.settings-accordion-trigger' },
     ] },
   ],
 };

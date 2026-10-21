@@ -47,7 +47,7 @@ export async function exportLogbookZip(archives: readonly ArchiveItem[], update:
     update({ percent: Math.round((i + 1) / Math.max(1, items.length) * 75), label: `사진 준비 중 · ${i + 1} / ${items.length}` });
     await new Promise<void>(resolve => setTimeout(resolve, 0));
   }
-  const keys = ['id','title','cat','date','timestamp','quote','score','loc','addressShort','fullAddress','good','bad','note','link','memberIds'] as const;
+  const keys = ['id','title','cat','date','timestamp','occurredAt','quote','score','loc','addressShort','fullAddress','good','bad','note','link','memberIds'] as const;
   const rows = [keys.map(csvCell).join(',') + ',"image_file","latitude","longitude"', ...snapshot.map(item => [...keys.map(key => csvCell(Array.isArray(item[key]) ? item[key]!.join(';') : item[key])), csvCell(references[item.id] || ''), csvCell(item.coordinates?.lat), csvCell(item.coordinates?.lng)].join(','))];
   zip.file('logs.csv', '\ufeff' + rows.join('\r\n'));
   zip.file('logs.json', JSON.stringify(snapshot, null, 2));

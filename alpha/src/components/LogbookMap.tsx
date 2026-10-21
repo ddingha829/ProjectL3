@@ -6,6 +6,7 @@ import type * as Leaflet from 'leaflet';
 import type { ArchiveItem, GeoPoint } from '@/types/l2';
 import { isGeoPoint } from '@/lib/mapLocations';
 import { allowsMotion, MOTION_EVENT } from '@/lib/motion';
+import { experienceTime, experienceDate } from '@/lib/logDate';
 import { logTime } from '@/lib/logCalendar';
 import 'leaflet/dist/leaflet.css';
 import './LogbookMap.css';
@@ -111,7 +112,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
     layer.clearLayers();setPlaying(false);
     if(!route||located.length<2)return;
     // Chronological logged coordinates, not a road-routing or GPS tracking request.
-    const points=[...located].sort((a,b)=>a.timestamp-b.timestamp||a.id.localeCompare(b.id)).map(item=>L.latLng(item.coordinates.lat,item.coordinates.lng));
+    const points=[...located].sort((a,b)=>experienceTime(a)-experienceTime(b)||a.id.localeCompare(b.id)).map(item=>L.latLng(item.coordinates.lat,item.coordinates.lng));
     const renderer=L.svg({padding:.5});
     const glow=L.polyline(points,{renderer,color:'#ff672c',weight:11,opacity:.13,interactive:false,lineCap:'round',lineJoin:'round',className:'calendar-route-glow'}).addTo(layer);
     const line=L.polyline(points,{renderer,color:'#ff743d',weight:3,opacity:.95,interactive:false,lineCap:'round',lineJoin:'round',className:'calendar-route-line'}).addTo(layer);
@@ -166,7 +167,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
     {route&&<button type="button" className="logbook-route-play" aria-label="경로 다시 보기" disabled={located.length<2||!ready} onClick={()=>{fitAll();setReplay(value=>value+1);}}><Play size={12} fill="currentColor"/>{playing?'따라가는 중':'경로 재생'}</button>}
     <div className="logbook-map-controls"><button type="button" aria-label="모든 장소 보기" disabled={!located.length || !ready} onClick={fitAll}><LocateFixed size={16}/></button><button type="button" aria-label="지도 확대" disabled={!ready} onClick={() => mapRef.current?.zoomIn()}><Plus size={18}/></button><button type="button" aria-label="지도 축소" disabled={!ready} onClick={() => mapRef.current?.zoomOut()}><Minus size={18}/></button></div>
     {failed && <button type="button" className="logbook-map-retry" onClick={() => setRevision(v => v + 1)}>지도를 다시 연결</button>}
-    {active ? <div className="logbook-map-focus"><button type="button" onClick={() => onOpen(active)} aria-label={`${active.title} 로그 열기`}><span><strong>{active.title}</strong><small>{active.addressShort || active.loc}</small><time>로그 추가 · {active.date}{route?` · ${logTime(active)}`:''}</time></span><ArrowUpRight size={20}/></button>{onCoordinates&&!isGeoPoint(active.coordinates) && <button type="button" className="logbook-map-resolve" disabled={resolving} onClick={() => void resolve()}>{resolving ? '연결 중…' : '위치 연결'}</button>}</div> : <p className="logbook-map-empty">장소가 연결된 로그가 없어요.</p>}
+    {active ? <div className="logbook-map-focus"><button type="button" onClick={() => onOpen(active)} aria-label={`${active.title} 로그 열기`}><span><strong>{active.title}</strong><small>{active.addressShort || active.loc}</small><time>{active.occurredAt!=null?'일어난 날':'로그 추가'} · {experienceDate(active)}{route?` · ${logTime(active)}`:''}</time></span><ArrowUpRight size={20}/></button>{onCoordinates&&!isGeoPoint(active.coordinates) && <button type="button" className="logbook-map-resolve" disabled={resolving} onClick={() => void resolve()}>{resolving ? '연결 중…' : '위치 연결'}</button>}</div> : <p className="logbook-map-empty">장소가 연결된 로그가 없어요.</p>}
     {resolveError && <p className="logbook-map-error" role="alert">{resolveError}</p>}
   </div>;
 }

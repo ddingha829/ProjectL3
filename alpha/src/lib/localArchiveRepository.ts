@@ -21,6 +21,8 @@ export interface ArchiveOperation {
   id: string;
   method: 'POST' | 'PATCH' | 'DELETE';
   item?: ArchiveItem;
+  /** Restore must never replace a newer copy already saved by another device. */
+  appendOnly?: boolean;
   revision: number;
   attempts: number;
   state: 'pending' | 'failed';
@@ -284,6 +286,25 @@ export class LocalArchiveRepository {
     }));
     void this.flush();
   }
+  /** One durable local transaction; replay normal logs before their groups. Never overwrite an existing ID. */
+  async restoreBatch(items:ArchiveItem[],expectedOwner:string):Promise<{added:number;skipped:number}> {
+    if(this.resetting)throw new Error('로그 초기화가 끝난 뒤 복원해 주세요.');
+    await this.initializeLocal();let added=0,skipped=0;
+    await this.mutate(current=>{
+      if(!expectedOwner||current.ownerId!==expectedOwner)throw new Error('계정이 변경됐어요. 백업 파일을 다시 선택해 주세요.');
+      const present=new Set(current.archives.map(item=>item.id)),normal=new Set(current.archives.filter(item=>item.cat!=='GROUP').map(item=>item.id));
+      const incoming:ArchiveItem[]=[];
+      for(const source of [...items.filter(item=>item.cat!=='GROUP'),...items.filter(item=>item.cat==='GROUP')]){
+        if(present.has(source.id)){skipped++;continue;}
+        if(!uuid.test(source.id)||source.cat==='GROUP'&&(!source.memberIds?.length||source.memberIds.some(id=>!normal.has(id))))throw new Error('복원할 그룹의 로그를 확인해 주세요.');
+        const item={...source,...(source.cardAppearance?{cardAppearance:cloneCardAppearance(source.cardAppearance)}:{})};incoming.push(item);present.add(item.id);if(item.cat!=='GROUP')normal.add(item.id);added++;
+      }
+      const archives=this.normalizeChronologicalNumbers([...current.archives,...incoming]);
+      const operations:ArchiveOperation[]=incoming.map(item=>({id:item.id,item:archives.find(row=>row.id===item.id)!,method:'POST',appendOnly:true,revision:++this.revision,attempts:0,state:'pending'}));
+      return {...current,archives,outbox:[...current.outbox,...operations]};
+    });
+    this.error=null;this.publish();void this.flush();return {added,skipped};
+  }
   async setArchives(update: ArchiveItem[] | ((current: ArchiveItem[]) => ArchiveItem[])): Promise<void> {
     await this.initializeLocal();
     await this.mutate(current => ({ ...current, archives: typeof update === 'function' ? update(current.archives) : update }));
@@ -364,7 +385,7 @@ export class LocalArchiveRepository {
         try {
           const response = await this.transport(operation.method === 'DELETE' ? `/api/logs?id=${encodeURIComponent(operation.id)}&expectedDeviceId=${encodeURIComponent(ownerId || '')}` : '/api/logs', {
             method: operation.method, headers: { 'Content-Type': 'application/json' },
-            ...(operation.item ? { body: JSON.stringify({ ...operation.item, expectedDeviceId: ownerId }) } : {}),
+            ...(operation.item ? { body: JSON.stringify({ ...operation.item, expectedDeviceId: ownerId, ...(operation.appendOnly?{appendOnly:true}:{}) }) } : {}),
           });
           const data = await response.json().catch(() => ({}));
           if (epoch !== this.sessionEpoch || ownerId !== this.state.ownerId) return;

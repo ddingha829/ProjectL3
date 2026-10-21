@@ -233,7 +233,7 @@ export const supabaseStore: L2Store = {
     }
   },
 
-  async saveArchive(ownerId, item) {
+  async saveArchive(ownerId, item, insertOnly = false) {
     try {
       await this.ensureProfile(ownerId);
       const existing = must(
@@ -245,6 +245,7 @@ export const supabaseStore: L2Store = {
       ) as { owner_id: string; data: ArchiveItem } | null;
 
       if (existing && existing.owner_id !== ownerId) return null;
+      if (existing && insertOnly) return { ...existing.data, id: item.id };
 
       let assignedNum = existing?.data?.num || item.num;
       if (!assignedNum) {
@@ -269,15 +270,16 @@ export const supabaseStore: L2Store = {
             .eq('owner_id', ownerId)
         );
       } else {
-        must(
-          await db()
+        const inserted = await db()
             .from('l2_archives')
-            .insert({ id: item.id, owner_id: ownerId, data: saved })
-        );
+            .insert({ id: item.id, owner_id: ownerId, data: saved });
+        // A simultaneous restore may have inserted this ID after the read above.
+        if (insertOnly && inserted.error?.code === '23505') return this.getOwnedArchive(ownerId, item.id);
+        must(inserted);
       }
       return saved;
     } catch (err) {
-      if (isSchemaMissingError(err)) return fileStore.saveArchive(ownerId, item);
+      if (isSchemaMissingError(err)) return fileStore.saveArchive(ownerId, item, insertOnly);
       throw err;
     }
   },
