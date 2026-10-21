@@ -1,5 +1,10 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 캘린더 공간 정리
+
+- Calendar header now contains month selection, previous/next and an accessible range icon. Today/full-month shortcuts moved into the month picker. Removed the summary row, date instruction/footer and decorative timeline/range help text; photo day cells and chronological map behavior remain.
+- At 390×844 in a five-week month, the calendar shrank 399→317px (-20.5%) and the map grew 284→366px (+28.9%). Six-week months and 320/768px stacked layouts also gain space; desktop/landscape retains the existing side-by-side layout. `test:calendar` covers moved shortcuts, range/date navigation, responsive themes and route animation in Chrome/real Playwright WebKit with API fixtures.
+
 ## 2026-10-21 카드 입체감 강화
 
 - Interactive card previews now idle through -10° to +14° yaw, with a 24° tap turn/rebound, stronger mouse tilt and a slow surface sheen. Six theme-colored edge slices at canonical 1–6px depth give the front a physical edge/backing. These are decorative preview siblings of the capture node; no editable back face or full flip was added.
