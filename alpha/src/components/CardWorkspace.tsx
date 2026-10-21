@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
-import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Crop } from 'lucide-react';
+import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, ChevronUp, Crop } from 'lucide-react';
 import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
 import { PRESET_SLOTS, INITIAL_SKINS } from '@/data/initialData';
 import { isLogGroup } from '@/lib/logGroups';
@@ -126,7 +126,7 @@ export default function CardWorkspace(p: Props) {
       )}
 
       <button type="button" className="record-editor-handle" aria-label={editorOpen?'카드 수정 메뉴 접기':'카드 수정 메뉴 열기'} aria-expanded={editorOpen} aria-controls="record-design-panel" onClick={()=>setEditorOpen(value=>!value)}>
-        <span className="record-editor-arrows" aria-hidden="true">{[0,1,2].map(index=>editorOpen?<ChevronDown key={index} size={25} strokeWidth={2.5}/>:<ChevronUp key={index} size={25} strokeWidth={2.5}/>)}</span>
+        <span className="record-editor-arrows" aria-hidden="true">{[0,1,2].map(index=><ChevronUp key={index} size={25} strokeWidth={2.5}/>)}</span>
       </button>
       <div className="record-edit-drawer">
       <div id="record-design-panel" className="record-design-tools" data-guide="card-style">

@@ -1,5 +1,9 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 편집 중 화살표 숨김
+
+- Mobile card editor hides the entire arrow handle while editing, reclaiming its 44px row for the preview. The upward entry hint remains in viewing mode. Tapping the card toggles back to the large preview; the card still supports Enter/Space and vertical gestures. Desktop split layout is unchanged. Native touch, keyboard, guide and export checks use `test:oct20-browser` in Chrome/real Playwright WebKit.
+
 ## 2026-10-21 카드 편집 빠른 선택 제거
 
 - Removed the recent/quick preset thumbnail row and its unused owner-history hook/prop/styles. Full PresetLibrary selection and previous/next arrows remain; first-visit guide now highlights that selector. Existing stored preferences/logs are unchanged.

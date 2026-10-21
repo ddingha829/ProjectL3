@@ -369,7 +369,7 @@ html.light .record-card-actions .record-card-save.is-dirty {
 html[data-motion=off] .record-editor-arrows svg{animation:none;opacity:.65}
 @media(prefers-reduced-motion:reduce){html:not([data-motion=on]) .record-editor-arrows svg{animation:none;opacity:.65}}
 .record-card.is-viewing-card .record-edit-drawer{display:none}
-.record-card.is-editing-card .record-editor-handle{min-height:44px;padding:0}.record-card.is-editing-card .record-editor-arrows svg{animation:none;opacity:.55}
+.record-card.is-editing-card .record-editor-handle{display:none}
 .record-card.is-editing-card .record-design-tools,.record-card.is-editing-card .record-card-actions{flex-shrink:0;animation:record-drawer-in 260ms cubic-bezier(.2,.8,.2,1) both}
 .record-card .fit-card-artwork{transition:width 280ms cubic-bezier(.2,.8,.2,1)}
 @keyframes record-drawer-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
