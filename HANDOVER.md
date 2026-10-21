@@ -1,5 +1,10 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 카드 편집 빠른 선택 제거
+
+- Removed the recent/quick preset thumbnail row and its unused owner-history hook/prop/styles. Full PresetLibrary selection and previous/next arrows remain; first-visit guide now highlights that selector. Existing stored preferences/logs are unchanged.
+- At 390×844, the editing drawer shrank 356→253px, freeing 103px for the card stage. With motion disabled for consistent measurement, the 9:16 preview grew 236→338px (+43%); square preview grew 236→314px. Card touch/swipe/keyboard, responsive split layout, guide and PNG export are checked in Chrome/real Playwright WebKit; library selection is covered by `test:calendar`.
+
 ## 2026-10-21 캘린더 공간 정리
 
 - Calendar header now contains month selection, previous/next and an accessible range icon. Today/full-month shortcuts moved into the month picker. Removed the summary row, date instruction/footer and decorative timeline/range help text; photo day cells and chronological map behavior remain.
