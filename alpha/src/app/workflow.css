@@ -902,3 +902,5 @@ html[data-standalone="true"] .test-studio-preview {
 .settings-font-row .settings-segmented button{min-height:40px;padding:0 8px;white-space:nowrap}
 .settings-font-row .settings-handwriting-choice{font-family:"Gaegu","Sebang Gothic",sans-serif;font-size:18px}
 .settings-font-preview{margin:0;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--fg);font-size:18px;line-height:1.5;overflow-wrap:anywhere}
+
+.settings-theme-row{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}.settings-theme-row .settings-segmented{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.settings-theme-row .settings-segmented button{min-height:44px;padding:0 8px;white-space:nowrap}

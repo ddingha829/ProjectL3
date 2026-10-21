@@ -17,6 +17,7 @@ import { fallbackSkinId, visibleSkins } from '@/lib/skinLibrary';
 import { useArchiveRepository } from '@/hooks/useArchiveRepository';
 import { usePresetPreferences } from '@/hooks/usePresetPreferences';
 import { useMotionPreference } from '@/hooks/useMotionPreference';
+import { useThemePreference } from '@/hooks/useThemePreference';
 import { useFirstVisitGuides, type GuideScreen } from '@/hooks/useFirstVisitGuides';
 import FirstVisitGuide from '@/components/FirstVisitGuide';
 import QuickLogComposer, { type LogDraft } from '@/components/QuickLogComposer';
@@ -46,7 +47,8 @@ export default function L2TestApp(){
   const repository=useArchiveRepository(),preferences=usePresetPreferences(repository.serverSnapshot),archives=repository.archives;
   const { motion, changeMotion } = useMotionPreference();
   const pwa = usePwaInstall();
-  const [tab,setTab]=useState<Tab>('log'),[light,setLight]=useState(false),[settings,setSettings]=useState(false);
+  const { theme, changeTheme } = useThemePreference();
+  const [tab,setTab]=useState<Tab>('log'),[settings,setSettings]=useState(false);
   const [listDetailsOn,setListDetailsOn]=useState(true),[autoPlaceLinkOn,setAutoPlaceLinkOn]=useState(true);
   const [calendarView,setCalendarView]=useState(initialCalendarView);
   const cardOrigin=useRef<'archive'|'calendar'>('archive');
@@ -78,14 +80,12 @@ export default function L2TestApp(){
     else {setSettings(true);notify('구글 로그인을 완료하지 못했어요. 다시 시도해 주세요.',undefined,undefined,'error');}
   },[notify]);
   useEffect(()=>{
-    try{setLight(localStorage.getItem('l2_test_theme')==='paper');setFont(normalizeAppFont(localStorage.getItem('l2_font_family')));}catch{}
+    try{setFont(normalizeAppFont(localStorage.getItem('l2_font_family')));}catch{}
     try{setListDetailsOn(localStorage.getItem(LIST_DETAILS_KEY)!=='off');}catch{}
     try{setAutoPlaceLinkOn(localStorage.getItem(AUTO_PLACE_LINK_KEY)!=='off');}catch{}
     try{const raw=localStorage.getItem(INBOX_STORAGE_KEY);if(raw)setInboxPlaces(JSON.parse(raw));}catch{}
   },[]);
-  useEffect(()=>{document.documentElement.classList.toggle('light',light);},[light]);
   const changeFont=(value:AppFont)=>{if(value===font)return;exportFile.current=null;setFont(value);document.documentElement.dataset.font=value;try{localStorage.setItem('l2_font_family',value);}catch{}};
-  const changeTheme=(value:boolean)=>{setLight(value);try{localStorage.setItem('l2_test_theme',value?'paper':'dark');}catch{}};
   const changeListDetails=(value:boolean)=>{setListDetailsOn(value);try{localStorage.setItem(LIST_DETAILS_KEY,value?'on':'off');}catch{}};
   const changeAutoPlaceLink=(value:boolean)=>{setAutoPlaceLinkOn(value);try{localStorage.setItem(AUTO_PLACE_LINK_KEY,value?'on':'off');}catch{}};
 
@@ -421,7 +421,7 @@ export default function L2TestApp(){
       </main>
     </div>
     <AccessibleDialog open={Boolean(editingItem)} onClose={()=>setEditingId(null)} title={editingItem&&isLogGroup(editingItem)?'그룹 수정':'내용 수정'}>{editingItem&&<div className="record-editor">{isLogGroup(editingItem)?<GroupEditor key={editingItem.id} item={editingItem} archives={archives} onSave={saveGroup}/>:<QuickLogComposer key={editingItem.id} editingItem={editingItem} onSave={saveLog} onCancelEdit={()=>setEditingId(null)} isReady={repository.ready} recordCount={archives.length} inboxPlaces={inboxPlaces} onRemoveInboxPlace={(id:string)=>updateInbox(prev=>prev.filter(p=>p.id!==id))} autoPlaceLinkOn={autoPlaceLinkOn}/>}<button type="button" className="test-text-button danger" onClick={()=>void remove(editingItem).catch(()=>{})}>로그 삭제</button></div>}</AccessibleDialog>
-    {settings&&<SettingsDialog open font={font} onFont={changeFont} beforeLogin={async()=>{await repository.prepareForLogin();await preferences.prepareForLogin();}} onClose={()=>setSettings(false)} light={light} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setPendingPhoto(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
+    {settings&&<SettingsDialog open font={font} onFont={changeFont} beforeLogin={async()=>{await repository.prepareForLogin();await preferences.prepareForLogin();}} onClose={()=>setSettings(false)} theme={theme} onTheme={changeTheme} motion={motion} onMotion={changeMotion} authorName={preferences.authorName} onAuthor={name=>{try{preferences.update({authorName:name});}catch{}}} listDetailsOn={listDetailsOn} onListDetailsChange={changeListDetails} autoPlaceLinkOn={autoPlaceLinkOn} onAutoPlaceLinkChange={changeAutoPlaceLink} recoveryCode={repository.serverSnapshot?.recoveryCode||''} aiUsage={repository.serverSnapshot?.aiUsage||{used:0,limit:20}} onRestore={restore} storageStatus={storageStatus} storageError={repository.error||preferences.error} onRetrySync={()=>{void repository.retrySync();void preferences.retrySync();}} onResetLogs={async()=>{await repository.resetAllLogs();setPendingAppearance(null);setPendingPhoto(null);setEditingId(null);setActiveId('');setNewId(null);setToast(null);go('archive','prev');}} archives={archives} inboxCount={inboxPlaces.length} onImportPlaces={places=>updateInbox(prev=>[...places,...prev].slice(0,200))} pwa={pwa} username={repository.serverSnapshot?.username} onReplayGuide={()=>{firstGuides.replay();setSettings(false);go('log','prev');}}/>}
     <PwaInstallGuideDialog pwa={pwa}/>
     <PwaFirstLaunchLoginPopup pwa={pwa} ready={repository.ready} username={repository.serverSnapshot?.username} onOpenSettings={()=>setSettings(true)}/>
     {repository.ready&&preferences.ready&&firstGuides.enabled&&!firstGuides.seen[guideScreen]&&!editingItem&&!isSavingLog&&<FirstVisitGuide key={guideScreen} screen={guideScreen} onDismiss={dismissGuide}/>}

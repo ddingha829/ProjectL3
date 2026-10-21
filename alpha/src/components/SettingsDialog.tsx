@@ -6,6 +6,7 @@ import AccessibleDialog from './AccessibleDialog';
 import type { ArchiveItem, PlaceInboxItem } from '@/types/l2';
 import type { MotionPreference } from '@/lib/motion';
 import type { AppFont } from '@/lib/fontPreference';
+import type { ThemePreference } from '@/lib/themePreference';
 import { buildGoogleMapsCsv, buildNotionMarkdown, parseGoogleTakeoutPlaces } from '@/lib/googleMapsParser';
 import { exportLogbookZip, type BackupProgress } from '@/lib/logBackup';
 import type { PwaState } from './PwaInstallControl';
@@ -16,8 +17,8 @@ interface Props {
   beforeLogin: () => Promise<void>;
   open: boolean;
   onClose: () => void;
-  light: boolean;
-  onTheme: (value: boolean) => void;
+  theme: ThemePreference;
+  onTheme: (value: ThemePreference) => void;
   motion: MotionPreference;
   onMotion: (value: MotionPreference) => void;
   authorName: string;
@@ -231,28 +232,13 @@ export default function SettingsDialog(p: Props) {
         <section className="settings-card">
           <span className="settings-section-title">화면 · 프로필</span>
 
-          <div className="settings-row">
+          <div className="settings-row settings-theme-row">
             <div className="settings-row-copy">
               <strong>테마 모드</strong>
-              <span>화면 배경 톤을 선택합니다</span>
+              <span>자동은 기기 설정을 따라가요 · 이 기기에 저장됩니다</span>
             </div>
             <div className="settings-segmented" role="group" aria-label="테마 선택">
-              <button
-                type="button"
-                className={!p.light ? 'active' : ''}
-                aria-pressed={!p.light}
-                onClick={() => p.onTheme(false)}
-              >
-                다크
-              </button>
-              <button
-                type="button"
-                className={p.light ? 'active' : ''}
-                aria-pressed={p.light}
-                onClick={() => p.onTheme(true)}
-              >
-                페이퍼
-              </button>
+              {([{value:'auto',label:'자동'},{value:'light',label:'라이트'},{value:'dark',label:'다크'}] as const).map(option => <button key={option.value} type="button" className={p.theme===option.value?'active':''} aria-pressed={p.theme===option.value} onClick={()=>p.onTheme(option.value)}>{option.label}</button>)}
             </div>
           </div>
 

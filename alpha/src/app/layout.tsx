@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { THEME_BOOTSTRAP_SCRIPT } from '@/lib/themePreference';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{__html: THEME_BOOTSTRAP_SCRIPT}} />
         <script dangerouslySetInnerHTML={{__html: "try{var f=localStorage.getItem('l2_font_family');document.documentElement.dataset.font=f==='pretendard'||f==='gaegu'?f:'sebang'}catch{}"}} />
         <link rel="preload" href="/fonts/sebang-gothic-regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/sebang-gothic-bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />

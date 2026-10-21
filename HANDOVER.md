@@ -1,5 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 시스템 테마 연동
+
+- Settings → 테마 모드 now offers 자동 / 라이트 / 다크. New/unset/invalid preferences follow prefers-color-scheme; explicit legacy paper/dark choices remain light/dark. Preference stays device-local under the existing l2_test_theme key and synchronizes across same-origin tabs.
+- A pre-hydration head script sets the initial html.light/data-theme/color-scheme. useThemePreference observes OS changes only through the chosen mode, cleans up listeners and updates the browser theme-color. Current map CSS recolors live without remounting; preset/card appearance data is not changed.
+- `test:theme` passes in Chrome and real Playwright WebKit: pre-hydration light/dark/legacy/storage-unavailable cases, live OS switches, manual overrides/reload persistence, three 44px controls at 320–1280px, cross-tab/reset and live calendar map changes. APIs are fixture-only; no live account writes.
+
 ## 2026-10-21 편집 중 화살표 숨김
 
 - Mobile card editor hides the entire arrow handle while editing, reclaiming its 44px row for the preview. The upward entry hint remains in viewing mode. Tapping the card toggles back to the large preview; the card still supports Enter/Space and vertical gestures. Desktop split layout is unchanged. Native touch, keyboard, guide and export checks use `test:oct20-browser` in Chrome/real Playwright WebKit.
