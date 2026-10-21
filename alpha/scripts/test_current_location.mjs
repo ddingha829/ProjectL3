@@ -22,7 +22,7 @@ await context.addInitScript(()=>{
 });
 await context.route('**/*',async route=>{const request=route.request(),url=new URL(request.url());if(/\.tile\.openstreetmap\.org$/.test(url.hostname))return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+Zq6xAAAAAElFTkSuQmCC','base64')});if(!url.pathname.startsWith('/api/'))return route.continue();requests.push(url.pathname);let data={...prefs,archives:records};if(url.pathname==='/api/logs'&&['POST','PATCH'].includes(request.method())){const item={...records.find(item=>item.id===JSON.parse(request.postData()).id),...JSON.parse(request.postData())};records=[item,...records.filter(row=>row.id!==item.id)];data={item,archives:records};}if(url.pathname==='/api/places/search')data={results:[manualPlace]};return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});});
 const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
-const open=async()=>{await page.locator('.quick-actions button').nth(1).click();await page.getByRole('button',{name:'현재 위치 사용',exact:true}).waitFor();};
+const open=async()=>{await page.locator('.quick-actions button').nth(2).click();await page.getByRole('button',{name:'현재 위치 사용',exact:true}).waitFor();};
 const dialog=()=>page.getByRole('dialog',{name:'장소·작품',exact:true});
 const locate=()=>page.getByRole('button',{name:'현재 위치 사용',exact:true}).click();
 const lastSuccess=async(lat=38,lng=128,accuracy=50)=>page.evaluate(({lat,lng,accuracy})=>window.__geoPending.at(-1).success({coords:{latitude:lat,longitude:lng,accuracy}}),{lat,lng,accuracy});

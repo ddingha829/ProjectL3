@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Mic, Square, X } from 'lucide-react';
 import { useSpeechInput, SPEECH_FALLBACK } from '@/hooks/useSpeechInput';
 import './VoiceLogInput.css';
 
-export default function VoiceLogInput({ blocked, full, onText, onActiveChange }: {
+export default function VoiceLogInput({ blocked, full, onText, onActiveChange, leadingAction }: {
+  leadingAction?: ReactNode;
   blocked: boolean;
   full: boolean;
   onText: (text: string) => void;
@@ -18,8 +19,9 @@ export default function VoiceLogInput({ blocked, full, onText, onActiveChange }:
   const label = speech.phase === 'starting' ? '마이크 연결 중 · 중지' : speech.phase === 'stopping' ? '음성 입력 마치는 중' : speech.active ? '음성 입력 완료' : '음성 입력';
   return <div ref={scope} className="voice-log-input" data-active={speech.active} data-no-swipe>
     <div className="voice-log-toolbar">
+      {leadingAction}
       <span id={`${id}-status`} role="status" aria-live="polite">{speech.active ? speech.phase === 'starting' ? '마이크를 연결하고 있어요' : speech.phase === 'stopping' ? '마지막 문구를 반영하고 있어요' : '듣고 있어요 · 한국어' : ''}</span>
-      <button type="button" className="quick-control voice-log-button" title={label} aria-label={label} aria-pressed={speech.active} aria-describedby={`${id}-help`} disabled={speech.phase === 'stopping' || (!speech.active && (blocked || full))} onClick={speech.active ? speech.stop : speech.start}>
+      <button type="button" className="quick-control input-tool-button voice-log-button" title={label} aria-label={label} aria-pressed={speech.active} aria-describedby={`${id}-help`} disabled={speech.phase === 'stopping' || (!speech.active && (blocked || full))} onClick={speech.active ? speech.stop : speech.start}>
         {speech.active ? <Square size={15} fill="currentColor" aria-hidden="true"/> : <Mic size={22} strokeWidth={1.7} aria-hidden="true"/>}
       </button>
     </div>

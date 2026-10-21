@@ -27,7 +27,7 @@ html.light .quick-input-surface::before{opacity:.28}html.light .quick-input-surf
 .quick-smart-chip { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 12px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,var(--surface)); color:var(--fg); font-size:12px; font-weight:600; max-width:100%; }
 .quick-smart-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .quick-smart-chip svg { color:var(--accent); flex-shrink:0; }
-.quick-actions { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 8px; margin-top: auto; padding-top: 12px; }
+.quick-actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-top: auto; padding-top: 12px; }
 .quick-action { min-width: 0; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--fg) 8%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); color: color-mix(in srgb, var(--fg) 92%, transparent); font-size: 13px; font-weight: 600; white-space: nowrap; transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease; }
 .quick-action svg { flex-shrink: 0; color: color-mix(in srgb, var(--fg) 84%, transparent); }
 .quick-action:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 14%, transparent); border-color: color-mix(in srgb, var(--fg) 28%, transparent); }
@@ -120,15 +120,15 @@ html.light .quick-save-button:not(:disabled) { background: #111115; color: #ffff
 
 .quick-composer-footer{display:grid;gap:12px;flex:0 0 auto;min-width:0}.quick-composer-footer .quick-actions{margin:0;padding-top:0}.quick-composer-footer .quick-save{margin:0}.quick-composer-footer .quick-action{min-height:48px}
 @media(max-width:640px){
- html[data-keyboard=open] .quick-composer-footer{position:relative;display:grid;grid-template-columns:144px minmax(0,1fr);gap:8px;align-items:end;flex-shrink:0;background:var(--bg);padding-top:4px;z-index:6}
- html[data-keyboard=open] .quick-composer-footer .quick-actions{grid-template-columns:repeat(3,44px);gap:6px!important;padding:0!important;margin:0!important}
+ html[data-keyboard=open] .quick-composer-footer{position:relative;display:grid;grid-template-columns:194px minmax(0,1fr);gap:8px;align-items:end;flex-shrink:0;background:var(--bg);padding-top:4px;z-index:6}
+ html[data-keyboard=open] .quick-composer-footer .quick-actions{grid-template-columns:repeat(4,44px);gap:6px!important;padding:0!important;margin:0!important}
  html[data-keyboard=open] .quick-composer-footer .quick-action{width:44px!important;height:44px;min-height:44px!important;padding:0!important;gap:0}
  html[data-keyboard=open] .quick-composer-footer .quick-action>span{display:none}
  html[data-keyboard=open] .quick-composer-footer .quick-action>svg{width:19px;height:19px}
  html[data-keyboard=open] .quick-composer-footer .quick-save-button{width:100%;min-width:0;min-height:44px!important;padding:8px!important;font-size:13px!important;border-radius:13px}
  html[data-keyboard=open] .quick-composer-footer .quick-save>p[role=alert]{position:absolute;bottom:100%;left:0;right:0;margin-bottom:5px;padding:8px;background:var(--surface);font-size:12px}
- html[data-keyboard=open] .quick-composer .voice-log-toolbar{min-height:36px}.quick-composer-footer button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
- html[data-keyboard=open] .quick-composer .voice-log-button{width:36px;min-height:36px}
+ html[data-keyboard=open] .quick-composer .voice-log-toolbar{min-height:44px}.quick-composer-footer button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+ html[data-keyboard=open] .quick-composer .input-tool-button{width:44px;min-height:44px}
  html[data-keyboard=open] .quick-dialog-panel:has(.record-editor .quick-composer){height:calc(var(--vvh,100dvh) - 24px);max-height:calc(var(--vvh,100dvh) - 24px);display:flex;flex-direction:column;padding:14px}
  html[data-keyboard=open] .quick-dialog-panel:has(.record-editor) .quick-dialog-header{margin-bottom:8px;flex-shrink:0}
  html[data-keyboard=open] .record-editor,html[data-keyboard=open] .record-editor :is(.quick-composer,.quick-form,.quick-fields,.quick-input-surface,.photo-memo,.photo-memo-panel){display:flex;flex-direction:column;flex:1;min-height:0}
@@ -142,3 +142,5 @@ html.light .quick-save-button:not(:disabled) { background: #111115; color: #ffff
 }
 
 @media(max-width:640px){html[data-keyboard=open] .test-shell.is-composing .quick-composer-footer .quick-save-button{min-height:44px!important;height:44px!important}}
+
+@media(max-width:640px){html:not([data-keyboard=open]) .quick-composer-footer .quick-action{flex-direction:column;gap:4px;padding:8px 3px;font-size:12px}html:not([data-keyboard=open]) .quick-composer-footer .quick-action>span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}}

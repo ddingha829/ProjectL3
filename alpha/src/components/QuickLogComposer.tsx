@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import dynamic from 'next/dynamic';
-import { Camera, MapPin, SlidersHorizontal, Utensils, Clapperboard, Shapes, Inbox, Star, LocateFixed, LoaderCircle } from 'lucide-react';
+import { Camera, BookOpen, MapPin, SlidersHorizontal, Utensils, Clapperboard, Shapes, Inbox, Star, LocateFixed, LoaderCircle } from 'lucide-react';
 import type { ArchiveCategory, ArchiveItem, GeoPoint, MapApiPlace, PlaceInboxItem } from '@/types/l2';
 import { ARCHIVE_CATEGORIES, getArchiveCategory } from '@/lib/archiveCategories';
 import { useLogDraft } from '@/hooks/useLogDraft';
@@ -123,7 +123,7 @@ export default function QuickLogComposer({
   const storageKey = `l2:quick-log:v1:${editingItem?.id || 'new'}`;
   const { draft: storedDraft, setDraft, isRestored, restored, error: draftError, clearDraft } = useLogDraft(storageKey, initialDraft);
   const [manualCategory, setManualCategory] = useState(Boolean(editingItem));
-  const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | 'photo' | null>(null);
+  const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | 'photo' | 'movie' | 'book' | null>(null);
   const { locating, locationMessage, locationError, requestLocation, cancelLocation } = useCurrentLocation(dialog === 'place');
   const [pickedLocation,setPickedLocation]=useState<GeoPoint|null>(null),[locationName,setLocationName]=useState('');
   useEffect(()=>{if(dialog!=='place'){setPickedLocation(null);setLocationName('');}},[dialog]);
@@ -484,7 +484,7 @@ export default function QuickLogComposer({
             <PhotoMemoCanvas id={`${id}-body`} body={draft.body} img={draft.img} cropX={draft.cropX} cropY={draft.cropY} cropZoom={draft.cropZoom} photoFit={draft.photoFit} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} onCrop={crop=>setDraft(current=>({...current,...crop}))} cropOpen={cropOpen} disabled={disabled} onBody={(body) => update('body', body)} onToggleCrop={() => setCropOpen((current) => !current)} onRemovePhoto={() => { photoToken.current += 1; setPhotoBusy(false); update('img', ''); setCropOpen(false); }} />
             {draft.img && cropOpen && <><p className="photo-adjust-hint">사진을 드래그해 위치를 옮길 수 있어요.</p><PhotoCropControls value={photoCrop(draft)} defaultFit={editingItem?.cardAppearance?.slot.layout==='ticket'?'contain':'cover'} disabled={disabled} positions onChange={crop=>setDraft(current=>({...current,...crop}))}/></>}
 
-            <VoiceLogInput blocked={disabled || !isReady || photoBusy || Boolean(dialog) || cropOpen} full={draft.body.length >= 5000} onActiveChange={setVoiceActive} onText={text => {
+            <VoiceLogInput leadingAction={<button type="button" onClick={() => setDialog('photo')} disabled={disabled || !isReady || photoBusy} aria-busy={photoBusy} aria-label={draft.img ? '사진 바꾸기' : '사진 첨부'} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className="quick-control input-tool-button quick-camera-button">{photoBusy ? <LoaderCircle size={22} className="preset-spinner" aria-hidden="true"/> : <Camera size={22} strokeWidth={1.7} aria-hidden="true"/>}</button>} blocked={disabled || !isReady || photoBusy || Boolean(dialog) || cropOpen} full={draft.body.length >= 5000} onActiveChange={setVoiceActive} onText={text => {
               setSpokenText(current => (current + ' ' + text).trim().slice(0, 600));
               setDraft(current => ({ ...current, body: (current.body + (current.body && !/\s$/.test(current.body) ? ' ' : '') + text).slice(0, 5000) }));
               setSubmitError(''); setSaved(false);
@@ -496,7 +496,8 @@ export default function QuickLogComposer({
 
         <div className="quick-composer-footer">
             <div className="quick-actions" role="group" aria-label="기록 첨부">
-              <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} aria-label={draft.img ? '사진 바꾸기' : '사진 첨부'} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
+              <button type="button" onClick={() => setDialog('movie')} disabled={disabled || photoBusy} aria-label="영화 및 드라마 검색" className={`quick-control quick-action quick-movie-button ${draft.media?.type === 'movie' || draft.media?.type === 'tv' ? 'selected' : ''}`}><Clapperboard size={17} aria-hidden="true"/><span>영화·드라마</span></button>
+              <button type="button" onClick={() => setDialog('book')} disabled={disabled || photoBusy} aria-label="책 검색" className={`quick-control quick-action quick-book-button ${draft.media?.type === 'book' ? 'selected' : ''}`}><BookOpen size={17} aria-hidden="true"/><span>책</span></button>
               <input ref={fileRef} type="file" accept="image/*" multiple={false} tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={event=>selectPhoto(event.currentTarget)} />
               <input ref={cameraRef} type="file" accept="image/*" multiple={false} capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={event=>selectPhoto(event.currentTarget)} />
               <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} aria-label={draft.place?`장소·작품 변경: ${draft.place.name}`:'장소·작품 선택'} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
@@ -513,7 +514,7 @@ export default function QuickLogComposer({
         </div>
       </form>
 
-      <PhotoPickerDialog open={dialog==='photo'} onClose={()=>setDialog(null)} selectionError={photoError} onAlbum={()=>openPhotoPicker(fileRef.current)} onCamera={()=>openPhotoPicker(cameraRef.current)} onMedia={item=>{
+      <PhotoPickerDialog key={dialog==='movie'?'movie':dialog==='book'?'book':'photo'} mode={dialog==='movie'?'movie':dialog==='book'?'book':'photo'} open={dialog==='photo'||dialog==='movie'||dialog==='book'} onClose={()=>setDialog(null)} selectionError={photoError} onAlbum={()=>openPhotoPicker(fileRef.current)} onCamera={()=>openPhotoPicker(cameraRef.current)} onMedia={item=>{
         photoToken.current += 1;
         const book=item.type==='book';
         const reference = `[${book?'책':'TMDB'} 참고] ${item.title}${book&&item.authors?.length?` · ${item.authors.slice(0,2).join(' · ')}`:item.rating>0?` · 평점 ${item.rating.toFixed(1)}/10`:''}${item.overview?`\n${item.overview}`:''}`;

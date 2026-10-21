@@ -1,5 +1,12 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 작성 화면 카메라 · 작품 바로가기
+
+- Writing and existing-log content-edit surfaces now have matching translucent circular camera/microphone controls at bottom left/right. The camera opens a photo-only album/capture chooser; native single-file inputs and local WebP compression (≤1080px, ≤300KB) remain in use.
+- Footer photo entry is replaced by direct `영화·드라마` and `책` searches, followed by place/details. Selecting a work retains manually typed titles, attaches one poster/cover and a short source-labelled reference. Source dialogs remount independently and abort unfinished selection on close.
+- Four responsive footer actions fit narrow phones; keyboard mode keeps 44px controls and save together. Full replay guides now separately highlight camera/movie/book (eight log steps); first-visit intro stays three steps.
+- Build/typecheck and fixture-only Chrome/WebKit composer checks cover responsive themes, keyboard sizing, native picker wiring, compression, media selection, stale-request cancellation and existing-log editing. Chrome voice/UX regression checks retain prior behaviors. Tests do not write live accounts or call paid providers.
+
 ## 2026-10-21 손글씨 가독성 보강
 
 - Existing Gaegu now uses its real Bold outline at every UI weight, including small body text, with the same 112% size adjustment. Existing `gaegu` device preferences stay selected. No synthetic text stroke or modified outlines.

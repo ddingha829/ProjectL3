@@ -10,9 +10,11 @@ const guides: Record<GuideScreen, GuidePage[]> = {
   log: [{ label: '첫 로그', hints: [
     { text: '제목 입력', selector: '.quick-title input' },
     { text: '내용 입력', detail: '직접 쓰거나 마이크로 말해 보세요.\n음성 입력을 마친 뒤 내용을 확인하고 저장해요.', selector: '.photo-memo-panel, .voice-log-input' },
-    { text: '사진 · 작품 표지 추가', detail: '앨범·카메라 또는 영화·드라마·책 검색으로 한 장을 담아요.', selector: '.quick-actions button:nth-of-type(1)' },
-    { text: '장소 추가', selector: '.quick-actions button:nth-of-type(2)' },
-    { text: '별점 · 일어난 날짜', detail: '실제 일어난 날짜와 시간을 정할 수 있어요.\n비워두면 저장한 시간을 사용해요.', selector: '.quick-actions button:nth-of-type(3)' },
+    { text: '사진 한 장 추가', detail: '작성 칸 왼쪽 아래 카메라를 눌러\n앨범에서 고르거나 바로 촬영해요.', selector: '.quick-camera-button' },
+    { text: '영화 · 드라마 포스터', detail: '작품을 검색해 포스터와 짧은 소개를 담아요.', selector: '.quick-movie-button' },
+    { text: '책 표지 추가', detail: '제목·저자·ISBN으로 찾아 표지와 소개를 담아요.', selector: '.quick-book-button' },
+    { text: '장소 추가', selector: '.quick-actions button:nth-of-type(3)' },
+    { text: '별점 · 일어난 날짜', detail: '실제 일어난 날짜와 시간을 정할 수 있어요.\n비워두면 저장한 시간을 사용해요.', selector: '.quick-actions button:nth-of-type(4)' },
     { text: '로그 저장하기', selector: '.quick-save-button' },
   ] }],
   archive: [

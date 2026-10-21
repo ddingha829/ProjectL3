@@ -32,6 +32,7 @@
     "test:oct20-api": "node scripts/test_oct20_api.mjs",
     "test:oct20-browser": "node scripts/test_oct20_browser.mjs",
     "test:handwriting": "node scripts/test_handwriting_font.mjs",
+    "test:composer-media": "node scripts/test_composer_media.mjs",
     "test:voice": "node scripts/test_voice_input.mjs",
     "test:calendar": "node scripts/test_log_calendar.mjs",
     "test:theme": "node scripts/test_theme.mjs",

@@ -104,7 +104,7 @@ try {
 
   await go('+ 로그'); await ready(); await fill('input[name=title]', '사진과 저녁');
   const upload = await page.$('input[type=file]'); await upload.uploadFile(path.resolve('public/images/korean.jpg'));
-  await page.waitForSelector('.photo-memo-image img'); await page.waitForFunction(() => !document.querySelector('.quick-actions button').disabled);
+  await page.waitForSelector('.photo-memo-image img'); await page.waitForFunction(() => !document.querySelector('.quick-camera-button').disabled);
   const photoBox = await page.$eval('.photo-memo', root => {
     const input = root.querySelector('textarea'), panel = root.querySelector('.photo-memo-panel');
     return { width: input.getBoundingClientRect().width, root: root.getBoundingClientRect().width, height: input.getBoundingClientRect().height, border: getComputedStyle(panel).borderWidth };
