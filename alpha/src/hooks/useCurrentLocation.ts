@@ -35,7 +35,7 @@ export function useCurrentLocation(active: boolean) {
         if (!isGeoPoint(point)) { fail(2); return; }
         pending.current = false; setLocating(false);
         const accuracy = position.coords.accuracy;
-        setMessage(`현재 위치를 추가했어요${Number.isFinite(accuracy) && accuracy >= 0 ? ` · 정확도 약 ${accuracy >= 1000 ? `${(accuracy / 1000).toFixed(1)}km` : `${Math.max(1, Math.round(accuracy))}m`}` : ''}`);
+        setMessage(`현재 위치를 확인했어요${Number.isFinite(accuracy) && accuracy >= 0 ? ` · 정확도 약 ${accuracy >= 1000 ? `${(accuracy / 1000).toFixed(1)}km` : `${Math.max(1, Math.round(accuracy))}m`}` : ''}`);
         onLocate(point);
       }, error => fail(error.code), { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
     } catch { fail(2); }

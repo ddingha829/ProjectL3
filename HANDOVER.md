@@ -1,5 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 현재 위치 확인 · 지점/이름 선택
+
+- GPS now opens a staged location picker rather than immediately changing the draft. Users move/tap the shared-theme Leaflet/OSM map, enter a place name and explicitly choose 이 위치로 적용. 검색으로/back/close discards the candidate. Existing linked coordinates have 위치·이름 수정. The applied label is stored in the existing loc field and restored when editing; log title/body remain independent.
+- A fixed center pin, tap alternative, native drag, arrow-key panning, zoom and reset support pointer/keyboard access. Map/keyboard viewport resizing preserves the chosen coordinate. No reverse geocoding or new paid API/DB field was introduced; coordinate share links use the chosen point.
+- Expanded `test:current-location` passes in Chrome and real Playwright WebKit: native touch/mouse movement, keyboard/reset, 320×568 through desktop sizing/light/dark, name/cancel/apply, draft/save/map/share and existing-log editing, plus permission/stale callback regressions. Provider calls and account data remain fixtures.
+
 ## 2026-10-21 장소 검색에서 현재 위치 첨부
 
 - Composer place picker includes 현재 위치 사용. Explicit click requests one browser getCurrentPosition (high accuracy, 10s timeout, at most 30s cached position); opening/restoring the composer never requests permission or watches position. Current coordinates are staged as a normal place with a Google Maps coordinate URL; title/body/category are preserved. Optional 지도에서 확인 link and accuracy estimate are shown.

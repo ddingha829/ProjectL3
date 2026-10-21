@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
+import dynamic from 'next/dynamic';
 import { Camera, MapPin, SlidersHorizontal, Utensils, Clapperboard, Shapes, Inbox, Star, LocateFixed, LoaderCircle } from 'lucide-react';
-import type { ArchiveCategory, ArchiveItem, MapApiPlace, PlaceInboxItem } from '@/types/l2';
+import type { ArchiveCategory, ArchiveItem, GeoPoint, MapApiPlace, PlaceInboxItem } from '@/types/l2';
 import { ARCHIVE_CATEGORIES, getArchiveCategory } from '@/lib/archiveCategories';
 import { useLogDraft } from '@/hooks/useLogDraft';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
@@ -17,7 +18,9 @@ import { compressUploadedImage as preparePhoto } from '@/lib/imageUtils';
 import { allowsMotion } from '@/lib/motion';
 import { normalizeLogMedia, type LogMedia } from '@/lib/media';
 import { voiceTitleCandidate } from '@/lib/voiceTitle';
+import { isGeoPoint } from '@/lib/mapLocations';
 import './QuickLogComposer.css';
+const LocationPickerMap=dynamic(()=>import('./LocationPickerMap'),{ssr:false,loading:()=> <div className="location-picker-map-loading" role="status">지도 불러오는 중…</div>});
 
 export interface LogDraft {
   title: string;
@@ -59,6 +62,7 @@ export function emptyLogDraft(): LogDraft {
 function draftFromItem(item: ArchiveItem | null): LogDraft {
   if (!item) return emptyLogDraft();
   const parsedScore = Number.parseFloat(item.score);
+  const customLocation = isGeoPoint(item.coordinates) && Boolean(item.loc) && !item.fullAddress && !item.addressShort;
   return {
     title: item.title || '',
     body: item.quote || '',
@@ -70,7 +74,8 @@ function draftFromItem(item: ArchiveItem | null): LogDraft {
     cropZoom:item.cropZoom??1,
     photoFit:item.photoFit,
     place: item.loc || item.addressShort || item.fullAddress || item.link ? {
-      name: item.title,
+      name: customLocation ? item.loc : item.title,
+      ...(customLocation ? {id:'current-location',source:'LOCAL' as const} : {}),
       short: item.addressShort || item.loc || '',
       fullAddress: item.fullAddress,
       loc: item.loc || '',
@@ -117,6 +122,8 @@ export default function QuickLogComposer({
   const [manualCategory, setManualCategory] = useState(Boolean(editingItem));
   const [dialog, setDialog] = useState<'place' | 'details' | 'category' | 'inbox' | 'photo' | null>(null);
   const { locating, locationMessage, locationError, requestLocation, cancelLocation } = useCurrentLocation(dialog === 'place');
+  const [pickedLocation,setPickedLocation]=useState<GeoPoint|null>(null),[locationName,setLocationName]=useState('');
+  useEffect(()=>{if(dialog!=='place'){setPickedLocation(null);setLocationName('');}},[dialog]);
   const [titleFocused, setTitleFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [placeResults, setPlaceResults] = useState<MapApiPlace[]>([]);
@@ -250,6 +257,13 @@ export default function QuickLogComposer({
     }, 300);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [dialog, searchQuery, draft.category]);
+
+  const applyLocation = () => {
+    if(!isGeoPoint(pickedLocation))return;
+    const point=pickedLocation,name=locationName.trim()||'현재 위치';
+    setDraft(current=>({...current,place:{id:'current-location',name,short:'',loc:name,fullAddress:'',category:current.category,link:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${point.lat},${point.lng}`)}`,coordinates:point,source:'LOCAL',x:50,y:50}}));
+    cancelLocation();setPickedLocation(null);setSearchQuery('');setPlaceResults([]);setSearchError('');setSubmitError('');setDialog(null);
+  };
 
   const update = <K extends keyof LogDraft>(key: K, value: LogDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -544,12 +558,17 @@ export default function QuickLogComposer({
         </div>
       </AccessibleDialog>
 
-      <AccessibleDialog open={dialog === 'place'} onClose={() => setDialog(null)} title="장소·작품" initialFocusId={placeId}>
-        <fieldset disabled={isSaving} className="space-y-7 border-0 p-0">
+      <AccessibleDialog open={dialog === 'place'} onClose={() => setDialog(null)} title={pickedLocation?'위치 선택':'장소·작품'} initialFocusId={pickedLocation?undefined:placeId}>
+        {pickedLocation?<div className="quick-location-picker">
+          <LocationPickerMap point={pickedLocation} onChange={setPickedLocation}/>
+          {locationMessage&&<p className="quick-location-accuracy" role="status">{locationMessage}</p>}
+          <label className="quick-location-name">장소 이름<input value={locationName} onChange={event=>setLocationName(event.target.value)} placeholder="예: 집, 성수 카페" maxLength={80} autoComplete="off"/></label>
+          <div className="quick-location-picker-actions"><button type="button" onClick={()=>{cancelLocation();setPickedLocation(null);setLocationName('');}}>검색으로</button><button type="button" className="primary" onClick={applyLocation}>이 위치로 적용</button></div>
+        </div>:<fieldset disabled={isSaving} className="space-y-7 border-0 p-0">
           <div>
             <label htmlFor={placeId} className="mb-2 block text-sm font-semibold">장소·작품</label>
-            {draft.place && <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-[var(--bg)] px-4 py-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{draft.place.name}</p><p className="mt-0.5 truncate text-xs text-[var(--muted)]">{draft.place.id==='current-location'?<a href={draft.place.link} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline underline-offset-2" aria-label="현재 위치 Google 지도에서 확인">지도에서 확인</a>:draft.place.short || draft.place.loc}</p></div><button type="button" onClick={() => { cancelLocation(); update('place', null); setSearchQuery(''); }} aria-label="선택한 장소·작품 제거" className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-[var(--muted)]">×</button></div>}
-            <button type="button" className="quick-current-location" disabled={disabled || locating} aria-busy={locating} onClick={()=>{requestLocation(point=>{setDraft(current=>({...current,place:{id:'current-location',name:'현재 위치',short:'',loc:'현재 위치',fullAddress:'',category:current.category,link:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${point.lat},${point.lng}`)}`,coordinates:point,source:'LOCAL',x:50,y:50}}));setSearchQuery('');setPlaceResults([]);setSearchError('');setSubmitError('');});}}>{locating?<LoaderCircle size={18} className="preset-spinner" aria-hidden="true"/>:<LocateFixed size={18} aria-hidden="true"/>}<span>{locating?'위치 확인 중…':'현재 위치 사용'}</span></button>
+            {draft.place && <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-[var(--bg)] px-4 py-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{draft.place.name}</p><p className="mt-0.5 truncate text-xs text-[var(--muted)]">{draft.place.id==='current-location'?<a href={draft.place.link} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline underline-offset-2" aria-label="현재 위치 Google 지도에서 확인">지도에서 확인</a>:draft.place.short || draft.place.loc}</p>{isGeoPoint(draft.place.coordinates)&&<button type="button" className="quick-location-edit" onClick={()=>{cancelLocation();setPickedLocation(draft.place!.coordinates!);setLocationName(draft.place!.name==='현재 위치'?'':draft.place!.name);}}>위치·이름 수정</button>}</div><button type="button" onClick={() => { cancelLocation(); update('place', null); setSearchQuery(''); }} aria-label="선택한 장소·작품 제거" className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-[var(--muted)]">×</button></div>}
+            <button type="button" className="quick-current-location" disabled={disabled || locating} aria-busy={locating} onClick={()=>requestLocation(point=>{setPickedLocation(point);setLocationName('');setSearchQuery('');setPlaceResults([]);setSearchError('');})}>{locating?<LoaderCircle size={18} className="preset-spinner" aria-hidden="true"/>:<LocateFixed size={18} aria-hidden="true"/>}<span>{locating?'위치 확인 중…':'현재 위치 사용'}</span></button>
             <p className={`quick-location-status ${locationError?'is-error':''}`} role={locationError?'alert':'status'} aria-live="polite">{locationError || locationMessage}</p>
             <input id={placeId} type="search" autoComplete="off" value={searchQuery} onChange={(event) => { cancelLocation(); setSearchQuery(event.target.value); if (draft.place) update('place', null); }} placeholder={draft.category === 'CINEMA' ? '영화 제목 검색' : '장소 이름 검색'} aria-describedby={`${id}-search-status`} className={fieldClass} />
             <p id={`${id}-search-status`} role="status" aria-live="polite" className="mt-2 text-xs leading-relaxed text-[var(--muted)]">{searching ? '검색 중…' : searchError || (searchQuery.trim().length >= 2 && placeResults.length === 0 ? '검색 결과가 없습니다.' : '')}</p>
@@ -557,7 +576,7 @@ export default function QuickLogComposer({
           </div>
 
           <button type="button" onClick={() => setDialog(null)} className="quick-control min-h-[48px] w-full rounded-2xl border border-[var(--line)] bg-[var(--fg)] px-6 py-3 text-base font-semibold text-[var(--bg)]">완료</button>
-        </fieldset>
+        </fieldset>}
       </AccessibleDialog>
 
       <AccessibleDialog open={dialog === 'details'} onClose={() => setDialog(null)} title="세부 설정" initialFocusId={scoreId}>
