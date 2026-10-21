@@ -1,17 +1,22 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Sparkles, Trash2 } from 'lucide-react';
-import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
+import type { ArchiveItem, PresetSlot, SkinTheme, CardAppearance } from '@/types/l2';
 import { CARD_LAYOUTS, getCardLayout, itemHasPhoto } from '@/lib/cardLayouts';
 import { visibleSkins } from '@/lib/skinLibrary';
-import { photoTone } from '@/lib/photoTone';
+import PresetThumbnail from './PresetThumbnail';
+import CardDetailsDialog from './CardDetailsDialog';
 import AccessibleDialog from './AccessibleDialog';
 import './StudioPanel.css';
 
 interface Props {
   slot: PresetSlot;
   skin: SkinTheme;
-  item: Pick<ArchiveItem, 'cat' | 'img' | 'hasPhoto'>;
+  item: ArchiveItem;
+  authorName?: string;
+  members?: ArchiveItem[];
+  historyControls?:ReactNode;
+  comparison?:{item:ArchiveItem;appearance:CardAppearance};
   skins: Record<string, SkinTheme>;
   disabled?: boolean;
   photoMode?: boolean;
@@ -20,14 +25,12 @@ interface Props {
   onGenerated?: (skin: SkinTheme) => void;
   onDeleteSkin?: (id: string) => void;
 }
-const elements = [{key:'showScore',label:'별점'},{key:'showProsCons',label:'요약'},{key:'showLocation',label:'장소'},{key:'showSignature',label:'서명'},{key:'showGrain',label:'질감'},{key:'showDecorations',label:'장식 문구'},{key:'showNumber',label:'로그 번호'}] as const;
-
 /** Shared tools edit their caller's draft; they never save a preset or a log. */
 export default function CardStyleControls(p: Props) {
   const [tab,setTab]=useState<'layout'|'color'>('layout');
   const [picker,setPicker]=useState<'layout'|'color'|'details'|'generate'|null>(null);
   const [prompt,setPrompt]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  const layout=getCardLayout(p.slot.layout),tone=photoTone(p.slot);
+  const layout=getCardLayout(p.slot.layout);
   const options=CARD_LAYOUTS.filter(option=>p.item.cat==='GROUP'?option.id==='curation':option.id!=='curation'&&(p.photoMode===undefined?(itemHasPhoto(p.item)||option.isNoPhoto):option.isNoPhoto!==p.photoMode));
   // A historical card may use a palette that is no longer in the library.
   const palettes=visibleSkins(p.skins), colors=Object.values(palettes);
@@ -64,12 +67,12 @@ export default function CardStyleControls(p: Props) {
         <button type="button" disabled={p.disabled||(tab==='layout'?options.length:colors.length)<2} aria-label={tab==='layout'?'다음 디자인':'다음 팔레트'} onClick={()=>step(1)}><ChevronRight size={19}/></button>
       </div>
     </div>
-    <AccessibleDialog open={picker==='layout'} onClose={()=>setPicker(null)} title="카드 디자인"><div className="preset-layout-picker">{options.map(option=><button type="button" key={option.id} aria-pressed={layout.id===option.id} onClick={()=>{change({layout:option.id});setPicker(null);}}><strong>{option.name}</strong><span>{option.sub}</span></button>)}</div></AccessibleDialog>
+    <AccessibleDialog open={picker==='layout'} onClose={()=>setPicker(null)} title="카드 디자인"><div className="preset-layout-picker visual-layout-picker">{options.map(option=><button type="button" key={option.id} aria-label={option.name} aria-pressed={layout.id===option.id} onClick={()=>{change({layout:option.id});setPicker(null);}}><PresetThumbnail lazy preset={{...p.slot,layout:option.id}} skin={p.skin} item={p.item} members={p.members} authorName={p.authorName??p.item.author??''}/><strong>{option.name}</strong><span>{option.sub}</span></button>)}</div></AccessibleDialog>
     <AccessibleDialog open={picker==='color'} onClose={()=>setPicker(null)} title="팔레트">
       {p.onGenerate&&<button type="button" className="preset-generate-link" onClick={()=>setPicker('generate')}><Sparkles size={16}/>분위기로 팔레트 만들기</button>}
-      <div className="preset-palette-picker">{colors.map(skin=><div key={skin.id} className="preset-palette-item"><button type="button" aria-pressed={skin.id===p.skin.id} onClick={()=>{change({skinId:skin.id});setPicker(null);}}><span>{[skin.bg,skin.text,skin.accent].map((color,i)=><i key={i} style={{background:color}}/>)}</span><strong>{skin.name}</strong></button>{p.onDeleteSkin&&<button type="button" className="preset-palette-del" aria-label={`${skin.name} 팔레트 삭제`} disabled={colors.length<=1} onClick={()=>p.onDeleteSkin?.(skin.id)}><Trash2 size={13}/></button>}</div>)}</div>
+      <div className="preset-palette-picker">{colors.map(skin=><div key={skin.id} className="preset-palette-item"><button type="button" aria-label={skin.name} aria-pressed={skin.id===p.skin.id} onClick={()=>{change({skinId:skin.id});setPicker(null);}}><span className="palette-sample" aria-hidden="true" style={{background:skin.bg,color:skin.text}}><i style={{background:skin.accent,color:skin.bg}}>L2.</i><b>{p.item.title.slice(0,14)||"나의 일상"}</b><small style={{color:skin.sub}}>오늘의 작은 순간</small></span><strong>{skin.name}</strong></button>{p.onDeleteSkin&&<button type="button" className="preset-palette-del" aria-label={`${skin.name} 팔레트 삭제`} disabled={colors.length<=1} onClick={()=>p.onDeleteSkin?.(skin.id)}><Trash2 size={13}/></button>}</div>)}</div>
     </AccessibleDialog>
-    <AccessibleDialog open={picker==='details'} onClose={()=>setPicker(null)} title="세부사항"><div className="preset-details"><div className="preset-ratios" role="group" aria-label="카드 비율">{(['3:4','1:1','9:16'] as const).map(ratio=><button type="button" key={ratio} disabled={!layout.supportedRatios.includes(ratio)} title={!layout.supportedRatios.includes(ratio)?'티켓은 세로 비율만 지원해요':undefined} aria-pressed={ratio===p.slot.ratio} onClick={()=>change({ratio})}>{ratio}</button>)}</div><div className="preset-toggles">{elements.filter(entry=>layout.supportedElements.includes(entry.key)).map(entry=><label key={entry.key}><input type="checkbox" name={entry.key} checked={p.slot[entry.key]!==false} onChange={event=>change({[entry.key]:event.target.checked})}/><span>{entry.label}</span></label>)}</div>{!layout.isNoPhoto&&<fieldset className="preset-photo-tones" disabled={p.disabled}><legend>사진 보정</legend>{([{key:'photoSaturation',label:'채도',min:0,max:200},{key:'photoLightness',label:'명도',min:-50,max:50},{key:'photoBrightness',label:'밝기',min:50,max:150}] as const).map(control=><label key={control.key}><span>{control.label}<output>{tone[control.key]}{control.key==='photoLightness'?'':'%'}</output></span><input type="range" aria-label={`사진 ${control.label}`} min={control.min} max={control.max} step="1" value={tone[control.key]} onChange={event=>change({[control.key]:Number(event.target.value)})}/></label>)}<button type="button" onClick={()=>change({photoSaturation:100,photoLightness:0,photoBrightness:100})}>사진 보정 초기화</button></fieldset>}</div></AccessibleDialog>
+    {picker==='details'&&<CardDetailsDialog item={p.item} slot={p.slot} skin={p.skin} authorName={p.authorName??p.item.author??''} members={p.members} historyControls={p.historyControls} comparison={p.comparison} disabled={p.disabled} onChange={patch=>change(patch)} onClose={()=>setPicker(null)}/>}
     <AccessibleDialog open={picker==='generate'} onClose={()=>{if(!busy)setPicker(null);}} title="어떤 분위기로 남길까요?"><form className="preset-generate-form" onSubmit={event=>{event.preventDefault();void generate();}}><input value={prompt} onChange={event=>setPrompt(event.target.value)} placeholder="예: 이른 아침의 미술관" maxLength={120} disabled={busy}/><button type="submit" className="test-button primary" disabled={busy||!prompt.trim()}>{busy?<><LoaderCircle size={16} className="preset-spinner"/>만드는 중…</>:'팔레트 만들기'}</button>{error&&<p role="alert">{error}</p>}</form></AccessibleDialog>
   </div>;
 }

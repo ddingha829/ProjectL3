@@ -490,17 +490,18 @@ export default function QuickLogComposer({
               setSubmitError(''); setSaved(false);
             }}/>
 
-            <div className="quick-actions" role="group" aria-label="기록 첨부">
-              <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
-              <input ref={fileRef} type="file" accept="image/*" multiple={false} tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={event=>selectPhoto(event.currentTarget)} />
-              <input ref={cameraRef} type="file" accept="image/*" multiple={false} capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={event=>selectPhoto(event.currentTarget)} />
-              <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
-              <button type="button" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.occurredAt!=null || draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
-            </div>
             {photoError && <p role="alert" className="text-sm leading-relaxed text-[var(--accent)]">{photoError}</p>}
           </div>
         </div>
 
+        <div className="quick-composer-footer">
+            <div className="quick-actions" role="group" aria-label="기록 첨부">
+              <button type="button" onClick={() => setDialog('photo')} disabled={disabled || photoBusy} aria-busy={photoBusy} aria-label={draft.img ? '사진 바꾸기' : '사진 첨부'} title={draft.img ? '사진 바꾸기' : '사진 첨부'} className={`quick-control quick-action ${draft.img ? 'selected' : ''}`}><Camera size={17} aria-hidden="true" /><span>사진</span></button>
+              <input ref={fileRef} type="file" accept="image/*" multiple={false} tabIndex={-1} hidden disabled={disabled} aria-label="기록 사진 선택" onChange={event=>selectPhoto(event.currentTarget)} />
+              <input ref={cameraRef} type="file" accept="image/*" multiple={false} capture="environment" tabIndex={-1} hidden disabled={disabled} aria-label="사진 촬영" onChange={event=>selectPhoto(event.currentTarget)} />
+              <button type="button" onClick={() => { if (!searchQuery && !draft.place && draft.title.trim()) setSearchQuery(draft.title.trim()); setDialog('place'); }} disabled={disabled} aria-label={draft.place?`장소·작품 변경: ${draft.place.name}`:'장소·작품 선택'} title={draft.place?.name || '장소·작품 선택'} className={`quick-control quick-action ${draft.place ? 'selected' : ''}`}><MapPin size={17} aria-hidden="true" /><span>{draft.place ? draft.place.name.slice(0, 8) : '장소'}</span></button>
+              <button type="button" aria-label="세부 설정" onClick={() => setDialog('details')} disabled={disabled} className={`quick-control quick-action ${draft.occurredAt!=null || draft.score !== null || draft.good || draft.bad || draft.note ? 'selected' : ''}`}><SlidersHorizontal size={16} aria-hidden="true" /><span>세부 설정</span></button>
+            </div>
         <div className="quick-save">
           {submitError && <p id={`${id}-save-error`} role="alert" className="mb-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-4 py-3 text-sm leading-relaxed text-[var(--accent)]">{submitError}</p>}
           {draftError && <p role="alert" className="mb-4 text-sm leading-relaxed text-[var(--accent)]">{draftError}</p>}
@@ -508,6 +509,7 @@ export default function QuickLogComposer({
           <div className="flex justify-end">
             <button type="submit" data-save-state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} disabled={!isReady || !isRestored || !meaningfulInput || isSaving || photoBusy || voiceActive} className="quick-control quick-save-button"><SaveFeedback state={saved ? 'saved' : isSaving ? 'saving' : 'idle'} label={editingItem ? '수정 저장' : voiceActive ? '음성 입력을 마친 뒤 저장' : '로그 저장'} /></button>
           </div>
+        </div>
         </div>
       </form>
 

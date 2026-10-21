@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
 import { Check, Share2, PencilLine, LoaderCircle, Layers, ChevronLeft, ChevronRight, ChevronUp, Crop } from 'lucide-react';
-import type { ArchiveItem, PresetSlot, SkinTheme } from '@/types/l2';
+import type { ArchiveItem, PresetSlot, SkinTheme, CardAppearance } from '@/types/l2';
 import { PRESET_SLOTS, INITIAL_SKINS } from '@/data/initialData';
 import { isLogGroup } from '@/lib/logGroups';
 import CardStage from './CardStage';
@@ -15,10 +15,17 @@ import CardStyleControls from './CardStyleControls';
 import './CardWorkspace.css';
 import PhotoAdjustDialog from './PhotoAdjustDialog';
 import {getCardLayout,itemHasPhoto} from '@/lib/cardLayouts';
-import type {PhotoCrop} from '@/lib/photoCrop';
+import {photoCrop,type PhotoCrop} from '@/lib/photoCrop';
+import type {CardDesignSnapshot} from '@/lib/designHistory';
+import {useDesignHistory} from '@/hooks/useDesignHistory';
+import DesignHistoryBar from './DesignHistoryBar';
 
 interface Props {
   item: ArchiveItem;
+  originalItem:ArchiveItem;
+  originalAppearance:CardAppearance;
+  presetAuthorName:string;
+  onRestoreDesign:(snapshot:CardDesignSnapshot)=>void;
   slot: PresetSlot;
   skin: SkinTheme;
   authorName: string;
@@ -43,6 +50,16 @@ interface Props {
 }
 
 export default function CardWorkspace(p: Props) {
+  const baselineKey=p.originalItem.id+JSON.stringify(p.originalAppearance)+JSON.stringify(photoCrop(p.originalItem))+p.originalItem.img;
+  const snapshot:CardDesignSnapshot={appearance:{slot:p.slot,skin:p.skin,authorName:p.authorName},photo:photoCrop(p.item)};
+  const history=useDesignHistory(baselineKey,snapshot,p.onRestoreDesign);
+  const [comparing,setComparing]=useState(false);
+  useEffect(()=>setComparing(false),[baselineKey]);
+  const changeStyle=(patch:Partial<PresetSlot>,dir=1)=>{
+    const next=createCardAppearance(p.item,{...p.slot,...patch},patch.skinId?allSkins:{...allSkins,[p.skin.id]:p.skin},p.authorName);
+    history.record({...snapshot,appearance:next},()=>{setComparing(false);setDirection(dir);p.onChangeStyle(patch);},Object.keys(patch).every(key=>key.startsWith('photo'))?Object.keys(patch).join(','):'');
+  };
+  const changePhoto=(crop:PhotoCrop)=>history.record({...snapshot,photo:photoCrop(crop)},()=>{setComparing(false);p.onChangePhoto(crop);});
   const [editorOpen,setEditorOpen]=useState(false);
   const [wide,setWide]=useState(false);
   const swipe=useRef<{id:number;x:number;y:number}|null>(null);
@@ -74,20 +91,21 @@ export default function CardWorkspace(p: Props) {
   const sourceIndex=presets.findIndex(preset=>preset.id===p.slot.id);
   const activeIndex=presets.findIndex(preset=>{const appearance=createCardAppearance(p.item,preset,allSkins,p.authorName);return preset.id===p.slot.id&&cardStyleKey(appearance.slot,appearance.skin)===cardStyleKey(p.slot,p.skin);});
   const customized=activeIndex<0;
-  const select = (preset:PresetSlot, dir=1) => { if(p.applying)return;setDirection(dir);p.onApplyPreset(preset); };
+  const select = (preset:PresetSlot, dir=1) => { if(p.applying)return;history.record({...snapshot,appearance:createCardAppearance(p.item,preset,allSkins,p.presetAuthorName)},()=>{setComparing(false);setDirection(dir);p.onApplyPreset(preset);}); };
   const selectPresetAt = (nextIdx: number, stepDir?: number) => {
     if (!presets.length || p.applying) return;
     const wrapped = (nextIdx + presets.length) % presets.length;
     const dir = stepDir ?? (wrapped < sourceIndex ? -1 : 1);
     select(presets[wrapped],dir);
   };
+  const historyControls=<DesignHistoryBar canUndo={history.canUndo} canRedo={history.canRedo} changed={Boolean(p.hasPendingChange)} comparing={comparing} disabled={p.applying} onUndo={history.undo} onRedo={history.redo} onCompare={()=>setComparing(value=>!value)}/>;
 
   return (
     <section className={`record-card ${editorOpen?'is-editing-card':'is-viewing-card'}`} aria-label="로그 카드">
       <div className="record-card-stage" onPointerDown={startSwipe} onPointerMove={moveSwipe} onPointerUp={()=>{swipe.current=null;}} onPointerCancel={()=>{swipe.current=null;}}>
         <FitCard
           interactive
-          onActivate={wide?undefined:()=>setEditorOpen(value=>!value)}
+          onActivate={wide?undefined:()=>{if(comparing)setComparing(false);else setEditorOpen(value=>!value);}}
           expanded={wide?undefined:editorOpen}
           ratio={p.slot.ratio}
           transition="slide"
@@ -104,6 +122,7 @@ export default function CardWorkspace(p: Props) {
             cardCaptureRef={p.captureRef}
           />
         </FitCard>
+        {comparing&&<div className="design-comparison" data-no-swipe aria-label="저장 전 카드 원본"><span className="design-comparison-label">저장 전 원본</span><FitCard ratio={p.originalAppearance.slot.ratio}><CardStage item={p.originalItem} slot={p.originalAppearance.slot} skin={p.originalAppearance.skin} authorName={p.originalAppearance.authorName} selectedItems={p.members} curationTitle={p.originalItem.title}/></FitCard></div>}
         {isLogGroup(p.item) && (
           <button
             type="button"
@@ -134,9 +153,9 @@ export default function CardWorkspace(p: Props) {
           <PresetLibrary presets={presets} activeId={customized?'':p.slot.id} currentName={customized?'개별 디자인':undefined} skins={allSkins} authorName={p.authorName} item={p.item} dirty={p.hasPendingChange} disabled={p.applying} onSelect={select}/>
           <div className="record-preset-arrows" role="group" aria-label="프리셋 이전 다음 이동"><button type="button" aria-label="이전 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?0:sourceIndex)-1,-1)}><ChevronLeft size={17}/></button><button type="button" aria-label="다음 프리셋" disabled={p.applying||presets.length<2} onClick={()=>selectPresetAt((sourceIndex<0?-1:sourceIndex)+1,1)}><ChevronRight size={17}/></button></div>
         </div>
-        <CardStyleControls slot={p.slot} skin={p.skin} item={p.item} skins={allSkins} disabled={p.applying} onChange={(patch,dir)=>{setDirection(dir||1);p.onChangeStyle(patch);}}/>
-        <div className="record-style-status"><span>{customized?'이 로그만 꾸민 디자인':'프리셋을 고르거나 이 로그만 꾸며보세요'}</span><div className="record-style-buttons">{canAdjustPhoto&&<button type="button" className="record-photo-adjust" disabled={p.applying} onClick={()=>setPhotoOpen(true)}><Crop size={13}/>사진 조정</button>}{p.hasPendingChange&&<button type="button" disabled={p.applying} onClick={p.onResetStyle}>변경 취소</button>}</div></div>
-        {photoOpen&&<PhotoAdjustDialog item={p.item} slot={p.slot} skin={p.skin} authorName={p.authorName} onApply={p.onChangePhoto} onClose={()=>setPhotoOpen(false)}/>}
+        <CardStyleControls slot={p.slot} skin={p.skin} item={p.item} authorName={p.authorName} members={p.members} historyControls={historyControls} comparison={comparing?{item:p.originalItem,appearance:p.originalAppearance}:undefined} skins={allSkins} disabled={p.applying} onChange={changeStyle}/>
+        <div className="record-style-status">{historyControls}<div className="record-style-buttons">{canAdjustPhoto&&<button type="button" className="record-photo-adjust" disabled={p.applying} onClick={()=>setPhotoOpen(true)}><Crop size={13}/>사진 조정</button>}{p.hasPendingChange&&<button type="button" disabled={p.applying} onClick={()=>history.record({appearance:p.originalAppearance,photo:photoCrop(p.originalItem)},()=>{setComparing(false);p.onResetStyle();})}>변경 취소</button>}</div></div>
+        {photoOpen&&<PhotoAdjustDialog item={p.item} slot={p.slot} skin={p.skin} authorName={p.authorName} onApply={changePhoto} onClose={()=>setPhotoOpen(false)}/>}
 
       </div>
 

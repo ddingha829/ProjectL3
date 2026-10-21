@@ -1,5 +1,15 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 UI/UX 선택 · 편집 · 작성 · 가이드 개선
+
+- All five approved UX proposals are implemented. See `alpha/DOCS/UX_POLISH_20261021.md` for behavior, limits and verification.
+- Design choices use lazy, same-content card thumbnails; palettes show actual background/title/subtext/accent combinations in three columns. Picker headers stay visible while scrolling.
+- Shared CardDetailsDialog keeps the preview visible above mobile settings or beside desktop settings. Ratio stays visible, while display/photo controls switch within one scroll region. Existing compatibility and explicit-save rules remain.
+- Card detail/Studio have bounded session Undo/Redo and preview-only original comparison, including within details. Slider gestures coalesce; new edits clear Redo; save/context change resets the baseline. Original comparison never substitutes the PNG capture node or changes saved records/presets.
+- Composer attachments and save now live outside the input surface. Phone keyboard mode uses a single 44px icon/save row with accessible names and visualViewport sizing; closing the keyboard restores labels. Content-edit sheets use the same compact footer.
+- First visits show three essential steps per screen. Settings replay switches to the retained full guides. Existing seen/installation state is compatible; no forced re-onboarding.
+- New `test:design-history` and Chrome/Playwright WebKit `test:ux-polish` cover history/privacy-safe comparison export, responsive details, emulated keyboard and intro/full replay. Existing card/guide regressions are updated. Tests use fixtures, not live account writes or paid provider calls.
+
 ## 2026-10-21 로그북 복귀 · 실제 날짜 · 백업 복원 · 공유 공개 범위
 
 - Approved proposals 1/2/3/5 are implemented. See `alpha/DOCS/CONTEXT_BACKUP_PRIVACY_20261021.md` for flows, compatibility and limits.

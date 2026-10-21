@@ -10,6 +10,8 @@
     "test:repository": "node scripts/test_repository.mjs",
     "test:context-restore": "node scripts/test_context_restore.mjs",
     "test:context-browser": "node scripts/test_context_browser.mjs",
+    "test:design-history": "node scripts/test_design_history.mjs",
+    "test:ux-polish": "node scripts/test_ux_polish.mjs",
     "test:stability": "node scripts/test_stability.mjs",
     "test:session-http": "node scripts/test_session_http.mjs",
     "test:ui": "node scripts/test_preset_workflows.mjs",

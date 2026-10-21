@@ -38,10 +38,10 @@ const guides: Record<GuideScreen, GuidePage[]> = {
   card: [{ label: '이 로그만 꾸미기', hints: [
     { text: '이 로그의 카드 미리 보기', detail: '카드가 천천히 움직이며 입체감을 보여줘요.\n모바일에서는 카드를 눌러 수정 메뉴를 열고 닫을 수 있어요.\n꾸민 디자인은 이 로그에만 적용돼요.', selector: '.record-card-stage .fit-card-artwork' },
     { text: '카드 수정 메뉴 열기', detail: '모바일에서는 카드를 누르거나 아래 화살표를 눌러 편집해요. 위로 밀어도 열려요.\n넓은 화면에서는 오른쪽 메뉴를 사용해요.', selector: '.record-editor-handle, .record-edit-drawer' },
-    { text: '프리셋을 골라 시작하기', detail: '프리셋 보관함을 열어 디자인을 골라보세요.\n옆 화살표로 하나씩 바꿔볼 수도 있어요.', selector: '.record-preset-controls' },
+    { text: '프리셋을 골라 시작하기', detail: '프리셋 보관함을 열거나 디자인 썸네일로 고르세요.\n색상·세부사항도 이 로그에만 적용돼요.', selector: '.record-preset-controls' },
     { text: '이 로그만 더 꾸미기', detail: '디자인·색상·비율·사진 채도·명도·밝기를 바꿔도\n원본 프리셋은 그대로예요.', selector: '.record-design-tools .preset-tabs' },
     { text: '내용 수정', detail: '제목·메모·사진·장소를 수정해요.', selector: '.record-card-actions button:nth-child(1)' },
-    { text: '이 카드에 변경 저장', detail: '미리 본 디자인을 로그북에 저장해요.\n변경 취소를 누르면 저장 전 모양으로 돌아가요.', selector: '.record-card-actions button:nth-child(2)' },
+    { text: '이 카드에 변경 저장', detail: '미리 본 디자인을 로그북에 저장해요.\n되돌리기로 한 단계씩, 원본 비교로 저장 전 모습을 확인해요.', selector: '.record-card-actions button:nth-child(2)' },
     { text: '공유 · 이미지 저장', detail: '위치 문구·지도 링크·서명을 고른 뒤 공유해요.\n이번 공유에만 적용되고 원본은 유지돼요.', selector: '.record-card-actions button:nth-child(3)' },
   ] }],
   studio: [
@@ -52,9 +52,9 @@ const guides: Record<GuideScreen, GuidePage[]> = {
       { text: '사진용 / 텍스트용', detail: '프리셋에 맞는 예시로 디자인해요.\n그룹용은 LIST로 고정돼요.', selector: '.preset-photo-mode' },
     ] },
     { label: '편집 · 저장', hints: [
-      { text: '디자인 / 색상 / 세부사항', detail: '화살표로 넘기거나 눌러서 고르세요.\n팔레트 만들기는 색상에, 사진 보정은 세부사항에 있어요.', selector: '.preset-tabs' },
+      { text: '디자인 / 색상 / 세부사항', detail: '디자인은 썸네일로, 색상은 글자 예시로 골라요.\n세부사항에서는 카드를 보면서 표시·사진 보정을 조절해요.', selector: '.preset-tabs' },
       { text: '새 로그의 기본 디자인', detail: '전체 또는 분류별 기본 프리셋으로 지정해요.', selector: '.preset-default' },
-      { text: '프리셋 저장', detail: '저장한 디자인은 카드 상세의\n프리셋 보관함에서 고를 수 있어요.', selector: '.preset-save' },
+      { text: '프리셋 저장', detail: '디자인·색상·세부사항을 고르고 저장해요.\n되돌리기·원본 비교로 확인하고, 새 로그 기본값도 지정할 수 있어요.', selector: '.preset-save' },
     ] },
   ],
   settings: [
@@ -70,12 +70,21 @@ const guides: Record<GuideScreen, GuidePage[]> = {
   ],
 };
 
-interface Props { screen: GuideScreen; onDismiss: () => void }
+interface Props { screen: GuideScreen; mode?:'intro'|'full'; onDismiss: () => void }
 type Box = { left: number; top: number; width: number; height: number };
 
 /** One real target per step; measurements follow the current viewport and scroll. */
-export default function FirstVisitGuide({ screen, onDismiss }: Props) {
-  const steps = guides[screen].flatMap(page => page.hints.map(hint => ({ ...hint, label: page.label })));
+export default function FirstVisitGuide({ screen, mode='intro', onDismiss }: Props) {
+  const allSteps = guides[screen].flatMap(page => page.hints.map(hint => ({ ...hint, label: page.label })));
+  const introSelectors:Record<GuideScreen,string[]>={
+    log:['.quick-title input','.photo-memo-panel, .voice-log-input','.quick-save-button'],
+    archive:['.logbook-search','.logbook-views','.logbook-group'],
+    calendar:['.calendar-days','.calendar-range-button','.calendar-map-panel'],
+    card:['.record-card-stage .fit-card-artwork','.record-preset-controls','.record-card-actions button:nth-child(2)'],
+    studio:['.preset-preview .fit-card-artwork','.preset-library','.preset-save'],
+    settings:['.modern-settings .settings-card:nth-of-type(1)','.modern-settings .settings-card:nth-of-type(2)','.settings-accordion-trigger'],
+  };
+  const steps=mode==='full'?allSteps:introSelectors[screen].map(selector=>allSteps.find(step=>step.selector===selector)!).filter(Boolean);
   const [step, setStep] = useState(0), [visible, setVisible] = useState(false);
   const [box, setBox] = useState<Box | null>(null);
   const [caption, setCaption] = useState({ left: 16, top: 120, width: 320 });

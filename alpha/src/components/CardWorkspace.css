@@ -394,3 +394,5 @@ html[data-motion=off] .record-editor-arrows svg{animation:none;opacity:.65}
 .record-style-status{line-height:1.45}
 .record-edit-drawer{max-height:calc(100dvh - 220px);overflow-y:auto;overscroll-behavior:contain}.record-edit-drawer .record-card-actions{position:sticky;bottom:0;z-index:4;background:var(--surface)}
 @media(min-width:760px){.record-edit-drawer{max-height:calc(100dvh - 130px)}}
+
+.record-style-status{flex-wrap:wrap;gap:0 6px}.record-style-status .design-history-bar>button{min-height:44px;font-size:11px;color:var(--fg)}.record-style-status .record-style-buttons{margin-left:auto;display:flex;gap:8px}.record-style-status .record-style-buttons>button{min-height:44px}.record-card-stage>.design-comparison{flex:1}.record-style-status:has(.design-compare[aria-pressed=true]){background:var(--surface-2);border-radius:12px}

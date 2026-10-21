@@ -32,7 +32,7 @@ async function makePage(existing=false){
  });
  return p;
 }
-async function button(p,text,scope='body'){for(const e of await p.$$(scope+' button'))if(await e.evaluate((el,t)=>el.getClientRects().length&&el.textContent.trim()===t,text)){await e.click();return;}throw Error('Button missing '+text);}
+async function button(p,text,scope='body'){for(const e of await p.$$(scope+' button'))if(await e.evaluate((el,t)=>el.getClientRects().length&&(el.textContent.trim()===t||el.getAttribute('aria-label')===t),text)){await e.click();return;}throw Error('Button missing '+text);}
 async function guide(p){await p.waitForSelector('.first-visit-guide');await p.waitForFunction(()=>document.querySelector('.first-guide-highlight')?.offsetWidth>0);}
 async function closeGuide(p){await button(p,'건너뛰기','.first-guide-footer');await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));await delay(100);}
 async function navigate(p,text){await button(p,text,'.test-header nav');await delay(600);}
@@ -51,29 +51,29 @@ try{
  await p.click('[aria-label="설치 안내 끄기"]');await p.waitForFunction(()=>!document.querySelector('.pwa-top-popup'));await guide(p);
  assert.equal(await p.$$eval('.first-guide-highlight',els=>els.length),1);assert.equal(await p.$('svg.first-guide-lines'),null);
  assert.equal(await p.$eval('.test-shell',e=>e.inert),true);await shot(p,'first-log-guide');
- await p.mouse.click(5,400);await p.waitForFunction(()=>document.querySelector('.first-guide-label')?.textContent.includes('2 / 6'));assert.ok(await p.$('.first-visit-guide'));for(let i=0;i<5;i++){await p.mouse.click(5,400);await delay(50);}await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));
+ await p.mouse.click(5,400);await p.waitForFunction(()=>document.querySelector('.first-guide-label')?.textContent.includes('2 / 3'));assert.ok(await p.$('.first-visit-guide'));for(let i=0;i<2;i++){await p.mouse.click(5,400);await delay(50);}await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));
  assert.equal(await p.$eval('input[name=title]',e=>e.value),'');assert.equal(await p.$eval('.test-shell',e=>e.inert),false);
  await p.reload({waitUntil:'networkidle2'});await delay(700);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time guide waits for installation, uses a real target highlight, each tap advances and the final tap dismisses without click-through and survives reload');
 
- await navigate(p,'로그북');await guide(p);await shot(p,'logbook-menu-guide');for(let i=0;i<4;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'logbook-search-guide');await closeGuide(p);
+ await navigate(p,'로그북');await guide(p);await shot(p,'logbook-menu-guide');for(let i=0;i<2;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'logbook-search-guide');await closeGuide(p);
  await p.click('.logbook-row');await guide(p);await shot(p,'card-guide');assert.equal(await p.$('.record-nophoto-tabs'),null);await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.querySelector('.first-visit-guide'));pass('logbook and card guides, optional guide sections and keyboard dismissal');
  if(await p.$eval('.record-editor-handle',e=>e.getAttribute('aria-expanded')==='false'))await p.click('.record-editor-handle');await p.click('.record-preset-controls .preset-library-open');await p.waitForSelector('.preset-collection-grid');
  assert.equal(await p.$('.preset-organize'),null);assert.equal(await p.$('.preset-create-open'),null);
  await p.$eval('.quick-dialog-panel',e=>{e.scrollTop=e.scrollHeight;});await delay(100);assert.ok(await p.$('.record-card'));await p.keyboard.press('Escape');pass('card presets open a thumbnail collection; scrolling the sheet never navigates the app and offers no preset-management controls');
  if(await p.$eval('.record-editor-handle',e=>e.getAttribute('aria-expanded')==='false'))await p.click('.record-editor-handle');await p.click('.record-preset-controls .preset-library-open');await p.waitForSelector('.preset-collection-grid');await p.click('.preset-collection-card[data-preset-id="02"]');
- await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');
+ await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');await p.waitForSelector('.share-card-submit:not(:disabled)',{timeout:45000});await p.click('.share-card-submit');
  await p.waitForFunction(()=>window.__shares.length>=1);const mapped=await p.evaluate(()=>window.__shares.at(-1));assert.deepEqual(mapped.keys,['files','text']);assert.equal(mapped.text,records[0].link);assert.equal(mapped.files,1);assert.ok(mapped.width<=1080&&mapped.bytes<=500*1024);assert.equal(mapped.type,'image/png');assert.equal(mapped.width,mapped.height,'export must use the new square preset, never the outgoing portrait card');
- await navigate(p,'로그북');await p.$$eval('.logbook-row',els=>els[1].click());await delay(600);await p.click('.record-editor-handle');await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');
+ await navigate(p,'로그북');await p.$$eval('.logbook-row',els=>els[1].click());await delay(600);await p.click('.record-editor-handle');await p.waitForSelector('.record-card-actions button:last-child:not(:disabled)',{timeout:30000});await button(p,'공유하기','.record-card-actions');await p.waitForSelector('.share-card-submit:not(:disabled)',{timeout:45000});await p.click('.share-card-submit');
  await p.waitForFunction(()=>window.__shares.length>=2);const imageOnly=await p.evaluate(()=>window.__shares.at(-1));assert.deepEqual(imageOnly.keys,['files']);assert.equal(imageOnly.files,1);pass('actual native-share invocation: Google-linked card adds only map URL, unlinked card has only the image; export uses current preset');
 
- await navigate(p,'스튜디오');await guide(p);await shot(p,'studio-library-guide');for(let i=0;i<5;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'studio-controls-guide');await closeGuide(p);
+ await navigate(p,'스튜디오');await guide(p);await shot(p,'studio-library-guide');for(let i=0;i<2;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(80);await shot(p,'studio-controls-guide');await closeGuide(p);
  assert.equal(await p.$eval('.preset-library-open .preset-selector-copy small',e=>e.textContent),'편집할 프리셋');assert.equal(await p.$eval('.preset-name-field label',e=>getComputedStyle(e).display),'block');
  assert.ok((await p.$eval('.preset-preview',e=>e.textContent)).includes('오후의 한 잔'));
  await p.waitForFunction(()=>[...document.querySelectorAll('.preset-preview img')].some(e=>e.complete&&e.naturalWidth>0));
  await shot(p,'studio-photo');
  await p.click('button[aria-label="글 예시"]');await delay(650);assert.ok((await p.$eval('.preset-preview',e=>e.textContent)).includes('천천히 걸은 저녁'));assert.equal(await p.$$eval('.preset-preview .fit-card-artwork img',els=>els.length),0);await shot(p,'studio-text');
  await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),7);await p.click('button[aria-label="추가 정보 닫기"]');
- await p.click('button[aria-label="사진 예시"]');await delay(600);await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),12);await button(p,'RECEIPT비스트로 감열 영수증','.preset-layout-picker');await delay(650);await shot(p,'studio-receipt');pass('separate preset library and visible name, coherent fictional photo/text samples, twelve normal photo designs, seven text designs and a separate group-only LIST');
+ await p.click('button[aria-label="사진 예시"]');await delay(600);await p.click('.preset-current');await p.waitForSelector('.preset-layout-picker');assert.equal(await p.$$eval('.preset-layout-picker button',els=>els.length),12);await button(p,'RECEIPT','.preset-layout-picker');await delay(650);await shot(p,'studio-receipt');pass('separate preset library and visible name, coherent fictional photo/text samples, twelve normal photo designs, seven text designs and a separate group-only LIST');
 
  await button(p,'색상','.preset-tabs');await p.click('.preset-current');await p.waitForSelector('.preset-palette-picker');
  for(const id of ['oat','mist','rose','lilac']){assert.ok((await p.$eval('.preset-palette-picker',e=>e.textContent)).includes(INITIAL_SKINS[id].name));assert.ok(skinContrast(INITIAL_SKINS[id].text,INITIAL_SKINS[id].bg)>=4.5);}
@@ -94,7 +94,7 @@ try{
  pass('Studio and main composer fit 320×568 / 390×844 / 768×1024 / 1280×800; composer width follows header');
  pass('preset collection selector remains fully visible on phone, tablet and desktop');
 
- await p.setViewport({width:390,height:844});await p.click('.test-settings-button');await guide(p);await shot(p,'settings-account-guide');for(let i=0;i<3;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(150);await shot(p,'settings-data-guide');await closeGuide(p);await p.click('button[aria-label="추가 정보 닫기"]');
+ await p.setViewport({width:390,height:844});await p.click('.test-settings-button');await guide(p);await shot(p,'settings-account-guide');for(let i=0;i<2;i++){await button(p,'다음','.first-guide-footer');await delay(50);};await delay(150);await shot(p,'settings-data-guide');await closeGuide(p);await p.click('button[aria-label="추가 정보 닫기"]');
  await p.click('.test-settings-button');await delay(600);assert.equal(await p.$('.first-visit-guide'),null);pass('first-time settings guide and once-only behavior');
  const existing=await makePage(true);await existing.goto(base,{waitUntil:'networkidle2'});const banner=await existing.$('[aria-label="설치 안내 끄기"]');if(banner)await banner.click();await delay(800);assert.equal(await existing.$('.first-visit-guide'),null);await existing.click('.test-settings-button');await delay(600);assert.equal(await existing.$('.first-visit-guide'),null);await button(existing,'사용 가이드 다시 보기','.modern-settings');await guide(existing);pass('existing installations are not interrupted; explicit Settings replay starts guidance');
  for(const [width,height] of [[320,568],[768,1024],[1280,800]]){await existing.setViewport({width,height});await delay(120);for(const b of await bounds(existing))assert.ok(b.left>=0&&b.top>=0&&b.right<=width+1&&b.bottom<=height+1);}
