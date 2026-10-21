@@ -1,5 +1,12 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 손글씨 가독성 보강
+
+- Existing Gaegu now uses its real Bold outline at every UI weight, including small body text, with the same 112% size adjustment. Existing `gaegu` device preferences stay selected. No synthetic text stroke or modified outlines.
+- Added `또박 손글씨` (`single-day`) as a fourth option in a 2×2/44px settings control. The local 92,768-byte Single Day WOFF2 retains all 11,172 Hangul syllables. Its OFL/source are recorded in public/fonts and `alpha/DOCS/HANDWRITING_FONT_20261020.md`.
+- Bootstrap/normalization, font-aware PNG embedding and device persistence support the new choice. PWA cache v9 includes it. Logs, presets, accounts and default Sebang choice are unchanged.
+- Build/typecheck, Chrome/Playwright WebKit handwriting checks and isolated real-offline PWA checks pass: thicker glyph coverage, responsive settings, reload/rollback, small/rare-Hangul PNG text pixels, transparency/size limits and offline font loading. No live user writes or paid provider calls.
+
 ## 2026-10-21 UI/UX 선택 · 편집 · 작성 · 가이드 개선
 
 - All five approved UX proposals are implemented. See `alpha/DOCS/UX_POLISH_20261021.md` for behavior, limits and verification.

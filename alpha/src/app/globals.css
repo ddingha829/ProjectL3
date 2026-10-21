@@ -269,6 +269,8 @@ button,input,textarea,select{font-family:inherit}
 @font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-italic-regular.woff2') format('woff2');font-weight:100 500;font-style:italic;font-display:swap}
 @font-face{font-family:"Sebang Gothic";src:url('/fonts/sebang-gothic-italic-bold.woff2') format('woff2');font-weight:501 1000;font-style:italic;font-display:swap}
 
-@font-face{font-family:"Gaegu";src:url('/fonts/gaegu-regular.woff2') format('woff2');font-weight:100 500;font-style:normal;size-adjust:112%;font-display:swap}
-@font-face{font-family:"Gaegu";src:url('/fonts/gaegu-bold.woff2') format('woff2');font-weight:501 1000;font-style:normal;size-adjust:112%;font-display:swap}
+/* Use the real Bold outline for small handwriting too; no synthetic text stroke. */
+@font-face{font-family:"Gaegu";src:url('/fonts/gaegu-bold.woff2') format('woff2');font-weight:100 1000;font-style:normal;size-adjust:112%;font-display:swap}
 html[data-font=gaegu]{--font-sans:"Gaegu","Sebang Gothic","Pretendard Variable",sans-serif}
+@font-face{font-family:"Single Day";src:url('/fonts/single-day.woff2') format('woff2');font-weight:100 1000;font-style:normal;size-adjust:110%;font-display:swap}
+html[data-font=single-day]{--font-sans:"Single Day","Sebang Gothic","Pretendard Variable",sans-serif}

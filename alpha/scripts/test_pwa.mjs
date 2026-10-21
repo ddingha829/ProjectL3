@@ -25,11 +25,11 @@ try{
  assert.equal(await page.evaluate(async()=>(await(await fetch('/api/session')).json()).storeKind),'file','Never write QA fixtures into Supabase');
  await page.waitForFunction(()=>document.documentElement.dataset.offlineReady==='true',{timeout:30000});
  const cache=await page.evaluate(async()=>{const keys=await caches.keys();const requests=(await Promise.all(keys.filter(k=>k.startsWith('l2-test-shell-')).map(async k=>(await (await caches.open(k)).keys()).map(r=>r.url)))).flat();return {keys,requests};});
- for(const font of ['sebang-gothic-regular.woff2','sebang-gothic-bold.woff2','caveat-wordmark.ttf','sebang-gothic-italic-regular.woff2','sebang-gothic-italic-bold.woff2','gaegu-regular.woff2','gaegu-bold.woff2'])assert.ok(cache.requests.some(url=>url.endsWith('/fonts/'+font)),font+' cached for offline');
+ for(const font of ['sebang-gothic-regular.woff2','sebang-gothic-bold.woff2','caveat-wordmark.ttf','sebang-gothic-italic-regular.woff2','sebang-gothic-italic-bold.woff2','gaegu-regular.woff2','gaegu-bold.woff2','single-day.woff2'])assert.ok(cache.requests.some(url=>url.endsWith('/fonts/'+font)),font+' cached for offline');
  assert(cache.requests.some(url=>url.includes('/_next/static/')));assert(!cache.requests.some(url=>url.includes('/api/')));
  assert.ok(workerUrls.length>0,'PNG worker warmed while online');
  await page.setOfflineMode(true);await page.reload({waitUntil:'networkidle2'});await ready();
- assert.ok(await page.evaluate(async()=>{const faces=await Promise.all([document.fonts.load('400 24px Gaegu','오늘'),document.fonts.load('700 24px Gaegu','오늘')]);return faces.every(list=>list.length>0&&list.every(face=>face.status==='loaded'));}),'both handwriting weights load offline');
+ assert.ok(await page.evaluate(async()=>{const faces=await Promise.all([document.fonts.load('400 24px Gaegu','오늘'),document.fonts.load('700 24px Gaegu','오늘'),document.fonts.load('400 24px \"Single Day\"','똠방각하')]);return faces.every(list=>list.length>0&&list.every(face=>face.status==='loaded'));}),'bold Gaegu and Single Day load offline');
  const workerResult=await page.evaluate(async url=>{
   const worker=new Worker(url);
   try{return await new Promise((resolve,reject)=>{

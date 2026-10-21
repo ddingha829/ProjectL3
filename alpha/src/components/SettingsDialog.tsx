@@ -253,6 +253,7 @@ export default function SettingsDialog(p: Props) {
               <button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>세방고딕</button>
               <button type="button" className={p.font==='pretendard'?'active':''} aria-pressed={p.font==='pretendard'} onClick={()=>p.onFont('pretendard')}>기존</button>
               <button type="button" className={`settings-handwriting-choice ${p.font==='gaegu'?'active':''}`} aria-pressed={p.font==='gaegu'} onClick={()=>p.onFont('gaegu')}>손글씨</button>
+              <button type="button" className={`settings-neat-handwriting-choice ${p.font==='single-day'?'active':''}`} aria-pressed={p.font==='single-day'} onClick={()=>p.onFont('single-day')}>또박 손글씨</button>
             </div>
             <p className="settings-font-preview">오늘의 작은 순간을 로그로 남겨요.</p>
           </div>

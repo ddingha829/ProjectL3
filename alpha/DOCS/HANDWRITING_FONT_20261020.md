@@ -1,5 +1,15 @@
 # 손글씨 글꼴 옵션 (2026-10-20)
 
+## 2026-10-21 가독성 보강 · 또박 손글씨
+
+- 기존 `손글씨`(Gaegu)의 본문/작은 UI도 실제 Bold 파일을 사용한다. CSS 가중치 100–1000을 한 Bold 윤곽에 연결하며, 기존 112% 크기 보정은 유지했다. 글자에 인공 외곽선을 덧그리지 않고 실제 굵은 폰트로 표시한다. Regular 파일은 비교와 기존 오프라인 호환을 위해 보존한다.
+- 설정의 글꼴 선택에 `또박 손글씨`(Single Day)를 추가했다. 2×2 선택 배치, 최소 44px 버튼, 현재 선택 미리보기, 기존 글꼴 복귀를 지원한다. 새로고침 전 HTML 초기화/React 복원 모두 `single-day`를 허용한다. 기존 Gaegu 선택을 자동으로 다른 글꼴로 바꾸지 않는다.
+- Single Day는 Google Fonts의 공식 `ofl/singleday/SingleDay-Regular.ttf`를 전체 글리프 WOFF2로 변환한 92,768바이트 로컬 파일이다. 한글 11,172음절을 포함한다. 원래 Regular 윤곽을 UI 가중치 범위에 연결한 것이며 가변 굵기 파일은 아니다. 110% 크기 보정을 적용했다.
+- 출처: https://github.com/google/fonts/tree/main/ofl/singleday . Copyright 2015 DXKorea Inc.; SIL OFL 1.1 전문을 `public/fonts/SingleDay-OFL.txt`에 보관한다. 별도 런타임 패키지나 외부 폰트 서비스 호출은 없다.
+- 공유 PNG에 Single Day와 Sebang 대체 글꼴을 포함하고 글꼴 변경 시 기존 파일을 다시 준비한다. 로그·프리셋·계정 데이터 형식은 변경하지 않는다. PWA v9는 새 파일도 미리 저장한다.
+- `npm run build`, `npm run typecheck`, Chrome/Playwright WebKit `test:handwriting`, 격리된 실제 오프라인 `test:pwa` 통과. 동일 문장의 24px 캔버스 비교에서 Gaegu의 알파 면적은 Chrome 약 25.7%, WebKit 약 25.0% 증가했다. 이는 획 굵기를 확인한 렌더링 측정이며 사용자 가독성 평가 수치는 아니다.
+- 320–1280px 선택 버튼, 기본/두 손글씨 간 전환, 각 선택의 새로고침 복원, 작은 날짜/본문/드문 한글이 실제 PNG 픽셀에 존재하는지, 1080px/500KiB/투명 모서리, 오프라인 글꼴 로딩을 검사했다. API fixture와 격리 저장소만 사용했다. 비교 화면과 내보낸 카드는 로컬 `outputs/oct21/handwriting-readability/`에 있다.
+
 - 설정 > 화면 · 프로필 > 글꼴에 **손글씨 (개구/Gaegu)** 추가. 기존 세방고딕·기존(Pretendard) 선택과 초기 기본값은 유지한다.
 - 공식 Google Fonts의 Regular/Bold를 모든 글리프를 보존한 WOFF2로 변환해 로컬 제공한다. 새 런타임 의존성이나 외부 폰트 서비스 호출은 추가하지 않는다. 작은 UI 글자의 시인성을 위해 size-adjust:112%를 적용한다.
 - 현재 기기의 l2_font_family에 저장하고 첫 HTML 표시와 React 복원 모두 같은 선택을 사용한다. 화면·입력 문구·카드에 적용한다. 데이터/프리셋 JSON에는 글꼴 선택을 추가하지 않는다.

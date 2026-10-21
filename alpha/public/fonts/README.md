@@ -16,3 +16,9 @@ Copyright 2018 The Gaegu Project Authors; SIL OFL 1.1, full license in Gaegu-OFL
 Select Settings > 화면 · 프로필 > 글꼴 > 손글씨. Applies to UI and card typography on this device; saved logs/preset JSON are unchanged. Sharing re-renders the card after font changes. PWA shell v8 includes both faces for offline use.
 
 Gaegu covers 2,350 common Hangul syllables; Sebang remains the fallback for other syllables and is also embedded during export. Both Gaegu faces use size-adjust:112% for small UI labels.
+
+
+2026-10-21 readability update: Gaegu now uses its real Bold outline for the entire CSS weight range (100–1000), retaining the same 112% size adjustment. The Regular file remains available for baseline comparison/offline backwards compatibility. No synthetic stroke or modified outlines were added.
+
+Single Day (또박 손글씨): official SingleDay-Regular.ttf converted losslessly to full-glyph WOFF2; Source: https://github.com/google/fonts/tree/main/ofl/singleday
+Copyright 2015 DXKorea Inc.; SIL OFL 1.1, license in SingleDay-OFL.txt. All 11,172 modern Hangul syllables are retained. The original 400 outline is mapped across UI weights (100–1000), with size-adjust:110%; this is not a new variable-font weight axis. Device choice is l2_font_family=single-day. PWA shell v9 caches this 92,768-byte local font; PNG export embeds it with the Sebang fallback.

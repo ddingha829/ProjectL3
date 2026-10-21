@@ -37,7 +37,7 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{__html: THEME_BOOTSTRAP_SCRIPT}} />
-        <script dangerouslySetInnerHTML={{__html: "try{var f=localStorage.getItem('l2_font_family');document.documentElement.dataset.font=f==='pretendard'||f==='gaegu'?f:'sebang'}catch{}"}} />
+        <script dangerouslySetInnerHTML={{__html: "try{var f=localStorage.getItem('l2_font_family');document.documentElement.dataset.font=f==='pretendard'||f==='gaegu'||f==='single-day'?f:'sebang'}catch{}"}} />
         <link rel="preload" href="/fonts/sebang-gothic-regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/sebang-gothic-bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

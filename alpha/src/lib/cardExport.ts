@@ -122,9 +122,9 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
   for (const element of [node, ...Array.from(node.querySelectorAll<HTMLElement>('*'))]) {
     const style = getComputedStyle(element);
     const families=style.fontFamily.split(',').map(part=>part.trim().replace(/["']/g,''));
-    // Gaegu has 2,350 common Hangul syllables; keep Sebang for rare syllables.
+    // Keep the local Korean fallback for handwriting families and unusual glyphs.
     // Avoid unused Pretendard/Inter files. Mono labels stay separate.
-    const bundled = families[0]==='Gaegu' ? families.slice(0,2) : families[0]==='Sebang Gothic' ? families.slice(0,1) : families;
+    const bundled = ['Gaegu','Single Day'].includes(families[0]) ? families.slice(0,2) : families[0]==='Sebang Gothic' ? families.slice(0,1) : families;
     for (const family of bundled) {
       const usageKey=`${family}|${style.fontStyle==='normal'?'normal':'italic'}`;
       if (!usage.has(usageKey)) usage.set(usageKey, new Set());
