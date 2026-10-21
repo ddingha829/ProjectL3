@@ -30,7 +30,8 @@
     "test:handwriting": "node scripts/test_handwriting_font.mjs",
     "test:voice": "node scripts/test_voice_input.mjs",
     "test:calendar": "node scripts/test_log_calendar.mjs",
-    "test:theme": "node scripts/test_theme.mjs"
+    "test:theme": "node scripts/test_theme.mjs",
+    "test:current-location": "node scripts/test_current_location.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

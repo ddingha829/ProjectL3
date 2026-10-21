@@ -111,3 +111,5 @@ html.light .quick-save-button:not(:disabled) { background: #111115; color: #ffff
 .light .quick-input-surface::before,.light .quick-input-surface::after{opacity:.19}.quick-title label{opacity:1;font-weight:700}
 
 .media-no-cover{display:grid;place-items:center;aspect-ratio:2/3;width:100%;background:var(--surface-2);color:var(--muted);border-radius:10px}.media-results button:disabled{opacity:.65}.media-picker>[role=status]{display:flex;align-items:center;gap:7px}
+
+.quick-current-location{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;width:100%;padding:11px 14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--accent);font-size:14px;font-weight:700}.quick-current-location:disabled{opacity:.6;cursor:wait}.quick-location-status{margin:8px 0 14px;color:var(--muted);font-size:12px;line-height:1.6}.quick-location-status:empty{margin:0 0 14px}.quick-location-status.is-error{color:var(--accent)}

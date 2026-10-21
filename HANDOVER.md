@@ -1,5 +1,11 @@
 # L2 Archive Card Engine — Project Handover & Architecture Guide
 
+## 2026-10-21 장소 검색에서 현재 위치 첨부
+
+- Composer place picker includes 현재 위치 사용. Explicit click requests one browser getCurrentPosition (high accuracy, 10s timeout, at most 30s cached position); opening/restoring the composer never requests permission or watches position. Current coordinates are staged as a normal place with a Google Maps coordinate URL; title/body/category are preserved. Optional 지도에서 확인 link and accuracy estimate are shown.
+- No reverse geocoding, inferred business/address, new paid provider call or backend endpoint was added. Existing draft/save/map/share pipelines persist the coordinates. Permission denial/unavailable/timeout/unsupported/insecure contexts keep ordinary search usable. Duplicate requests are blocked; closing, unmounting, removal and manual selection invalidate late responses.
+- `test:current-location` passes in Chrome/real Playwright WebKit using browser geolocation emulation and API fixtures: explicit permission flow, draft recovery/save/reload/OSM marker/share URL, error/retry/search, duplicate/stale callbacks, invalid coordinates/rough accuracy/removal and unsupported browser. Physical phone GPS accuracy remains device-dependent; no live user data or paid calls were used.
+
 ## 2026-10-21 시스템 테마 연동
 
 - Settings → 테마 모드 now offers 자동 / 라이트 / 다크. New/unset/invalid preferences follow prefers-color-scheme; explicit legacy paper/dark choices remain light/dark. Preference stays device-local under the existing l2_test_theme key and synchronizes across same-origin tabs.
