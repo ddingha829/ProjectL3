@@ -41,6 +41,7 @@
 .ec-top-date{font-family:ui-monospace,monospace;font-size:10px;color:var(--ec-sub);letter-spacing:.05em}
 .ec-stamp{flex-basis:80px;min-height:92px;border-color:var(--ec-border);border-radius:9px;background:var(--ec-chip);transform:none;gap:9px;font-size:9px}
 .ec-stamp .ec-rating{font-size:19px}
+.ec-stamp-symbol{color:var(--ec-accent);opacity:.72}
 .ec-postcard .ec-back-header{padding-bottom:19px;border-bottom:1px solid var(--ec-text)}
 .ec-postcard .ec-back-header h2{font-size:30px}
 .ec-postcard .ec-scroll-inner{gap:24px}

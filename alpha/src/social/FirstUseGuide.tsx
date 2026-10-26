@@ -15,11 +15,11 @@ const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
  studio:[{targets:['.un-studio-tools'],title:'내 스타일을 프리셋으로',body:'앞면·뒷면·색·질감을 고르고 이름을 붙여 저장해요. 기본으로 지정하면 새 로그에 적용돼요. 기존 로그의 디자인은 바뀌지 않아요.'}],
  today:[
   {targets:['.lab-main [data-log-id]:first-child .lab-poster-art','.lab-main .lab-empty'],title:'로그는 카드로 모여요',body:'카드를 누르면 크게 펼쳐져요. 펼친 카드를 한 번 더 누르면 뒤집혀 감상을 읽을 수 있어요. 카드 안쪽 아래에 작성자 이름이 보여요. 카드 어디를 눌러도 상세 화면이 열려요.'},
-  {targets:['.flc-search-slot','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'피드 도구 모음의 돋보기를 누르면 검색창이 펼쳐지고 나머지 도구는 오른쪽 아이콘으로 모여요. 다른 도구나 카드를 누르면 검색창이 접혀요. 검색어는 유지되고, 도구 모음은 스크롤해도 위에 남아요.'},
+   {targets:['.flc-search-slot','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'전체 드롭다운에서 카테고리·정렬·사진 필터를 한 번에 골라요. 돋보기는 검색, 더보기는 카드·리스트·캘린더와 보관함을 열어요. 다른 곳을 누르면 검색창은 접히고 검색어는 유지돼요. 도구 모음은 스크롤해도 위에 남아요.'},
   {targets:['.un-header-v2','.un-navigation .lab-nav-rail'],title:'남기고, 찾아보고',body:'로고 옆 드롭다운에서 마이로그나 모임을 골라요. 모임을 만들면 초대 코드가 나오고, 받은 6자리 코드로 바로 참여할 수 있어요. 아래 메뉴를 누르거나 화면을 좌우로 밀어 피드·지도·타일·스튜디오를 오가요. 지도 이동과 타일 드래그는 각 영역에서 그대로 사용할 수 있어요. ＋로 기록을 남겨요.'},
  ],
  library:[{targets:['.flc-shell'],title:'내 기록을 다시 찾는 곳',body:'내 로그·모임 로그·담아둔 로그를 나눠 보고, 검색으로 찾아보세요. 오른쪽 보관함에서 로그를 선택해 묶거나 취향 선반을 열 수 있어요.'}],
- map:[{targets:['.lab-map-panel'],title:'기록할수록 채워지는 지도',body:'선택한 범위에서 장소가 있는 로그가 동네의 색을 채워요. 확대하면 흰색 점과 제목이 나타나요. 누르면 그 위에 카드가 펼쳐져요. 카드나 오른쪽 아래 정보를 누르면 로그가 열려요.'}],
+  map:[{targets:['.lab-map-panel'],title:'기록할수록 채워지는 지도',body:'위치를 허용하면 내 주변부터 열려요. 확대하면 동네, 축소하면 시·군·구·시·도·국가로 색칠 범위가 넓어져요. 동네 수준에서는 화면 안의 로그가 지도 아래에도 보여요. 흰 점을 누르면 카드가 펼쳐지고 한 번 더 누르면 크게 열려요.'}],
  compose:[
   {targets:['.un-entry-options','.lab-story-stage','.lab-write-surface'],title:'지금의 순간을 담아요',body:'촬영하기·작품 등록하기·글만 쓰기 중에서 골라요. 사진을 찍거나 선택하면 작성창이 올라오고, 작품은 검색 후 고르면 표지가 배경에 보여요. 글만 쓰면 노트 배경으로 시작해요.'},
   {targets:['.un-entry-options','.un-sheet-header','.lab-submit'],title:'글만 남겨도 좋아요',body:'상단 위치에서 근처 장소나 표시할 이름을 고르고, 오른쪽에서 날씨를 확인해요. 아래 별을 밀어 평점을 고르거나 비워둘 수 있어요. 작품에는 위치를 읽지 않아요. 로그 등록을 누른 뒤 함께 나눌 모임을 여러 개 골라요. 마이로그에는 항상 남아요. 작성창 위 손잡이를 누르면 접혀요.'},
@@ -36,7 +36,7 @@ export default function FirstUseGuide({context,replay,owned,shared,pending=false
  const active=Boolean(ready&&context&&settledContext===context&&!seen.all&&!seen[context]);
  useEffect(()=>{onActiveChange(active);return()=>onActiveChange(false);},[active,onActiveChange]);
  const finish=(all=false)=>{if(!context)return;const next={...seen,[all?'all':context]:true,...(!all&&context==='own-detail'?{detail:true}:{})};setSeen(next);try{localStorage.setItem(GUIDE_KEY,JSON.stringify(next));}catch{}};
- const detail:Step[]=[{targets:['.un-detail-card'],title:'한 장에 집중해요',body:'크게 펼친 사진 카드를 다시 누르면 뒷면이 보여요. 사진이 없는 로그는 감상 면만 보여요. 아래에 살짝 보이는 패널을 누르거나 위로 밀면 반응·댓글·공유가 펼쳐져요.'},{targets:['.un-viewer-toggle'],title:'필요한 메뉴만 꺼내요',body:owned?'패널에서 하트·책갈피·공유 아이콘을 사용해요. 더보기에서 내용 수정·카드 꾸미기·프리셋을 골라요. 손잡이를 누르거나 아래로 밀면 카드가 다시 커져요.':'패널에서 하트·책갈피·공유 아이콘을 사용하고 한마디를 남겨요. 책·영화는 더보기에서 나도 보기에 담을 수 있어요. 손잡이를 누르거나 아래로 밀면 카드가 다시 커져요.'}];
+ const detail:Step[]=[{targets:['.un-detail-card'],title:'한 장에 집중해요',body:'크게 펼친 사진 카드를 다시 누르면 뒷면이 보여요. 사진이 없는 로그는 감상 면만 보여요. 아래에는 반응·공유 버튼과 장소가 항상 보여요. 작성자와 댓글 수가 있는 부분을 누르거나 위로 밀면 댓글만 펼쳐져요.'},{targets:['.un-viewer-toggle','.un-viewer-action-bar'],title:'필요한 메뉴만 꺼내요',body:owned?'하트·책갈피·공유 아이콘을 바로 사용해요. 더보기에서 내용 수정·카드 꾸미기·프리셋을 골라요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.':'하트·책갈피·공유 아이콘을 바로 사용하고 한마디를 남겨요. 책·영화는 더보기에서 나도 보기에 담을 수 있어요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.'}];
  return active&&context?<GuideOverlay key={`${replay}:${context}`} steps={context==='detail'||context==='own-detail'?detail:copy[context]} onDone={()=>finish()} onSkip={()=>finish(true)}/>:null;
 }
 

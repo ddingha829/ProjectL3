@@ -38,3 +38,5 @@
 /* Unvisited light-map areas sit below the coloured visited districts. Only the
    grayscale base changes; map controls, labels and colour layers retain tone. */
 html.light .logbook-map.scratch-map:not(.is-dark){--map-base:#cacbc8;--map-filter:grayscale(1) brightness(.78) contrast(1.18);--map-tile-opacity:1}
+.scratch-map[data-region-tier=country] .scratch-dong-outline{stroke-width:0!important;stroke-opacity:0!important}
+.scratch-map[data-region-tier=province] .scratch-dong-outline{stroke-width:.6;stroke-opacity:.3}

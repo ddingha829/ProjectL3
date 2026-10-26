@@ -36,10 +36,10 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
   {surface}
   {s.back==='doodle'&&<i className="ec-tape" aria-hidden="true"/>}
   {s.back==='paint'&&<div className="ec-swatch" aria-hidden="true"/>}
-  {(['review','day','broadside'] as string[]).includes(s.back)&&<div className="ec-back-topline">{category}{s.back==='review'&&<span className="ec-top-date">{date}</span>}{rating}</div>}
+  {(['review','day','broadside'] as string[]).includes(s.back)&&<div className="ec-back-topline">{category}{rating}</div>}
   {s.back==='day'&&<div className="ec-calendar-date"><strong>{new Date(log.createdAt).getDate()}</strong><span>{new Date(log.createdAt).getFullYear()}<i>/</i>{new Date(log.createdAt).toLocaleDateString('en-US',{month:'short'}).toUpperCase()}</span></div>}
   <header className="ec-back-header"><div>{!(['review','day','broadside'] as string[]).includes(s.back)&&category}<h2>{title}</h2>{place&&s.back!=='broadside'&&<p>{place}</p>}</div>
-   {s.back==='postcard'?<div className="ec-stamp">{rating}<span>{date}</span></div>:s.back==='vinyl'?<div className="ec-disc" aria-hidden="true"><i/></div>:!(['review','day','broadside'] as string[]).includes(s.back)&&rating}
+   {s.back==='postcard'?<div className="ec-stamp">{rating||<Icon className="ec-stamp-symbol" size={29} strokeWidth={1.2} aria-hidden="true"/>}</div>:s.back==='vinyl'?<div className="ec-disc" aria-hidden="true"><i/></div>:!(['review','day','broadside'] as string[]).includes(s.back)&&rating}
   </header>
   {s.back==='broadside'&&<div className="ec-news-meta"><div><b>DATE</b><span>{date}</span></div>{place&&<div><b>PLACE</b><span>{place}</span></div>}{log.rating&&<div><b>RATING</b><span>★ {log.rating} / 5.0</span></div>}</div>}
   {s.back==='passport'&&<div className="ec-passport-grid"><div><b>LOCATION</b><span>{place||'—'}</span></div><div><b>DATE</b><span>{date}</span></div><div><b>RATING</b><span>{log.rating||'—'}</span></div></div>}
@@ -48,7 +48,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
    {log.body&&<blockquote className="ec-quote ec-flow-block" data-ec-quote>{log.body}</blockquote>}
    {specsView}
   </div></div>
-  <footer className="ec-back-footer"><span>{s.back==='passport'?`<<<<${author.replace(/\s/g,'').toUpperCase()}<<<<`:date}</span><WeatherMark value={log.weather}/></footer>
+  {(!(['day','broadside','library'] as string[]).includes(s.back)||log.weather)&&<footer className="ec-back-footer"><span>{s.back==='passport'?`<<<<${author.replace(/\s/g,'').toUpperCase()}<<<<`:!(['day','broadside','library'] as string[]).includes(s.back)?date:''}</span><WeatherMark value={log.weather}/></footer>}
  </div>;
 }
 
