@@ -13,7 +13,7 @@ const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen};
 export const cardTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||new Date(log.createdAt).toLocaleDateString('ko-KR');
 const dateOf=(time:number)=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(time).replaceAll('-','.');
 
-export function EditorialFace({log,author,side,appearance}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle}){
+export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number}){
  const s=appearance||styleOf(log),Icon=icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
  const needed=Boolean(log.image&&(s.finish==='film'||s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
@@ -24,7 +24,7 @@ export function EditorialFace({log,author,side,appearance}:{log:LabLog;author:st
  const photoBadges=<div className="ec-photo-badges"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div>;
  const settings=log.photo;
  const photo=<img style={settings?{objectFit:settings.fit,objectPosition:settings.x+'% '+settings.y+'%',transform:'translate('+((50-settings.x)*(settings.zoom-1))+'%, '+((50-settings.y)*(settings.zoom-1))+'%) scale('+settings.zoom+')',filter:'saturate('+settings.saturation/100+') brightness('+settings.brightness/100+') contrast('+settings.contrast/100+')'}:undefined} className="ec-photo" src={s.finish==='film'&&prepared?.value?prepared.value.film:log.image} alt="" draggable={false}/>;
- const variables={...editorialColors(s),'--ec-height':s.ratio==='1:1'?'420px':'747px','--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
+ const variables={...editorialColors(s),'--ec-height':`${canvasHeight??(s.ratio==='1:1'?420:747)}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
  const surface=<>{side==='back'&&(s.ambientBleed||s.finish==='acrylic')&&<div className={`ec-color-residue ${s.finish==='acrylic'?'ec-frosted':''}`} aria-hidden="true"/>}{s.finish==='satin'&&<div className="ec-satin-sheen" aria-hidden="true"/>}</>;
  const materialClass=`ec-finish-${s.finish||'none'} ${s.fontMood?`ec-mood-${s.fontMood}`:''}`;
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
@@ -55,7 +55,7 @@ export function EditorialFace({log,author,side,appearance}:{log:LabLog;author:st
 
 export default function EditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal',compactPreview=false}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
  const scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!log.image);
- const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=compactPreview&&s.ratio!=='1:1';
+ const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=compactPreview&&s.ratio!=='1:1',canvasHeight=s.ratio==='1:1'?420:compact?672:747;
  const targetBack=useRef(back);targetBack.current=back;
  const turn=useCardTurn(scene,initialSide==='back'||!log.image);
  useLayoutEffect(()=>{const initial=initialSide==='back'||!log.image;setBack(initial);turn.reset(initial);},[log.id,Boolean(log.image),initialSide,turn.reset]);
@@ -68,14 +68,14 @@ export default function EditorialCard({log,author,appearance,interactive=true,in
   const stop=()=>{if(motion.matches){setHint(false);turn.reset(targetBack.current);}};motion.addEventListener('change',stop);observer.observe(element);
   return()=>{observer.disconnect();motion.removeEventListener('change',stop);};
  },[log.id,canFlip,turn.hint,turn.reset,hintStrength]);
- useLayoutEffect(()=>{const element=scene.current;if(!element)return;const update=()=>setScale(element.clientWidth/420);update();const observer=new ResizeObserver(update);observer.observe(element);return()=>observer.disconnect();},[]);
+ useLayoutEffect(()=>{const element=scene.current;if(!element)return;setScale(parseFloat(getComputedStyle(element).width)/420);const observer=new ResizeObserver(([entry])=>setScale(entry.contentRect.width/420));observer.observe(element);return()=>observer.disconnect();},[]);
  const flip=()=>{hintSeen.current=true;setHint(false);if(canFlip&&!window.getSelection()?.toString())setBack(value=>!value);};
- return <div ref={scene} className={`ec-scene ${compact?'ec-feed-preview':''} ${log.image&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!log.image?'ec-single':''}`} style={{aspectRatio:s.ratio==='1:1'?'1':compact?'420/672':'420/747','--ec-scale':scale,'--ec-height':s.ratio==='1:1'?'420px':compact?'672px':'747px'} as CSSProperties} data-card-preview data-card-side={!log.image||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
+ return <div ref={scene} className={`ec-scene ${compact?'ec-feed-preview':''} ${log.image&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!log.image?'ec-single':''}`} style={{aspectRatio:`420 / ${canvasHeight}`,'--ec-scale':scale,'--ec-height':`${canvasHeight}px`} as CSSProperties} data-card-preview data-card-side={!log.image||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
   onPointerDown={event=>{start.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{if(start.current&&Math.hypot(event.clientX-start.current.x,event.clientY-start.current.y)<7)flip();start.current=null;}} onPointerCancel={()=>{start.current=null;}}
   onClick={event=>{if(event.detail===0)flip();}} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();flip();}}}>
   <div className="ec-logical">{log.image?<div className={`ec-hint-stage ${hint?'ec-hint-active':''}`}><div className="ec-rotator">
-   <div ref={turn.front} className="ec-plane ec-front-plane" style={{visibility:turn.visibleBack?'hidden':'visible'}} aria-hidden={turn.visibleBack} inert={turn.visibleBack}><EditorialFace log={log} author={author} side="front" appearance={s}/></div>
-   <div ref={turn.rear} className="ec-plane ec-back-plane" style={{visibility:turn.visibleBack?'visible':'hidden'}} aria-hidden={!turn.visibleBack} inert={!turn.visibleBack}><EditorialFace log={log} author={author} side="back" appearance={s}/></div>
-  </div></div>:<EditorialFace log={log} author={author} side="back" appearance={s}/>}</div>
+   <div ref={turn.front} className="ec-plane ec-front-plane" style={{visibility:turn.visibleBack?'hidden':'visible'}} aria-hidden={turn.visibleBack} inert={turn.visibleBack}><EditorialFace log={log} author={author} side="front" appearance={s} canvasHeight={canvasHeight}/></div>
+   <div ref={turn.rear} className="ec-plane ec-back-plane" style={{visibility:turn.visibleBack?'visible':'hidden'}} aria-hidden={!turn.visibleBack} inert={!turn.visibleBack}><EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/></div>
+  </div></div>:<EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/>}</div>
  </div>;
 }
