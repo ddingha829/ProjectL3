@@ -155,3 +155,5 @@
 
 /* Keep the original two-column width; only the card canvas is shortened. */
 .un-app .un-grid{row-gap:14px}
+
+.un-app .un-grid .un-feed-card-open,.un-studio-preview>.ec-scene,.un-navigation .lab-nav-rail{touch-action:pan-y;user-select:none;-webkit-user-select:none}
