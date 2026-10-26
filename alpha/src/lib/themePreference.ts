@@ -1,5 +1,5 @@
 export type ThemePreference = 'auto' | 'light' | 'dark';
-export const THEME_STORAGE_KEY = 'l2_test_theme';
+export const THEME_STORAGE_KEY = 'l2_unified_ui_theme';
 
 export function normalizeThemePreference(value: string | null): ThemePreference {
   if (value === 'paper' || value === 'light') return 'light';
@@ -12,7 +12,7 @@ export function applyTheme(preference: ThemePreference, systemDark: boolean) {
   root.classList.toggle('light', light);
   root.dataset.theme = preference;
   root.style.colorScheme = light ? 'light' : 'dark';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#F3F1EC' : '#08080A');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#FFFFFF' : '#08080A');
 }
 
 // Run before hydration/CSS paint. Preserve the legacy paper/dark choices.

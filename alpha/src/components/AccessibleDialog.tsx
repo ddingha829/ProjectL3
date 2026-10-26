@@ -1,29 +1,38 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import {isolateDialog} from '@/lib/dialogIsolation';
 
 interface AccessibleDialogProps {
   open: boolean;
   title: string;
+  hideTitle?: boolean;
   description?: string;
   headerAdornment?: ReactNode;
+  closeLabel?: string;
+  closeIcon?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   initialFocusId?: string;
   panelClassName?: string;
+  panelStyle?: CSSProperties;
 }
 
 /** A small modal primitive shared by the optional composer controls. */
 export default function AccessibleDialog({
   open,
   title,
+  hideTitle = false,
   description,
   headerAdornment,
+  closeLabel = '추가 정보 닫기',
+  closeIcon,
   onClose,
   children,
   initialFocusId,
   panelClassName = '',
+  panelStyle,
 }: AccessibleDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -40,15 +49,7 @@ export default function AccessibleDialog({
     const previousFocus = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const inertElements = Array.from(document.body.children)
-      .filter((element): element is HTMLElement =>
-        element instanceof HTMLElement && element !== overlayRef.current &&
-        !['SCRIPT', 'STYLE', 'LINK'].includes(element.tagName)
-      )
-      .map((element) => ({ element, wasInert: element.inert }));
-    inertElements.forEach(({ element }) => { element.inert = true; });
+    const releaseIsolation=overlayRef.current?isolateDialog(overlayRef.current):()=>{};
 
     const getFocusable = () => Array.from(
       panelRef.current?.querySelectorAll<HTMLElement>(
@@ -91,9 +92,8 @@ export default function AccessibleDialog({
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      inertElements.forEach(({ element, wasInert }) => { element.inert = wasInert; });
-      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+      releaseIsolation();
+      queueMicrotask(()=>{if(previousFocus?.isConnected&&!previousFocus.closest('[inert]'))previousFocus.focus({preventScroll:true});});
     };
   }, [open, mounted, initialFocusId]);
 
@@ -114,14 +114,15 @@ export default function AccessibleDialog({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={`quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7 ${panelClassName}`}
+        style={panelStyle}
       >
         <div className={`quick-dialog-header mb-6 flex items-start justify-between gap-4 ${headerAdornment ? 'has-adornment' : ''}`}>
-          <div>
+          <div className={hideTitle ? 'sr-only' : undefined}>
             <h2 id={titleId} className="text-xl font-bold tracking-tight">{title}</h2>
             {description && <p id={descriptionId} className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{description}</p>}
           </div>
           {headerAdornment}
-          <button type="button" onClick={onClose} aria-label="추가 정보 닫기" className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl">×</button>
+          <button type="button" onClick={onClose} aria-label={closeLabel} className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl">{closeIcon??'×'}</button>
         </div>
         {children}
       </div>

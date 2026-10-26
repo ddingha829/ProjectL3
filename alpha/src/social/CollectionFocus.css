@@ -1,0 +1,60 @@
+/* A single utility line above the collection; everything else belongs to cards. */
+.lab-header,.lab-main{max-width:854px}
+.lab-header{min-height:78px;border-bottom:0;gap:20px}
+.lab-logo-lockup{min-width:0;gap:20px;flex:1}
+.lab-brand{font-size:43px;flex-shrink:0}
+.lab-header .lab-circle-switch{display:flex;align-items:center;gap:7px;max-width:210px;min-width:0;min-height:44px;font-size:13px;font-weight:700;letter-spacing:-.035em;color:var(--muted);padding:0;border:0;flex-shrink:1}
+.lab-header .lab-circle-switch>svg:last-child{display:block;flex-shrink:0;width:13px;height:13px;opacity:.7}
+.lab-header .lab-circle-switch>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lab-header-actions{flex-shrink:0;gap:8px}
+.lab-header-actions>.lab-write-desktop{display:grid;place-items:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;background:var(--fg);color:var(--bg)}
+.lab-header .lab-profile-button{position:relative;border-color:transparent;background:none}
+.lab-profile-pending{position:absolute;top:9px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+.lab-main{padding-top:9px}
+.lab-poster-grid{column-gap:14px;row-gap:19px}
+.lab-poster-art{box-shadow:none;border-radius:16px}
+.lab-poster-author{padding:8px 2px 0;font-size:11px;line-height:1.5;font-weight:700;color:var(--muted)}
+.lab-poster-grid .lab-log-poster{border-radius:0}
+.lab-log-poster:focus-visible{outline-offset:3px;border-radius:16px}
+.lab-desktop-nav{flex-shrink:0;margin:0 0 0 auto}
+.lab-desktop-nav .lab-nav-rail{min-width:266px}
+.lab-desktop-nav .lab-nav-rail>button{font-size:11px;padding-inline:12px}
+.view-map .lab-page-heading{justify-content:flex-end;margin-bottom:14px}
+.view-library .lab-library-controls{margin-top:4px}
+.lab-profile-intro p{display:none}
+
+@media(max-width:1040px){
+ .lab-header .lab-circle-switch{max-width:155px}
+}
+@media(max-width:760px) and (min-width:701px){
+ .lab-logo-lockup{gap:11px}.lab-header{gap:12px}
+ .lab-header .lab-circle-switch{max-width:120px;font-size:12px}
+ .lab-desktop-nav .lab-nav-rail{min-width:248px}
+}
+@media(max-width:700px){
+ .lab-header{min-height:74px;width:calc(100% - 32px);gap:12px}
+ .lab-brand{font-size:41px}
+ .lab-logo-lockup{gap:15px}
+ .lab-header .lab-circle-switch{max-width:calc(100vw - 160px);font-size:12px}
+ .lab-header-actions>.lab-write-desktop{display:none}
+ .lab-main{width:calc(100% - 24px);padding:4px 0 0}
+ .lab-poster-grid{column-gap:9px;row-gap:16px}
+ .lab-poster-art{border-radius:12px}
+ .lab-poster-author{font-size:11px;padding:7px 3px 0}
+ .view-library .lab-library-controls,.view-library .lab-feed-filters{margin-left:4px;margin-right:4px}
+ .view-map .lab-page-heading{margin-top:4px;margin-right:4px;margin-bottom:13px}
+ .view-map .lab-map-layout{margin-left:4px;margin-right:4px}
+ .lab-bottom-nav{width:min(390px,calc(100% - 32px));gap:10px}
+}
+@media(max-width:360px){
+ .lab-header{width:calc(100% - 28px);gap:9px}.lab-logo-lockup{gap:12px}
+ .lab-brand{font-size:39px}.lab-header .lab-circle-switch{font-size:11px}
+ .lab-main{width:calc(100% - 20px)}.lab-poster-grid{column-gap:8px}
+}
+
+/* Content editing and publication withdrawal reuse the existing card sheet. */
+.lab-edit-content{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;width:100%;border:1px solid var(--fg);border-radius:13px;font-size:13px;font-weight:800;margin:20px 0 4px;background:var(--surface);color:var(--fg)}
+.lab-withdraw-action{display:flex;align-items:center;gap:7px;min-height:44px;font-size:12px;color:var(--fg);margin-top:12px}
+.lab-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}.lab-confirm-actions>button{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid var(--line);border-radius:14px;font-size:13px;font-weight:750}.lab-confirm-actions>.lab-primary{border-color:transparent}
+.lab-audience:disabled{opacity:1!important;color:var(--muted);cursor:default}
+.lab-withdraw-dialog h2{word-break:keep-all;line-height:1.25}

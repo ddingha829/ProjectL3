@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "checks": [
+    "actual-email-password-login",
+    "browser-text-log-save-survives-reload",
+    "preset-save-survives-reload",
+    "invite-link-login-auto-join",
+    "peer-edit-visible-without-reload",
+    "studio-sample-does-not-inherit-real-work"
+  ],
+  "viewport": "desktop 1280x720 via in-app browser",
+  "mobileDeviceEmulation": "not available through current browser controls",
+  "finishedAt": "2026-10-25T22:16:26.993Z"
+}

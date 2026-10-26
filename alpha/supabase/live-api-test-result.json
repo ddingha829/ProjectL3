@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "checks": 19,
+  "names": [
+    "existing-test-account-login-0",
+    "existing-test-account-login-1",
+    "new-real-account-has-no-demo-logs",
+    "other-account-cannot-read-private",
+    "automatic-six-character-code",
+    "code-join-case-insensitive",
+    "invited-account-reads-existing-shared-log",
+    "other-author-update-rejected",
+    "group-slot-conflict-rejected",
+    "original-update-shared-live",
+    "unshared-private-photo-denied",
+    "owner-can-download-photo",
+    "shared-photo-readable-by-member",
+    "removed-member-keeps-only-personal-original",
+    "kicked-member-cannot-reuse-old-invite",
+    "kicked-member-cannot-reuse-old-code",
+    "removed-member-fresh-photo-request-denied",
+    "removed-member-cannot-mint-photo-link",
+    "keep-choice-retains-shared-original"
+  ],
+  "finishedAt": "2026-10-26T04:36:50.785Z"
+}

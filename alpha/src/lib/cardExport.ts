@@ -210,6 +210,7 @@ async function renderSnapshot(snapshot: HTMLElement, width: number, height: numb
   const corners = [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius].map(value => parseFloat(value) || 0);
   const notchRadius = parseFloat(style.getPropertyValue('--card-notch-radius')) || 0;
   const notchY = height * (parseFloat(style.getPropertyValue('--card-notch-y')) || 0) / 100;
+  const cut = parseFloat(style.getPropertyValue('--card-cut-corner')) || 0;
   const svg = await withTimeout(toSvg(snapshot, { width, height, fontEmbedCSS, preferredFontFormat: 'woff2',
     style: { animation: 'none', transition: 'none', transform: 'none', boxShadow: 'none', mask: 'none', webkitMask: 'none' },
   }), '카드 이미지 생성이 지연되고 있습니다. 다시 시도해 주세요.', 30000);
@@ -226,6 +227,7 @@ async function renderSnapshot(snapshot: HTMLElement, width: number, height: numb
     context.save();
     context.scale(canvas.width / width, canvas.height / height);
     context.beginPath(); context.roundRect(0, 0, width, height, corners); context.clip();
+    if(cut>0){context.beginPath();context.moveTo(cut,0);context.lineTo(width-cut,0);context.lineTo(width,cut);context.lineTo(width,height-cut);context.lineTo(width-cut,height);context.lineTo(cut,height);context.lineTo(0,height-cut);context.lineTo(0,cut);context.closePath();context.clip();}
     context.drawImage(image, 0, 0, width, height);
     if (notchRadius > 0) {
       context.globalCompositeOperation = 'destination-out';
@@ -241,7 +243,9 @@ async function renderSnapshot(snapshot: HTMLElement, width: number, height: numb
   paint();
   // Decoded SVGs can precede foreignObject photo/font painting (including Chrome
   // when a new font family loads). Repaint the SAME SVG without re-fetching photos.
-  await new Promise<void>(resolve => setTimeout(resolve, 150));
+  // Font-backed SVG foreignObjects may initially paint only part of the text.
+  // In particular, repeated exports can decode before headings/metadata paint.
+  await new Promise<void>(resolve => setTimeout(resolve, 1000));
   await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   paint();
   return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob?.size ? resolve(blob) : reject(new Error('카드 이미지를 생성하지 못했습니다. 다시 시도해 주세요.')), 'image/png'));

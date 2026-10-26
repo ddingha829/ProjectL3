@@ -1,0 +1,14 @@
+.l2-save-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:auto}
+.l2-save-button .tween-slide-label{height:20px;font:inherit}
+.l2-save-button .tween-slide-label>span{font:inherit;line-height:20px}
+.l2-save-button .tween-slide-badge{flex:none;width:24px;height:24px;background:#fff;color:#c54725}
+.l2-save-button .tween-slide-badge>svg{stroke:currentColor}
+.l2-save-button.is-compact .tween-slide-label{height:18px}
+.l2-save-button.is-compact .tween-slide-label>span{line-height:18px}
+.l2-save-button.is-compact .tween-slide-badge{width:18px;height:18px}
+.l2-save-button:disabled .tween-slide-badge{background:#ffffff20;color:inherit}
+.l2-save-button[data-pending=true] .tween-slide-label>span{animation:none!important;transform:none!important}
+.l2-save-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0;pointer-events:none}
+.l2-save-icon svg{display:block;flex:none}
+.l2-save-button:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.l2-save-button .lab-spin{animation:none}.l2-save-icon path{transform:none!important}}

@@ -1,42 +1,14 @@
 {
-  "name": "l2-archive-card-engine",
-  "version": "1.0.0",
+  "name": "l2-unified",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack -H 127.0.0.1 -p 3013",
+    "dev": "next dev --webpack -H 127.0.0.1 -p 3014",
     "build": "next build --webpack",
-    "start": "next start -H 127.0.0.1 -p 3013",
+    "start": "next start -H 127.0.0.1 -p 3014",
     "typecheck": "tsc --noEmit --incremental false",
-    "test:repository": "node scripts/test_repository.mjs",
-    "test:context-restore": "node scripts/test_context_restore.mjs",
-    "test:context-browser": "node scripts/test_context_browser.mjs",
-    "test:design-history": "node scripts/test_design_history.mjs",
-    "test:ux-polish": "node scripts/test_ux_polish.mjs",
-    "test:stability": "node scripts/test_stability.mjs",
-    "test:session-http": "node scripts/test_session_http.mjs",
-    "test:ui": "node scripts/test_preset_workflows.mjs",
-    "test:pwa": "node scripts/test_pwa.mjs",
-    "test:map": "node scripts/test_map_presets.mjs",
-    "test:motion": "node scripts/test_motion.mjs",
-    "test:motion-defaults": "node scripts/test_motion_defaults.mjs",
-    "test:save-feedback": "node scripts/test_save_feedback.mjs",
-    "test:guides-studio": "node scripts/test_guides_studio.mjs",
-    "test:ux-upgrade": "node scripts/test_ux_upgrade.mjs",
-    "test:card-exports": "node scripts/test_card_exports.mjs",
-    "test:ticket-export": "node scripts/test_ticket_export.mjs",
-    "test:photo-adjust": "node scripts/test_photo_adjust.mjs",
-    "test:card-designs": "node scripts/test_card_designs.mjs",
-    "test:preset-workflows": "node scripts/test_preset_workflows.mjs",
-    "test:google-auth": "node scripts/test_google_auth.mjs",
-    "test:frontend-round2": "node scripts/test_frontend_round2.mjs",
-    "test:oct20-api": "node scripts/test_oct20_api.mjs",
-    "test:oct20-browser": "node scripts/test_oct20_browser.mjs",
-    "test:handwriting": "node scripts/test_handwriting_font.mjs",
-    "test:composer-media": "node scripts/test_composer_media.mjs",
-    "test:voice": "node scripts/test_voice_input.mjs",
-    "test:calendar": "node scripts/test_log_calendar.mjs",
-    "test:theme": "node scripts/test_theme.mjs",
-    "test:current-location": "node scripts/test_current_location.mjs"
+    "test:db": "node scripts/test-unified-schema.mjs",
+    "test:weather": "node scripts/test-weather.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",
@@ -46,10 +18,13 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.16.0",
     "next": "16.4.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "server-only": "^0.0.1",
-    "upng-js": "^2.1.0"
+    "upng-js": "^2.1.0",
+    "@mapbox/vector-tile": "3.0.0",
+    "pbf": "5.1.2",
+    "motion": "14.6.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",
@@ -59,8 +34,12 @@
     "@types/react-dom": "^19",
     "@types/upng-js": "^2.1.5",
     "postcss": "^8.5.0",
-    "puppeteer-core": "^24.4.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@electric-sql/pglite": "0.5.11",
+    "esbuild": "0.28.2"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

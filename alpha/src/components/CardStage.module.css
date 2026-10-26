@@ -170,3 +170,19 @@
 .frame[data-card-ratio='9:16'] .ticket .title{font-size:38px}
 .frame[data-card-ratio='9:16'] .ticket .content{gap:10px}
 .frame[data-card-ratio='9:16'] .ticket .details{font-size:12px;gap:4px}
+.collection .artwork{padding:30px;gap:20px}
+.collection .title{font-size:46px;line-height:1.1;letter-spacing:-.055em;max-width:100%;word-break:keep-all;overflow-wrap:anywhere;text-wrap:balance;-webkit-line-clamp:3}
+.collection .quote{font-size:26px;line-height:1.45;font-weight:650;letter-spacing:-.035em;font-style:normal;word-break:keep-all;overflow-wrap:anywhere;-webkit-line-clamp:4}
+.collection .quoteBox{border:0;background:none;padding:0;border-radius:0}
+.collection.fullBleed .content{gap:16px}
+.collection.fullBleed .title{font-size:52px;line-height:1.04;-webkit-line-clamp:3}
+.collection.fullBleed .quote{font-size:25px;border:0;padding:0;-webkit-line-clamp:3}
+.collection.broadside .title{font-size:46px;line-height:1.1}
+.collection.broadside .quote{font-size:31px;line-height:1.4;-webkit-line-clamp:7}
+.collection.broadside .quoteBox{padding:0;border:0}
+.collection.broadside .content{gap:24px}
+.collection.polaroid .title{font-size:40px}
+.collection.polaroid .film{background:none;padding:0;border-radius:12px}
+.collection.polaroid .tape{display:none}
+.collection.ticket .title{font-size:40px}
+.collection.ticket .quote{font-size:26px;-webkit-line-clamp:3}

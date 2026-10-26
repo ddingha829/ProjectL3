@@ -1,0 +1,12 @@
+/* A click completes one cycle, including on touchscreens without hover. */
+.tween-shiny-sweep[data-tween-run=true]{animation:l2-tween-shine 650ms ease-in-out}
+.tween-slide-label[data-tween-run=true]>span{animation:l2-tween-label 560ms cubic-bezier(.32,.72,0,1)}
+.tween-slide-badge[data-tween-run=true]>svg:first-child{animation:l2-tween-arrow-out 560ms ease-in-out}
+.tween-slide-badge[data-tween-run=true]>svg:last-child{animation:l2-tween-arrow-in 560ms ease-in-out}
+@keyframes l2-tween-shine{from{left:-67%}to{left:110%}}
+@keyframes l2-tween-label{from{transform:translateY(0)}to{transform:translateY(-100%)}}
+@keyframes l2-tween-arrow-out{from{translate:0 0}to{translate:24px 0}}
+@keyframes l2-tween-arrow-in{from{translate:-24px 0}to{translate:0 0}}
+@media(prefers-reduced-motion:reduce){
+ .tween-shiny-sweep[data-tween-run],.tween-slide-label[data-tween-run]>span,.tween-slide-badge[data-tween-run]>svg{animation:none!important}
+}

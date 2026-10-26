@@ -1,0 +1,12 @@
+legacy
+legacy/**
+**/node_modules
+**/node_modules/**
+**/.next
+**/.next/**
+**/.test-data
+**/.test-data/**
+**/work
+**/work/**
+**/.env*.local
+**/.dev.vars*

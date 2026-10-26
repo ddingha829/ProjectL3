@@ -22,6 +22,7 @@ interface CardStageProps {
   cardCaptureRef?: React.RefObject<HTMLDivElement | null>;
   photoEditing?: boolean;
   onPhotoChange?: (crop:PhotoCrop) => void;
+  presentation?: 'full' | 'collection';
 }
 
 function accentInk(color: string): string {
@@ -32,9 +33,10 @@ function accentInk(color: string): string {
   return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722 > .179 ? '#111114' : '#FFFFFF';
 }
 
-export default function CardStage({ item, slot: preferredSlot, skin, authorName, selectedItems, curationTitle, cardCaptureRef, photoEditing=false, onPhotoChange }: CardStageProps) {
+export default function CardStage({ item, slot: preferredSlot, skin, authorName, selectedItems, curationTitle, cardCaptureRef, photoEditing=false, onPhotoChange, presentation='full' }: CardStageProps) {
   const displayDate=experienceDate(item);
-  const slot = resolveEffectiveSlot(item, preferredSlot);
+  const collection=presentation==='collection';
+  const slot = resolveEffectiveSlot(item, collection?{...preferredSlot,showDecorations:false,showNumber:false,showLocation:false,showSignature:false,showProsCons:false,showScore:false}:preferredSlot);
   const showScore = slot.showScore !== false && item.score !== '' && Number.isFinite(Number(item.score));
   const showLocation = slot.showLocation !== false;
   const showSignature = slot.showSignature !== false;
@@ -49,20 +51,20 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   const location = item.fullAddress || item.addressShort || item.loc;
 
   const photo = (height: number | string, fullBleed = false) => <PhotoViewport
-    src={item.img} alt={item.title} crop={photoCrop(item)} defaultFit={slot.layout==='ticket'?'contain':'cover'}
+    src={item.img} alt={item.title} crop={photoCrop(item)} defaultFit={slot.layout==='ticket'&&!collection?'contain':'cover'}
     editing={photoEditing} onChange={onPhotoChange} imageFilter={photoToneFilter(slot,slot.layout==='receipt'?'grayscale(1) contrast(1.15)':'')}
     className={`${styles.photo} ${fullBleed ? styles.photoCover : ''}`} style={{height}}/>;
   const label = (text: React.ReactNode, className = '') => <span className={`${styles.label} ${className}`}>{text}</span>;
   const decoration = (text: React.ReactNode, className = '') => showDecorations ? <span data-card-decoration="true" className={`${styles.label} ${className}`}>{text}</span> : null;
   const score = showScore ? <span className={styles.score} aria-label={`평점 ${item.score}`}>{item.score}</span> : null;
-  const heading = (withScore = true) => <div className={styles.row} style={{ alignItems: 'flex-start' }}>
-    <div style={{ minWidth: 0, flex: 1 }}><h3 className={styles.title}>{item.title}</h3>{showLocation && location && <p className={styles.location}>{location}</p>}</div>{withScore && score}
+  const heading = (withScore = true) => !item.title.trim()&&(!showLocation||!location)&&(!withScore||!score)?null:<div className={styles.row} style={{ alignItems: 'flex-start' }}>
+    <div style={{ minWidth: 0, flex: 1 }}>{item.title.trim()&&<h3 className={styles.title}>{item.title}</h3>}{showLocation && location && <p className={styles.location}>{location}</p>}</div>{withScore && score}
   </div>;
-  const quote = item.quote.trim() ? <p className={styles.quote}>“{item.quote}”</p> : null;
+  const quote = item.quote.trim() ? <p className={styles.quote}>{collection?item.quote:<>“{item.quote}”</>}</p> : null;
   const details = showProsCons && (item.good || item.bad || item.note) ? <div className={styles.details}>
     {([['GOOD', item.good], ['BAD', item.bad], ['NOTE', item.note]] as const).filter(([, value]) => value).slice(0, compact ? 2 : 3).map(([key, value]) => <div className={styles.detail} key={key}><span>{key}</span><span>{value}</span></div>)}
   </div> : null;
-  const footer = <div className={styles.footer}>
+  const footer = collection?null:<div className={styles.footer}>
     <div className={styles.imprint} data-card-imprint="true">
       <span data-imprint-field="date">{displayDate}</span>
       {showSignature && <span data-imprint-field="author" className={styles.imprintAuthor} title={author}>— {author}</span>}
@@ -80,7 +82,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'magazine': {
       const magazine = slot.layout === 'magazine';
       treatment = styles.fullBleed;
-      artwork = <>{photo('100%', true)}<div className={styles.vignette} /><div className={styles.artwork}>
+      artwork = <>{photo('100%', true)}{(!collection||item.title.trim()||item.quote.trim())&&<div className={styles.vignette} />}<div className={styles.artwork}>
         {(showDecorations || !magazine && showScore) && <div className={styles.header} style={!showDecorations ? { justifyContent: 'flex-end' } : undefined}>{showDecorations && <div data-card-decoration="true"><div className={magazine ? styles.masthead : styles.brand}>{magazine ? 'L2. CHRONICLE' : compact && showNumber ? number : 'L2.'}</div>{label(magazine ? 'THE JOURNAL OF TASTE & SPACES' : item.sub || item.cat, styles.muted)}</div>}{magazine ? decoration(item.cat) : score}</div>}
         <div className={styles.content}>{magazine && decoration(`COVER STORY · ${item.cat}`, styles.accent)}{heading(false)}{quote}{magazine && !compact && details}{magazine && showScore && label(`RATING ${item.score} / 5`)}{footer}</div>
       </div></>;
@@ -147,7 +149,7 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
     case 'broadside':
       treatment = styles.broadside;
       artwork = <div className={styles.artwork}>{showDecorations && <div data-card-decoration="true" className={styles.header}><div className={styles.number} data-card-number="true" hidden={!showNumber}>{number}</div><span className={styles.brand}>L2<br />ARCHIV.</span></div>}
-        <div className={styles.metadata}>{showLocation && <div>{label('01 PLACE', styles.muted)}<div className={styles.truncate}>{item.loc}</div></div>}<div>{label('02 DATE', styles.muted)}<div>{displayDate}</div></div>{showScore && <div>{label('03 SCORE', styles.muted)}<div className={styles.accent}>★ {item.score}</div></div>}</div>
+        {!collection&&<div className={styles.metadata}>{showLocation && <div>{label('01 PLACE', styles.muted)}<div className={styles.truncate}>{item.loc}</div></div>}<div>{label('02 DATE', styles.muted)}<div>{displayDate}</div></div>{showScore && <div>{label('03 SCORE', styles.muted)}<div className={styles.accent}>★ {item.score}</div></div>}</div>}
         <div className={`${styles.content} ${styles.grow}`} style={{ justifyContent: 'center' }}>{heading(false)}{quote && <div className={styles.quoteBox}>{quote}</div>}{details}</div>{footer}
       </div>;
       break;
@@ -168,8 +170,8 @@ export default function CardStage({ item, slot: preferredSlot, skin, authorName,
   }
 
   const variables = { '--card-bg': skin.bg, '--card-text': skin.text, '--card-sub': skin.sub, '--card-border': skin.border, '--card-accent': skin.accent, '--card-chip': skin.chipBg, '--card-accent-ink': accentInk(skin.accent), backgroundColor: skin.bg } as CSSProperties;
-  return <div data-card-preview="true" className={styles.stage}>
-    <CardFrame ratio={slot.ratio} layout={slot.layout} captureRef={cardCaptureRef} style={variables}><div className={`${styles.surface} ${treatment}`}>{artwork}</div>{slot.showGrain !== false && <div className={styles.grain} style={{ backgroundImage: `url("${CARD_GRAIN}")` }} aria-hidden="true" />}</CardFrame>
+  return <div data-card-preview="true" data-card-presentation={presentation} className={styles.stage}>
+    <CardFrame ratio={slot.ratio} layout={slot.layout} captureRef={cardCaptureRef} style={variables}><div className={`${styles.surface} ${treatment} ${collection?styles.collection:''}`}>{artwork}</div>{slot.showGrain !== false && <div className={styles.grain} style={{ backgroundImage: `url("${CARD_GRAIN}")` }} aria-hidden="true" />}</CardFrame>
 
   </div>;
 }

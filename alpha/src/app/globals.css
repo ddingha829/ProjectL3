@@ -24,7 +24,7 @@
 }
 
 html.light {
-  --bg: #F3F1EC;
+  --bg: #FFFFFF;
   --surface: #FFFFFF;
   --surface-2: #EAE6DF;
   --fg: #0B0B0C;
@@ -46,7 +46,7 @@ body {
   color: var(--fg);
   font-family:var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: background-color 0.25s ease, color 0.25s ease;
   margin: 0;
 }

@@ -1,0 +1,6 @@
+/* Runs after the log is actually stored, so fast saves still have feedback. */
+.lab-save-notice .lab-save-check svg{animation:l2-save-confirm 600ms cubic-bezier(.16,.8,.25,1) both}
+.lab-save-notice .lab-save-check path{stroke-dasharray:30;stroke-dashoffset:0;animation:l2-save-tick 550ms 70ms ease-out both}
+@keyframes l2-save-confirm{0%{transform:scale(.65);opacity:.2}65%{transform:scale(1.13);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes l2-save-tick{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.lab-save-notice .lab-save-check svg,.lab-save-notice .lab-save-check path{animation:none;transform:none;stroke-dashoffset:0}}

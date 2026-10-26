@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "checks": [
+    "group creation with chosen capacity",
+    "owner selects shared log through UI",
+    "invite entry survives login",
+    "shared history readable after joining",
+    "original change updates open viewer without reload",
+    "other-author edit controls hidden",
+    "share withdrawal removes open viewer",
+    "group creation opens six-character code panel",
+    "lowercase code entry joins through actual UI and persists two members"
+  ],
+  "finishedAt": "2026-10-26T04:47:13.524Z"
+}

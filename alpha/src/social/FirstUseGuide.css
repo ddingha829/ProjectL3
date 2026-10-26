@@ -1,0 +1,17 @@
+.lab-guide-overlay{position:fixed;inset:0;z-index:1000;isolation:isolate;color:var(--fg);font-family:"Sebang Gothic",sans-serif;touch-action:manipulation}
+.lab-guide-dim{position:absolute;inset:0}
+.lab-guide-highlight{position:absolute;pointer-events:none;box-sizing:border-box;border:2px solid var(--accent);border-radius:16px;background:color-mix(in srgb,var(--accent) 13%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 10%,transparent)}
+.lab-guide-card{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-radius:23px;padding:20px;overflow:auto;overscroll-behavior:contain;background:var(--surface);color:var(--fg);box-shadow:0 18px 65px #0004}
+.lab-guide-meta{display:flex;justify-content:space-between;gap:12px;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--muted)}
+.lab-guide-meta>span:first-child{color:var(--accent)}
+.lab-guide-copy h2{font-size:22px;line-height:1.3;letter-spacing:-.055em;font-weight:800;margin:15px 0 10px;word-break:keep-all;text-wrap:balance}
+.lab-guide-copy p{font-size:14px;line-height:1.7;letter-spacing:-.035em;word-break:keep-all;color:var(--muted);margin:0}
+.lab-guide-actions,.lab-guide-actions>div{display:flex;align-items:center;gap:8px}.lab-guide-actions{justify-content:space-between;margin-top:20px}
+.lab-guide-actions button{min-height:44px;border-radius:12px;font-size:12px;font-weight:700}.lab-guide-skip{padding:0 6px;color:var(--muted)}.lab-guide-back{display:grid;place-items:center;width:44px;border:1px solid var(--line)}
+.lab-guide-next{display:flex;align-items:center;justify-content:center;gap:10px;min-width:100px;padding:0 15px;background:var(--accent);color:#fff}
+.lab-guide-actions button:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.lab-guide-copy{animation:lab-guide-reveal 180ms ease-out both}
+@keyframes lab-guide-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:360px){.lab-guide-card{padding:17px}.lab-guide-copy h2{font-size:20px}.lab-guide-copy p{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.lab-guide-copy{animation:none}}
+@media(forced-colors:active){.lab-guide-card,.lab-guide-highlight,.lab-guide-next{border:2px solid CanvasText}.lab-guide-next{background:Highlight;color:HighlightText}}

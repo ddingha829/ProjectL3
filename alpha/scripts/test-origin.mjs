@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const compiled=await build({entryPoints:['src/server/requestOrigin.ts'],bundle:true,platform:'node',format:'esm',write:false});
+const {sameOrigin}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+const req=headers=>new Request('http://localhost:3014/api/weather/',{headers});
+assert.equal(sameOrigin(req({Host:'127.0.0.1:3014',Origin:'http://127.0.0.1:3014'})),true);
+assert.equal(sameOrigin(req({Host:'preview.vercel.app',Origin:'https://preview.vercel.app','x-forwarded-proto':'https'})),true);
+assert.equal(sameOrigin(req({Host:'preview.vercel.app',Origin:'https://other.invalid','x-forwarded-proto':'https'})),false);
+assert.equal(sameOrigin(req({Host:'preview.vercel.app',Origin:'https://preview.vercel.app','x-forwarded-proto':'https','sec-fetch-site':'cross-site'})),false);
+assert.equal(sameOrigin(req({Host:'preview.vercel.app',Origin:'https://other.invalid','x-forwarded-proto':'https','x-forwarded-host':'other.invalid'})),false);
+assert.equal(sameOrigin(req({Host:'preview.vercel.app/other'})),false);
+assert.equal(sameOrigin(req({Host:'127.0.0.1:3014'})),true);
+console.log(JSON.stringify({status:'passed',checks:7}));

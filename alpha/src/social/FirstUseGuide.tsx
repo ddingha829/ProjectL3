@@ -1,0 +1,88 @@
+'use client';
+import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
+import {isolateDialog} from '@/lib/dialogIsolation';
+import {ArrowLeft,ArrowRight,Check} from 'lucide-react';
+import './FirstUseGuide.css';
+
+export type GuideContext='today'|'library'|'map'|'studio'|'compose'|'detail'|'own-detail'|'mosaic';
+export const GUIDE_KEY='l2_unified_ui_guides_v1';
+type Seen=Partial<Record<GuideContext|'all',boolean>>;
+type Step={targets:string[];title:string;body:string};
+type Rect={left:number;top:number;width:number;height:number};
+const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
+ mosaic:[{targets:['.mosaic-frame','.mosaic-tray'],title:'취향을 원하는 칸에',body:'작품을 연결한 로그만 타일로 보여요. 하단 플로팅 트레이를 옆으로 넘겨 내 타일을 찾고, 위로 끌어 빈 칸(+)에 놓아요. 타일 선택 후 빈 칸을 눌러도 돼요. 채운 타일을 누르면 양면 카드를 볼 수 있고, 위치 이동에서 자리를 바꿀 수 있어요. 모임 보드에서는 내 타일만 빈 칸으로 옮길 수 있어요.'}],
+ studio:[{targets:['.un-studio-tools'],title:'내 스타일을 프리셋으로',body:'앞면·뒷면·색·질감을 고르고 이름을 붙여 저장해요. 기본으로 지정하면 새 로그에 적용돼요. 기존 로그의 디자인은 바뀌지 않아요.'}],
+ today:[
+  {targets:['.lab-main [data-log-id]:first-child .lab-poster-art','.lab-main .lab-empty'],title:'로그는 카드로 모여요',body:'카드를 누르면 크게 펼쳐져요. 펼친 카드를 한 번 더 누르면 뒤집혀 감상을 읽을 수 있어요. 카드 안쪽 아래에 작성자 이름이 보여요. 카드 어디를 눌러도 상세 화면이 열려요.'},
+  {targets:['.un-header-search','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'상단 돋보기를 누르면 작은 검색창이 펼쳐져요. 아래 한 줄에서 카테고리·필터·보기모드·보관함을 골라요. 도구 모음은 스크롤해도 위에 남아요.'},
+  {targets:['.un-header-v2','.un-navigation .lab-nav-rail'],title:'남기고, 찾아보고',body:'로고 옆 드롭다운에서 마이로그나 모임을 골라요. 모임을 만들면 초대 코드가 나오고, 받은 6자리 코드로 바로 참여할 수 있어요. 아래에서 피드·지도·타일·스튜디오를 오가고, ＋로 기록을 남겨요.'},
+ ],
+ library:[{targets:['.flc-shell'],title:'내 기록을 다시 찾는 곳',body:'내 로그·모임 로그·담아둔 로그를 나눠 보고, 검색으로 찾아보세요. 오른쪽 보관함에서 로그를 선택해 묶거나 취향 선반을 열 수 있어요.'}],
+ map:[{targets:['.lab-map-panel'],title:'기록할수록 채워지는 지도',body:'선택한 범위에서 장소가 있는 로그가 동네의 색을 채워요. 확대하면 흰색 점과 제목이 나타나요. 누르면 그 위에 카드가 펼쳐져요. 카드나 오른쪽 아래 정보를 누르면 로그가 열려요.'}],
+ compose:[
+  {targets:['.un-entry-options','.lab-story-stage','.lab-write-surface'],title:'지금의 순간을 담아요',body:'촬영하기·작품 등록하기·글만 쓰기 중에서 골라요. 사진을 찍거나 선택하면 작성창이 올라오고, 작품은 검색 후 고르면 표지가 배경에 보여요. 글만 쓰면 노트 배경으로 시작해요.'},
+  {targets:['.un-entry-options','.un-sheet-header','.lab-submit'],title:'글만 남겨도 좋아요',body:'상단 위치에서 근처 장소나 표시할 이름을 고르고, 오른쪽에서 날씨를 확인해요. 아래 별을 밀어 평점을 고르거나 비워둘 수 있어요. 작품에는 위치를 읽지 않아요. 로그 등록을 누른 뒤 함께 나눌 모임을 여러 개 골라요. 마이로그에는 항상 남아요. 작성창 위 손잡이를 누르면 접혀요.'},
+ ],
+};
+function readSeen():Seen{try{const value=JSON.parse(localStorage.getItem(GUIDE_KEY)||'{}'),seen:Seen={};for(const key of ['today','library','map','studio','compose','detail','own-detail','mosaic','all'] as const)if(value?.[key]===true)seen[key]=true;return seen;}catch{return {};}}
+
+export default function FirstUseGuide({context,replay,owned,shared,pending=false,onActiveChange}:{context:GuideContext|null;replay:number;owned:boolean;shared:boolean;pending?:boolean;onActiveChange:(active:boolean)=>void}){
+ const [seen,setSeen]=useState<Seen>({}),[ready,setReady]=useState(false),[settledContext,setSettledContext]=useState<GuideContext|null>(null),previousReplay=useRef(replay);
+ useEffect(()=>{setSeen(readSeen());setReady(true);},[]);
+ // Let the underlying modal finish its focus/inert setup before placing a tour above it.
+ useEffect(()=>{let frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>setSettledContext(context));});return()=>cancelAnimationFrame(frame);},[context]);
+ useEffect(()=>{if(previousReplay.current===replay)return;previousReplay.current=replay;setSeen({});try{localStorage.removeItem(GUIDE_KEY);}catch{}},[replay]);
+ const active=Boolean(ready&&context&&settledContext===context&&!seen.all&&!seen[context]);
+ useEffect(()=>{onActiveChange(active);return()=>onActiveChange(false);},[active,onActiveChange]);
+ const finish=(all=false)=>{if(!context)return;const next={...seen,[all?'all':context]:true,...(!all&&context==='own-detail'?{detail:true}:{})};setSeen(next);try{localStorage.setItem(GUIDE_KEY,JSON.stringify(next));}catch{}};
+ const detail:Step[]=[{targets:['.un-detail-card'],title:'한 장에 집중해요',body:'크게 펼친 사진 카드를 다시 누르면 뒷면이 보여요. 사진이 없는 로그는 감상 면만 보여요. 손가락으로 위아래로 밀거나 아래 화살표를 누르면 메뉴가 열려요.'},{targets:['.un-viewer-toggle'],title:'필요한 메뉴만 꺼내요',body:owned?'화살표를 누르면 내용 수정·카드 꾸미기·사진 조정이 열려요. 공유하기에서 앞면 1장·앞뒤 2장·합본을 고를 수 있어요. 메뉴를 접으면 카드가 다시 커져요.':'화살표를 누르면 공감·댓글·담아두기가 열려요. 공유하기에서 이미지 형식을 고를 수 있고, 책·영화는 나도 보기에 담아둘 수 있어요.'}];
+ return active&&context?<GuideOverlay key={`${replay}:${context}`} steps={context==='detail'||context==='own-detail'?detail:copy[context]} onDone={()=>finish()} onSkip={()=>finish(true)}/>:null;
+}
+
+function GuideOverlay({steps,onDone,onSkip}:{steps:Step[];onDone:()=>void;onSkip:()=>void}){
+ const [index,setIndex]=useState(0),[geometry,setGeometry]=useState<{rects:Rect[];left:number;top:number;width:number;maxHeight:number}|null>(null);
+ const overlay=useRef<HTMLDivElement>(null),panel=useRef<HTMLDivElement>(null),next=useRef<HTMLButtonElement>(null),titleId=useId(),bodyId=useId(),actions=useRef({onSkip,onDone,index});actions.current={onSkip,onDone,index};
+ const advance=()=>index===steps.length-1?onDone():setIndex(index+1);
+ useEffect(()=>{
+  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null,top=scrollY,left=scrollX;
+  const positions=Array.from(document.querySelectorAll<HTMLElement>('.lab-detail-dialog,.lab-compose-dialog')).map(el=>({el,top:el.scrollTop}));
+  const releaseIsolation=overlay.current?isolateDialog(overlay.current):()=>{};next.current?.focus({preventScroll:true});
+  const keyboard=(e:KeyboardEvent)=>{
+   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();actions.current.onSkip();return;}
+   if(e.key==='Tab'){
+    const buttons=Array.from(panel.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])')||[]),first=buttons[0],last=buttons.at(-1);
+    if(e.shiftKey&&(document.activeElement===first||!panel.current?.contains(document.activeElement))){e.preventDefault();last?.focus();}
+    else if(!e.shiftKey&&(document.activeElement===last||!panel.current?.contains(document.activeElement))){e.preventDefault();first?.focus();}
+   }
+  };
+  document.addEventListener('keydown',keyboard,true);
+  return()=>{document.removeEventListener('keydown',keyboard,true);releaseIsolation();positions.forEach(({el,top})=>{if(el.isConnected)el.scrollTop=top;});window.scrollTo({top,left,behavior:'instant'});queueMicrotask(()=>{if(previous?.isConnected&&!previous.closest('[inert]'))previous.focus({preventScroll:true});});};
+ },[]);
+ useLayoutEffect(()=>{
+  let frame=0,tries=0,scrolled=false,observer:ResizeObserver|undefined;
+  const measure=()=>{
+   const visible=steps[index].targets.flatMap(selector=>Array.from(document.querySelectorAll<HTMLElement>(selector))).filter(el=>el.getClientRects().length&&el.getBoundingClientRect().width>0);
+   if(!visible.length&&tries++<60){frame=requestAnimationFrame(measure);return;}
+   const viewport=window.visualViewport,vLeft=viewport?.offsetLeft||0,vTop=viewport?.offsetTop||0,w=viewport?.width||innerWidth,h=viewport?.height||innerHeight;
+   if(!scrolled){scrolled=true;const first=visible[0];if(first){const r=first.getBoundingClientRect();if(r.top<vTop+8||r.top>vTop+h-60)first.scrollIntoView({block:'nearest',behavior:'instant'});}}
+   const rects=visible.map(el=>{const r=el.getBoundingClientRect(),left=Math.max(vLeft+6,r.left-5),top=Math.max(vTop+6,r.top-5),right=Math.min(vLeft+w-6,r.right+5),bottom=Math.min(vTop+h-6,r.bottom+5);return{left,top,width:Math.max(0,right-left),height:Math.max(0,bottom-top)};}).filter(r=>r.width>0&&r.height>0);
+   const width=Math.min(350,w-24),maxHeight=h-24,pHeight=Math.min(panel.current?.scrollHeight||230,maxHeight),bounds=rects[0];
+   let top=vTop+h-pHeight-12,left=vLeft+(w-width)/2;
+   if(bounds){left=Math.max(vLeft+12,Math.min(bounds.left+(bounds.width-width)/2,vLeft+w-width-12));const below=bounds.top+bounds.height+16,above=bounds.top-pHeight-16;if(below+pHeight<vTop+h-12)top=below;else if(above>vTop+12)top=above;}
+   setGeometry({rects,left,top:Math.max(vTop+12,Math.min(top,vTop+h-pHeight-12)),width,maxHeight});
+  };
+  frame=requestAnimationFrame(measure);observer=new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure);});if(panel.current)observer.observe(panel.current);
+  const update=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure);};window.addEventListener('resize',update);document.addEventListener('scroll',update,true);window.visualViewport?.addEventListener('resize',update);window.visualViewport?.addEventListener('scroll',update);
+  return()=>{cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',update);document.removeEventListener('scroll',update,true);window.visualViewport?.removeEventListener('resize',update);window.visualViewport?.removeEventListener('scroll',update);};
+ },[index,steps]);
+ return createPortal(<div ref={overlay} className="lab-guide-overlay" data-lab-guide onClick={e=>{if(e.target===e.currentTarget)advance();}}>
+  <svg className="lab-guide-dim" aria-hidden="true" onClick={advance} width="100%" height="100%"><defs><mask id={`${titleId}-mask`}><rect width="100%" height="100%" fill="white"/>{geometry?.rects.map((r,i)=><rect key={i} {...r} x={r.left} y={r.top} rx="16" fill="black"/>)}</mask></defs><rect width="100%" height="100%" fill="black" fillOpacity=".46" mask={`url(#${titleId}-mask)`}/></svg>
+  {geometry?.rects.map((r,i)=><div className="lab-guide-highlight" key={i} style={r} aria-hidden="true"/>)}
+  <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} className="lab-guide-card" style={geometry?{left:geometry.left,top:geometry.top,width:geometry.width,maxHeight:geometry.maxHeight}:{visibility:'hidden',width:350}}>
+   <div className="lab-guide-meta"><span>QUICK GUIDE</span><span aria-label={`${steps.length}단계 중 ${index+1}단계`}>{String(index+1).padStart(2,'0')} / {String(steps.length).padStart(2,'0')}</span></div>
+   <div key={index} className="lab-guide-copy" aria-live="polite"><h2 id={titleId}>{steps[index].title}</h2><p id={bodyId}>{steps[index].body}</p></div>
+   <div className="lab-guide-actions"><button className="lab-guide-skip" onClick={onSkip}>안내 끄기</button><div>{index>0&&<button className="lab-guide-back" aria-label="이전 안내" onClick={()=>setIndex(index-1)}><ArrowLeft size={18}/></button>}<button ref={next} className="lab-guide-next" onClick={advance}>{index===steps.length-1?'알겠어요':'다음'}{index===steps.length-1?<Check size={17}/>:<ArrowRight size={17}/>}</button></div></div>
+  </div>
+ </div>,document.body);
+}

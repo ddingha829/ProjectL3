@@ -59,7 +59,7 @@ async function encodeCardPng(canvas: HTMLCanvasElement): Promise<Blob> {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data.buffer;
-  const worker = new Worker(new URL('../workers/cardPng.ts', import.meta.url));
+  const worker = new Worker(new URL('../workers/cardPng.ts', import.meta.url), { type: 'module' });
   try {
     return await new Promise<Blob>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('카드 압축이 지연되고 있어요. 다시 시도해 주세요.')), 20000);
