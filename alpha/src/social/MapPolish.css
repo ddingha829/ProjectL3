@@ -41,4 +41,3 @@ html.light .logbook-map.scratch-map:not(.is-dark){--map-base:#cacbc8;--map-filte
 .scratch-map[data-region-tier=country] .scratch-dong-outline{stroke-width:0!important;stroke-opacity:0!important}
 .scratch-map[data-region-tier=province] .scratch-dong-outline{stroke-width:.6;stroke-opacity:.3}
 .scratch-map-tools button[aria-pressed=true]{color:var(--accent)!important;border-color:var(--accent)!important}
-.scratch-pan-mode{position:absolute;top:9px;left:9px;z-index:650;display:flex;align-items:center;gap:7px;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--map-line);background:var(--map-panel);color:var(--map-ink);font-size:11px}

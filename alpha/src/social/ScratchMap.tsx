@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Expand,RotateCcw,MapPin,LoaderCircle,X,ArrowUpRight,LocateFixed,Info,Move,Check} from 'lucide-react';
+import {Expand,RotateCcw,MapPin,LoaderCircle,X,ArrowUpRight,LocateFixed,Info} from 'lucide-react';
 import type * as Leaflet from 'leaflet';
 import type {FeatureCollection} from 'geojson';
 import {archive,timeAgo,type LabLog,type Person,type Place} from './model';
@@ -16,17 +16,17 @@ import {loadMapRegions,mapTierForZoom,MAP_TIER_LABEL,regionalCoverage,type MapTi
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
-type Props={logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;pageSwipe?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string};
+type Props={logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string};
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 로그';
 const LOG_DETAIL_ZOOM=13;
-export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,compact=false,pageSwipe=false,scopeKey,highlightedDong,focusedLog}:Props){
+export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
  const [currentPoint,setCurrentPoint]=useState<{lat:number;lng:number}|null>(null),[locating,setLocating]=useState(false),[locationError,setLocationError]=useState('');
  const locationRequest=useRef(0),locateIcon=useRef<LocateFixedIconHandle>(null),replayIcon=useRef<RotateCcwIconHandle>(null);
- const [replaying,setReplaying]=useState(false),[freePan,setFreePan]=useState(false);
+ const [replaying,setReplaying]=useState(false);
  const [tier,setTier]=useState<MapTier>('dong'),[regional,setRegional]=useState<Partial<Record<WideMapTier,DongCollection>>>({}),[regionError,setRegionError]=useState('');
  const userMoved=useRef(false),autoLocated=useRef(false);
  const reduceMotion=useMotionPreference();
@@ -74,7 +74,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(gone||!host.current)return;engine.current=L;
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
    const nearby=currentPoint&&!compact&&!current.current.onPick&&!focusedLog?currentPoint:null;
-   const m=L.map(host.current,{dragging:!pageSwipe||freePan,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:nearby?15:14.25);
+   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:nearby?15:14.25);
    map.current=m;
    userMoved.current=false;
    m.on('dragstart zoomstart',()=>{userMoved.current=true;});
@@ -153,7 +153,6 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   },{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
  };
  useEffect(()=>{if(!ready||onPick||compact||focusedLog||autoLocated.current)return;autoLocated.current=true;locate(true);},[ready,onPick,compact,focusedLog]);
- useEffect(()=>{const m=map.current;if(!ready||!m)return;if(pageSwipe&&!freePan)m.dragging.disable();else m.dragging.enable();},[pageSwipe,freePan,ready]);
  const selected=located.find(log=>log.id===focused),selectedPerson=selected?people.find(person=>person.id===selected.authorId):undefined;
  const appearance=selected?cardView(selected):null;
  useEffect(()=>{
@@ -163,11 +162,10 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   return()=>{m.off('move zoom viewreset resize',position);};
  },[focused,geometry,ready]);
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
- return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-page-swipe-map={pageSwipe||undefined} data-no-swipe={pageSwipe&&freePan||undefined} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
+ return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
   <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 로그 지도'}/>
   {(!ready||!boundaries&&!boundaryError)&&<div className="scratch-loading" role="status"><LoaderCircle size={22}/>{ready?'행정동 경계를 불러오는 중':'지도를 펼치고 있어요'}</div>}
-  {ready&&<div className="scratch-map-tools" data-no-swipe><button onClick={fit} aria-label="공유한 장소 전체 보기" title="전체 보기"><Expand size={13}/></button><button onClick={()=>replay(true)} aria-label="지도 색 채움 다시 보기" aria-busy={replaying} data-replaying={replaying||undefined} title="색 채움 다시 보기"><RotateCcwIcon ref={replayIcon} size={14} isAnimated={false} duration={1.15}/></button>{!onPick&&<button onClick={()=>locate()} disabled={locating} aria-label="내 현재 위치 보기" aria-busy={locating} data-location-state={locating?'locating':locationError?'error':currentPoint?'found':'idle'} title="내 현재 위치"><LocateFixedIcon ref={locateIcon} size={14} isAnimated={false} duration={.75}/></button>}{pageSwipe&&<button aria-label={freePan?'지도 이동 마치기':'지도 이동 모드'} aria-pressed={freePan} title={freePan?'지도 이동 마치기':'지도 이동 모드 · 두 손가락으로도 이동 가능'} onClick={()=>setFreePan(value=>!value)}>{freePan?<Check size={14}/>:<Move size={14}/>}</button>}</div>}
-  {pageSwipe&&freePan&&<button className="scratch-pan-mode" onClick={()=>setFreePan(false)}><Move size={13}/><span>지도 이동 중</span><Check size={14}/></button>}
+  {ready&&<div className="scratch-map-tools" data-no-swipe><button onClick={fit} aria-label="공유한 장소 전체 보기" title="전체 보기"><Expand size={13}/></button><button onClick={()=>replay(true)} aria-label="지도 색 채움 다시 보기" aria-busy={replaying} data-replaying={replaying||undefined} title="색 채움 다시 보기"><RotateCcwIcon ref={replayIcon} size={14} isAnimated={false} duration={1.15}/></button>{!onPick&&<button onClick={()=>locate()} disabled={locating} aria-label="내 현재 위치 보기" aria-busy={locating} data-location-state={locating?'locating':locationError?'error':currentPoint?'found':'idle'} title="내 현재 위치"><LocateFixedIcon ref={locateIcon} size={14} isAnimated={false} duration={.75}/></button>}</div>}
   {locationError&&<div className="scratch-location-status" role="status">{locationError}<button onClick={()=>setLocationError('')} aria-label="위치 안내 닫기"><X size={13}/></button></div>}
   {!onPick&&boundaries&&<div className="scratch-caption"><span className="scratch-dot"/><span>{activeCoverage.dongs.length?`${MAP_TIER_LABEL[tier]} ${activeCoverage.dongs.length}곳 · 로그 ${matched}개`:located.length?MAP_TIER_LABEL[tier]:'장소가 있는 로그부터 남겨보세요'}</span></div>}
   {showLogDetails&&selected&&appearance&&<div key={selected.id} ref={floatingCard} className="scratch-floating-card-anchor" style={{left:-1000,top:-1000}}>

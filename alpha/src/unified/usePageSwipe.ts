@@ -29,7 +29,7 @@ export function usePageSwipe(enabled:boolean,onSwipe:(direction:SwipeDirection,o
    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey)return;
    const target=event.target;
    if(!(target instanceof Element)||!target.closest('.un-app')||event.clientX<24||event.clientX>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target))return;
-   const map=target.closest('.leaflet-container');if(map&&!map.closest('[data-page-swipe-map="true"]'))return;
+   if(target.closest('.leaflet-container'))return;
    const button=target.closest('button');if(button&&!button.closest('.un-main,.lab-nav-rail'))return;
    for(let node=target;node&&!node.matches('.un-app');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return;}
    gesture={id:event.pointerId,kind:event.pointerType,x:event.clientX,y:event.clientY,time:performance.now(),claimed:false,offset:0,target,surfaces:[]};
