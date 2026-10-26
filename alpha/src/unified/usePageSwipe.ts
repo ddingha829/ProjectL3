@@ -1,38 +1,65 @@
 'use client';
-import {useEffect,useRef} from 'react';
-import {swipeIntent,type SwipeDirection} from './pageSwipe';
-type Gesture={x:number;y:number;time:number;claimed:boolean};
-/** Local controls own map, board, form and scrolling gestures; page swipes use the rest. */
-export function usePageSwipe(enabled:boolean,onSwipe:(direction:SwipeDirection)=>void){
- const callback=useRef(onSwipe),suppress=useRef(0);callback.current=onSwipe;
- useEffect(()=>{const stopClick=(event:MouseEvent)=>{if(performance.now()<suppress.current&&event.target instanceof Element&&event.target.closest('.un-app')){event.preventDefault();event.stopImmediatePropagation();}};document.addEventListener('click',stopClick,true);return()=>document.removeEventListener('click',stopClick,true);},[]);
+import {useEffect,useRef,type RefObject} from 'react';
+import {swipeAxis,swipeIntent,swipeOffset,type SwipeDirection} from './pageSwipe';
+
+type Gesture={id:number;kind:string;x:number;y:number;time:number;claimed:boolean;offset:number;target:Element;surfaces:HTMLElement[]};
+type Options={root:RefObject<HTMLElement|null>;canSwipe:(direction:SwipeDirection)=>boolean};
+/** One primary pointer pages the main screen; local edit modes and multitouch own their gestures. */
+export function usePageSwipe(enabled:boolean,onSwipe:(direction:SwipeDirection,offset:number)=>void,options:Options){
+ const live=useRef({onSwipe,...options}),suppress=useRef(0);live.current={onSwipe,...options};
+ useEffect(()=>{
+  const stopClick=(event:MouseEvent)=>{if(event.detail>0&&performance.now()<suppress.current&&event.target instanceof Element&&event.target.closest('.un-app')){event.preventDefault();event.stopImmediatePropagation();}};
+  document.addEventListener('click',stopClick,true);return()=>document.removeEventListener('click',stopClick,true);
+ },[]);
  useEffect(()=>{
   if(!enabled)return;
-  let touch:Gesture|null=null,mouse:Gesture|null=null;
-  const begin=(target:EventTarget|null,x:number,y:number):Gesture|null=>{
-   if(!(target instanceof Element)||!target.closest('.un-app')||x<24||x>innerWidth-24||document.querySelector('[aria-modal="true"]'))return null;
-   if(target.closest('.leaflet-container,.scratch-map,.mosaic-frame,.mosaic-tray,[data-no-swipe],[data-ec-scroll],input,textarea,select,a,[contenteditable="true"]'))return null;
-   const button=target.closest('button');if(button&&!button.matches('.un-feed-card-open')&&!button.closest('.lab-nav-rail'))return null;
-   for(let node=target;node&&!node.matches('.un-app');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return null;}
-   return{x,y,time:performance.now(),claimed:false};
+  let gesture:Gesture|null=null;const touches=new Set<number>();
+  const blocked=(target:Element)=>Boolean(target.closest('[data-no-swipe],[data-no-page-swipe],.mosaic-frame.is-editing,.leaflet-control,input,textarea,select,a,[contenteditable="true"]'));
+  const resetMotion=(g:Gesture,spring=false)=>{
+   live.current.root.current?.removeAttribute('data-page-swipe-active');
+   for(const element of g.surfaces){
+    const from=element.style.transform;element.style.removeProperty('transform');element.style.removeProperty('will-change');
+    if(spring&&g.offset&&!matchMedia('(prefers-reduced-motion:reduce)').matches)element.animate([{transform:from},{transform:'translate3d(0,0,0)'}],{duration:180,easing:'cubic-bezier(.2,.75,.2,1)'});
+   }
   };
-  const move=(g:Gesture|null,x:number,y:number,event:Event):Gesture|null=>{
-   if(!g)return null;const dx=x-g.x,dy=y-g.y;
-   if(!g.claimed&&Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)*.9)return null;
-   if(Math.abs(dx)>20&&Math.abs(dx)>Math.abs(dy)*1.7)g.claimed=true;
-   if(g.claimed&&event.cancelable)event.preventDefault();return g;
+  const cancel=(spring=true)=>{if(gesture)resetMotion(gesture,spring);gesture=null;};
+  const down=(event:PointerEvent)=>{
+   suppress.current=0;
+   if(event.pointerType==='touch'){touches.add(event.pointerId);if(touches.size>1){cancel();return;}}
+   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey)return;
+   const target=event.target;
+   if(!(target instanceof Element)||!target.closest('.un-app')||event.clientX<24||event.clientX>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target))return;
+   const map=target.closest('.leaflet-container');if(map&&!map.closest('[data-page-swipe-map="true"]'))return;
+   const button=target.closest('button');if(button&&!button.closest('.un-main,.lab-nav-rail'))return;
+   for(let node=target;node&&!node.matches('.un-app');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return;}
+   gesture={id:event.pointerId,kind:event.pointerType,x:event.clientX,y:event.clientY,time:performance.now(),claimed:false,offset:0,target,surfaces:[]};
   };
-  const finish=(g:Gesture|null,x:number,y:number)=>{if(!g)return;const direction=swipeIntent(x-g.x,y-g.y,performance.now()-g.time);if(g.claimed||direction)suppress.current=performance.now()+500;if(direction&&!document.querySelector('[aria-modal="true"]'))callback.current(direction);};
-  const touchStart=(event:TouchEvent)=>{touch=event.touches.length===1?begin(event.target,event.touches[0].clientX,event.touches[0].clientY):null;};
-  const touchMove=(event:TouchEvent)=>{touch=event.touches.length===1?move(touch,event.touches[0].clientX,event.touches[0].clientY,event):null;};
-  const touchEnd=(event:TouchEvent)=>{const g=touch;touch=null;if(event.touches.length||!event.changedTouches[0])return;finish(g,event.changedTouches[0].clientX,event.changedTouches[0].clientY);};
-  const pointerDown=(event:PointerEvent)=>{if(event.pointerType==='mouse'&&event.button===0)mouse=begin(event.target,event.clientX,event.clientY);};
-  const pointerMove=(event:PointerEvent)=>{if(event.pointerType==='mouse')mouse=event.buttons===1?move(mouse,event.clientX,event.clientY,event):null;};
-  const pointerUp=(event:PointerEvent)=>{if(event.pointerType!=='mouse')return;const g=mouse;mouse=null;finish(g,event.clientX,event.clientY);};
-  const cancel=()=>{touch=null;mouse=null;};
-  const preventNativeDrag=(event:DragEvent)=>{if(mouse)event.preventDefault();};
-  document.addEventListener('touchstart',touchStart,{passive:true});document.addEventListener('touchmove',touchMove,{passive:false});document.addEventListener('touchend',touchEnd,{passive:true});document.addEventListener('touchcancel',cancel);
-  window.addEventListener('pointerdown',pointerDown,true);window.addEventListener('pointermove',pointerMove,{passive:false,capture:true});window.addEventListener('pointerup',pointerUp,true);window.addEventListener('pointercancel',cancel,true);document.addEventListener('dragstart',preventNativeDrag,true);window.addEventListener('blur',cancel);
-  return()=>{document.removeEventListener('touchstart',touchStart);document.removeEventListener('touchmove',touchMove);document.removeEventListener('touchend',touchEnd);document.removeEventListener('touchcancel',cancel);window.removeEventListener('pointerdown',pointerDown,true);window.removeEventListener('pointermove',pointerMove,true);window.removeEventListener('pointerup',pointerUp,true);window.removeEventListener('pointercancel',cancel,true);document.removeEventListener('dragstart',preventNativeDrag,true);window.removeEventListener('blur',cancel);};
+  const move=(event:PointerEvent)=>{
+   const g=gesture;if(!g||g.id!==event.pointerId)return;
+   if(!g.target.isConnected||(g.kind==='mouse'&&event.buttons!==1)||touches.size>1||document.querySelector('[aria-modal="true"]')||blocked(g.target)){cancel();return;}
+   const dx=event.clientX-g.x,dy=event.clientY-g.y,axis=swipeAxis(dx,dy);
+   if(!g.claimed&&axis==='vertical'){suppress.current=performance.now()+500;cancel(false);return;}
+   if(!g.claimed&&axis==='horizontal'){
+    g.claimed=true;g.surfaces=Array.from(live.current.root.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0);
+    for(const element of g.surfaces){for(const animation of element.getAnimations())animation.cancel();element.style.willChange='transform';}
+    live.current.root.current?.setAttribute('data-page-swipe-active','true');
+   }
+   if(!g.claimed)return;
+   if(event.cancelable)event.preventDefault();
+   const direction:SwipeDirection=dx<0?1:-1;g.offset=swipeOffset(dx,innerWidth,live.current.canSwipe(direction));
+   for(const element of g.surfaces)element.style.transform=`translate3d(${g.offset}px,0,0)`;
+  };
+  const up=(event:PointerEvent)=>{
+   touches.delete(event.pointerId);const g=gesture;if(!g||g.id!==event.pointerId)return;gesture=null;
+   const direction=g.claimed?swipeIntent(event.clientX-g.x,event.clientY-g.y,performance.now()-g.time):null;
+   const navigate=direction&&g.target.isConnected&&live.current.canSwipe(direction)&&!document.querySelector('[aria-modal="true"]')&&!blocked(g.target);
+   if(g.claimed)suppress.current=performance.now()+500;
+   resetMotion(g,!navigate);if(navigate&&direction)live.current.onSwipe(direction,g.offset);
+  };
+  const pointerCancel=(event:PointerEvent)=>{touches.delete(event.pointerId);if(gesture?.id===event.pointerId)cancel();};
+  const blur=()=>{touches.clear();cancel(false);};
+  const preventNativeDrag=(event:DragEvent)=>{if(gesture)event.preventDefault();};
+  window.addEventListener('pointerdown',down,true);window.addEventListener('pointermove',move,{passive:false,capture:true});window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',pointerCancel,true);window.addEventListener('blur',blur);document.addEventListener('dragstart',preventNativeDrag,true);
+  return()=>{blur();window.removeEventListener('pointerdown',down,true);window.removeEventListener('pointermove',move,true);window.removeEventListener('pointerup',up,true);window.removeEventListener('pointercancel',pointerCancel,true);window.removeEventListener('blur',blur);document.removeEventListener('dragstart',preventNativeDrag,true);};
  },[enabled]);
 }

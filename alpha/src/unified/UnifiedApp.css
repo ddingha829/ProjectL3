@@ -157,3 +157,6 @@
 .un-app .un-grid{row-gap:14px}
 
 .un-app .un-grid .un-feed-card-open,.un-studio-preview>.ec-scene,.un-navigation .lab-nav-rail{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.un-main{touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none}
+.un-main input,.un-main textarea,[contenteditable=true]{user-select:text;-webkit-user-select:text}
+.un-main[data-page-swipe-active=true] [data-page-swipe-surface]{cursor:grabbing}

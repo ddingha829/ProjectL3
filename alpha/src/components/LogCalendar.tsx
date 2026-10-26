@@ -13,7 +13,7 @@ const LogbookMap=dynamic(()=>import('./LogbookMap'),{ssr:false,loading:()=> <div
 const shortDay=(key:string)=>`${Number(key.slice(5,7))}월 ${Number(key.slice(8))}일`;
 const dayLabel=(key:string)=>`${key.slice(0,4)}년 ${shortDay(key)}`;
 
-export default function LogCalendar({items,view,onView,onOpen}:{items:ArchiveItem[];view:CalendarView;onView:(view:CalendarView)=>void;onOpen:(item:ArchiveItem)=>void}) {
+export default function LogCalendar({items,view,onView,onOpen,allowPageSwipe=false}:{items:ArchiveItem[];view:CalendarView;onView:(view:CalendarView)=>void;onOpen:(item:ArchiveItem)=>void;allowPageSwipe?:boolean}) {
   const logs=useMemo(()=>calendarLogs(items),[items]);
   const byDay=useMemo(()=>{const result=new Map<string,ArchiveItem[]>();for(const log of logs){const day=logDay(log),entries=result.get(day);if(entries)entries.push(log);else result.set(day,[log]);}return result;},[logs]);
   const monthLogs=useMemo(()=>logs.filter(item=>logDay(item).startsWith(view.month)),[logs,view.month]);
@@ -44,7 +44,7 @@ export default function LogCalendar({items,view,onView,onOpen}:{items:ArchiveIte
     const date=new Date(button.dataset.day+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+delta);const day=date.toISOString().slice(0,10);if(!validDay(day))return;
     event.preventDefault();if(!day.startsWith(view.month))changeMonth(day.slice(0,7));requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(`.calendar-day[data-day="${day}"]`)?.focus());
   };
-  return <section className="log-calendar" aria-label="로그캘린더" data-no-swipe>
+  return <section className="log-calendar" aria-label="로그캘린더" data-no-swipe={!allowPageSwipe||view.timelineOpen||undefined}>
     <div className="calendar-panel">
       <div className="calendar-board" inert={view.timelineOpen}>
         <div className="calendar-heading"><button type="button" className="calendar-month" aria-label="연월 선택" onClick={()=>{setMonthInput(view.month);setMonthOpen(true);}}><strong>{view.month.replace('-','. ')}</strong><ChevronDown size={15}/></button><div className="calendar-month-arrows"><button type="button" aria-label="이전 달" disabled={view.month==='1900-01'} onClick={()=>changeMonth(shiftMonth(view.month,-1))}><ChevronLeft size={20}/></button><button type="button" className="calendar-range-button" aria-label="기간 선택" title="기간 선택" onClick={openRange}><CalendarRange size={18}/></button><button type="button" aria-label="다음 달" disabled={view.month==='9999-12'} onClick={()=>changeMonth(shiftMonth(view.month,1))}><ChevronRight size={20}/></button></div></div>
