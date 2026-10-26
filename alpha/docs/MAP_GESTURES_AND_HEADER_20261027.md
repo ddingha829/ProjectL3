@@ -5,6 +5,7 @@ Supersedes the map-specific gesture section in FULL_SCREEN_SWIPE_20261027.md.
 - Map canvas always starts with Leaflet dragging enabled. One finger pans; two fingers use Leaflet zoom. Removed the extra map-move mode and toggle.
 - Map and its overlays opt out of app page swiping. Main menu swipes continue on feed, tiles, studio and outside the map. The map page's ancestor permits map gestures, and the canvas owns touch input so it cannot become a document scroll.
 - Header is sticky, opaque and explicitly has no filter/backdrop filter. Top padding and height include the top safe-area inset. The feed toolbar sticks below it; map height accounts for the added inset, including short screens.
+- Toolbar follow-up: sticky top must equal the header's 56px plus safe-area height. An extra 8px inset was displacing the toolbar over the first cards and activating its pinned appearance at scroll zero. Verified initial 7px card gap and unpinned state, with pinning only after scrolling.
 - First-use guidance reflects direct map panning.
 - Teardown ignores late move/zoom/resize callbacks so leaving a moving map cannot read an already removed Leaflet pane.
 
