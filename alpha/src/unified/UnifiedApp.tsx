@@ -18,6 +18,7 @@ import {archive,CATEGORY_LABEL,type LabLog,type Person} from '@/social/model';
 import type {EditorialStyle} from '@/social/editorialStyle';
 import BookmarkToggle from '@/social/BookmarkToggle';
 import {usePageSwipe} from './usePageSwipe';
+import {useCardHistory} from './useCardHistory';
 import {swipeDestination} from './pageSwipe';
 import type {DongCount} from '@/social/adminDong';
 import UnifiedStudio from './UnifiedStudio';
@@ -45,7 +46,7 @@ export default function UnifiedApp(){
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
  const [mosaicFocus,setMosaicFocus]=useState('');
  const handledInvite=useRef('');
- useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(null,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join]);
+ useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(history.state,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join]);
  const [calendar,setCalendar]=useState<CalendarView>({month:todayKey().slice(0,7),start:'',end:'',timelineOpen:false});
  const cardRoot=useRef<HTMLDivElement>(null),mainRoot=useRef<HTMLElement>(null),navDirection=useRef(1),swipeEntry=useRef(0),savedScroll=useRef(new Map<string,number>()),saveLock=useRef(false);
  const {theme,changeTheme:chooseTheme}=useThemePreference();
@@ -58,7 +59,7 @@ export default function UnifiedApp(){
  // selection as well so the hidden viewer does not keep swipe entry disabled.
  useEffect(()=>{if(!state||!selectedId||state.logs.some(l=>l.id===selectedId&&(l.authorId==='me'||audienceIds(l).some(id=>state.circles.some(c=>c.id===id&&c.members.includes('me'))))))return;setSelectedId('');setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setEditing(previous=>previous?.id===selectedId?null:previous);},[state,selectedId]);
  useEffect(()=>{if(state&&scope!=='mine'&&!state.circles.some(c=>c.id===scope&&c.members.includes('me')))setScope('mine');},[state,scope]);
- useEffect(()=>{if(!ready||!session)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(null,'',url);},[view,scope,ready,session]);
+ useEffect(()=>{if(!ready||!session)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(history.state,'',url);},[view,scope,ready,session]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(t);},[toast]);
  useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#08080A':'#FFFFFF');},[dark]);
  useEffect(()=>{if(accountMode==='cloud'&&syncStatus==='idle')setToast(previous=>previous==='서버에 저장하고 있어요.'?'서버에 저장했어요.':previous);},[accountMode,syncStatus]);
@@ -69,6 +70,11 @@ export default function UnifiedApp(){
  const pageSwipeEnabled=Boolean(session&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  useEffect(()=>{const distance=swipeEntry.current||16,slide=swipeEntry.current>0;swipeEntry.current=0;if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const elements=Array.from(mainRoot.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0),animations=elements.map(element=>element.animate([{opacity:slide?1:.6,transform:`translateX(${navDirection.current*distance}px)`},{opacity:1,transform:'translateX(0)'}],{duration:slide?240:220,easing:'cubic-bezier(.2,.75,.2,1)'}));return()=>animations.forEach(animation=>animation.cancel());},[view]);
+ const cardNavigation=useCardHistory({id:selectedId,canLeave:()=>{
+  const top=Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]')).at(-1);
+  if(top&&!top.classList.contains('un-detail-dialog')){top.querySelector<HTMLButtonElement>(':scope > .quick-dialog-header > button')?.click();return false;}
+  return !cardDraft||confirm('적용하지 않은 디자인 변경을 닫을까요?');
+ },onChange:id=>{setSelectedId(id);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setPanel(null);setWork(undefined);if(!id){setEditing(null);requestAnimationFrame(()=>scrollTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));}}});
  const enter=(name:string)=>enterDemo(name);
  if(!ready||!state||!actor)return <div className="lab-boot"><span className="lab-brand">L2<span>.</span></span>{error?<p role="alert">{error}</p>:<span className="un-subtle">기록을 펼치고 있어요</span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate}/>;
@@ -78,8 +84,8 @@ export default function UnifiedApp(){
  const selected=readable.find(l=>l.id===selectedId),selectedAuthor=state.people.find(p=>p.id===selected?.authorId),mine=selected?.authorId===actor.id;
  const mapLogs=scoped.filter(l=>!!l.place),style=selected?(cardDraft||styleOf(selected)):null;
  const notify=(text:string)=>setToast(text);
- const openLog=(log:LabLog)=>{setWork(undefined);savedScroll.current.set(route,scrollY);setSelectedId(log.id);setCardDraft(null);setDesignOpen(false);setComment('');};
- const closeLog=()=>{if(cardDraft&&!confirm('적용하지 않은 디자인 변경을 닫을까요?'))return;setSelectedId('');setCardDraft(null);setDesignOpen(false);requestAnimationFrame(()=>scrollTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));};
+ const openLog=(log:LabLog)=>{savedScroll.current.set(route,scrollY);cardNavigation.open(log.id);};
+ const closeLog=cardNavigation.back;
  const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){changeScope('mine');setView('logs');setMosaicFocus(log.work?log.id:'');}}return result;};
  const toggle=(id:string,key:'likes'|'bookmarks')=>commit(s=>({...s,logs:s.logs.map(l=>l.id===id?{...l,[key]:l[key].includes(actor.id)?l[key].filter(v=>v!==actor.id):[...l[key],actor.id]}:l)}));
  const applyStyle=()=>{if(!selected||!cardDraft)return;if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,card:{...cardDraft},updatedAt:Date.now(),revision:(l.revision||0)+1}:l)}))){setCardDraft(null);setDesignOpen(false);notify('이 로그의 디자인을 적용했어요.');}};
@@ -112,8 +118,8 @@ export default function UnifiedApp(){
 
  <AccessibleDialog open={panel==='collection'} title="개인 컬렉션" onClose={()=>setPanel(null)} panelClassName="lab-dialog"><p className="un-subtle">선택한 {picked.length}개의 내 기록을 묶어요. 모임 공개 범위는 바뀌지 않아요.</p><label className="un-form-label">컬렉션 이름<input autoFocus maxLength={40} value={collectionName} onChange={e=>setCollectionName(e.target.value)} placeholder="함께 기억할 이름"/></label><button className="un-primary un-full" disabled={!collectionName.trim()||!picked.length} onClick={addCollection}>컬렉션 만들기</button></AccessibleDialog>
  <AccessibleDialog open={!!collection} title={collection?.name||'컬렉션'} onClose={()=>setCollection(null)} panelClassName="lab-dialog un-collection-dialog"><div className="lab-feed lab-poster-grid un-grid">{collection?.logIds.map(id=>own.find(l=>l.id===id)).filter((l):l is UnifiedLog=>!!l).map(renderCard)}</div></AccessibleDialog>
- <AccessibleDialog open={!!selected&&!!selectedAuthor} title="로그 카드" hideTitle onClose={closeLog} panelClassName="lab-dialog un-detail-dialog">
- {selected&&selectedAuthor&&style&&<CardViewer key={selected.id} log={selected} author={selectedAuthor.name} authorColor={selectedAuthor.color} authorInitial={selectedAuthor.initial} appearance={style} root={cardRoot}
+ <AccessibleDialog open={!!selected&&!!selectedAuthor} title="로그 카드" hideTitle closeLabel="뒤로가기" closeIcon={<ArrowLeft size={21} strokeWidth={1.8}/>} onClose={closeLog} panelClassName="lab-dialog un-detail-dialog">
+ {selected&&selectedAuthor&&style&&<CardViewer key={selected.id} onBack={closeLog} log={selected} author={selectedAuthor.name} authorColor={selectedAuthor.color} authorInitial={selectedAuthor.initial} appearance={style} root={cardRoot}
   actions={<><button className="un-viewer-icon-action" aria-label={selected.likes.includes(actor.id)?'공감 취소':'공감'} title={selected.likes.includes(actor.id)?'공감 취소':'공감'} aria-pressed={selected.likes.includes(actor.id)} onClick={()=>toggle(selected.id,'likes')}><Heart size={19} fill={selected.likes.includes(actor.id)?'currentColor':'none'}/>{selected.likes.length>0&&<span>{selected.likes.length}</span>}</button><BookmarkToggle className="un-viewer-icon-action" iconOnly active={selected.bookmarks.includes(actor.id)} onClick={()=>toggle(selected.id,'bookmarks')}>담아두기</BookmarkToggle></>}
   options={mine||selected.work?close=><>
    {mine&&<><button onClick={()=>{close();setEditing(selected);}}><Pencil size={17}/>내용 수정</button><button onClick={()=>{close();setDesignOpen(true);}}><Palette size={17}/>카드 꾸미기</button>{selected.image&&<button onClick={()=>{close();setPhotoOpen(true);}}><ImageIcon size={17}/>사진 조정</button>}<button onClick={()=>{close();setPanel('preset');}}><Palette size={17}/>프리셋 선택</button><button onClick={()=>{close();setAudienceDraft(audienceIds(selected));setPanel('audience');}}><Users size={17}/>공유 대상 관리</button>{cardDraft&&<button onClick={()=>{close();applyStyle();}}><Check size={17}/>변경한 디자인 적용</button>}<button onClick={()=>{close();setPresetName('');setPanel('save-preset');}}><Plus size={17}/>이 디자인을 프리셋으로 저장</button></>}

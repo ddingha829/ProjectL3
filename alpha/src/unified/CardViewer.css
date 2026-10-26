@@ -1,7 +1,7 @@
 /* A real sheet header stays visible; the card and export root never remount. */
 .quick-dialog-backdrop:has(>.un-detail-dialog.quick-dialog-panel){padding:0!important;align-items:center;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 .un-detail-dialog.quick-dialog-panel{position:relative;width:100%!important;max-width:none!important;height:var(--lab-vvh,100dvh);max-height:var(--lab-vvh,100dvh)!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important;flex-shrink:0}
-.un-detail-dialog>.quick-dialog-header{position:absolute;right:max(14px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:5;margin:0!important;pointer-events:none}
+.un-detail-dialog>.quick-dialog-header{position:absolute;left:max(14px,env(safe-area-inset-left));right:auto;top:max(12px,env(safe-area-inset-top));z-index:5;margin:0!important;pointer-events:none}
 .un-detail-dialog>.quick-dialog-header>button{pointer-events:auto;background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(16px)}
 .un-card-viewer{--viewer-height:var(--lab-vvh,100dvh);--viewer-peek:calc(var(--viewer-peek-content) + env(safe-area-inset-bottom,0px));--viewer-open:min(calc(var(--viewer-height) - 160px),calc(clamp(240px,calc(var(--viewer-height) * .30),270px) + env(safe-area-inset-bottom,0px)));height:100%;display:grid;grid-template-rows:minmax(0,1fr) var(--viewer-peek);min-height:0;transition:grid-template-rows .32s cubic-bezier(.22,.75,.2,1)}
 .un-viewer-stage{display:flex;align-items:center;justify-content:center;padding:54px 22px 14px;min-height:0;min-width:0;touch-action:pan-y}
@@ -40,3 +40,5 @@
 }
 @media(prefers-reduced-motion:reduce){.un-card-viewer,.un-card-viewer .un-detail-card,.un-viewer-icon-action{transition:none!important;animation:none!important}}
 .un-card-viewer .un-detail-card>.ec-scene.ec-is-back,.un-card-viewer .un-detail-card>.ec-scene.ec-single{touch-action:pan-y}
+.un-card-viewer{touch-action:pan-y pinch-zoom}
+.un-detail-dialog[data-back-swiping=true]{user-select:none;-webkit-user-select:none}

@@ -36,7 +36,7 @@ export default function FirstUseGuide({context,replay,owned,shared,pending=false
  const active=Boolean(ready&&context&&settledContext===context&&!seen.all&&!seen[context]);
  useEffect(()=>{onActiveChange(active);return()=>onActiveChange(false);},[active,onActiveChange]);
  const finish=(all=false)=>{if(!context)return;const next={...seen,[all?'all':context]:true,...(!all&&context==='own-detail'?{detail:true}:{})};setSeen(next);try{localStorage.setItem(GUIDE_KEY,JSON.stringify(next));}catch{}};
- const detail:Step[]=[{targets:['.un-detail-card'],title:'한 장에 집중해요',body:'크게 펼친 사진 카드를 다시 누르면 뒷면이 보여요. 사진이 없는 로그는 감상 면만 보여요. 아래에는 반응·공유 버튼과 장소가 항상 보여요. 작성자와 댓글 수가 있는 부분을 누르거나 위로 밀면 댓글만 펼쳐져요.'},{targets:['.un-viewer-toggle','.un-viewer-action-bar'],title:'필요한 메뉴만 꺼내요',body:owned?'하트·책갈피·공유 아이콘을 바로 사용해요. 더보기에서 내용 수정·카드 꾸미기·프리셋을 골라요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.':'하트·책갈피·공유 아이콘을 바로 사용하고 한마디를 남겨요. 책·영화는 더보기에서 나도 보기에 담을 수 있어요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.'}];
+ const detail:Step[]=[{targets:['.un-detail-card'],title:'한 장에 집중해요',body:'크게 펼친 사진 카드를 다시 누르면 뒷면이 보여요. 사진이 없는 로그는 감상 면만 보여요. 왼쪽 위 화살표를 누르거나 카드를 오른쪽으로 밀면 이전 화면으로 돌아가요. 아래에는 반응·공유 버튼과 장소가 항상 보여요. 작성자와 댓글 수가 있는 부분을 누르거나 위로 밀면 댓글만 펼쳐져요.'},{targets:['.un-viewer-toggle','.un-viewer-action-bar'],title:'필요한 메뉴만 꺼내요',body:owned?'하트·책갈피·공유 아이콘을 바로 사용해요. 더보기에서 내용 수정·카드 꾸미기·프리셋을 골라요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.':'하트·책갈피·공유 아이콘을 바로 사용하고 한마디를 남겨요. 책·영화는 더보기에서 나도 보기에 담을 수 있어요. 손잡이를 다시 누르거나 아래로 밀면 댓글이 접혀요.'}];
  return active&&context?<GuideOverlay key={`${replay}:${context}`} steps={context==='detail'||context==='own-detail'?detail:copy[context]} onDone={()=>finish()} onSkip={()=>finish(true)}/>:null;
 }
 

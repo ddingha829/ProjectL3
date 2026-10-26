@@ -6,13 +6,15 @@ import EditorialCard,{cardTitle} from '@/social/EditorialCard';
 import CardImageActions from '@/social/CardImageActions';
 import type {EditorialStyle} from '@/social/editorialStyle';
 import type {UnifiedLog} from './store';
+import {useCardBackSwipe} from './useCardBackSwipe';
 import './CardViewer.css';
 
-type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;actions:ReactNode;place?:ReactNode;options?:(close:()=>void)=>ReactNode;children:ReactNode};
-export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,actions,place,options,children}:Props){
+type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;options?:(close:()=>void)=>ReactNode;children:ReactNode};
+export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,options,children}:Props){
  const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),gesture=useRef<{x:number;y:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
+ const viewer=useRef<HTMLDivElement>(null);useCardBackSwipe(viewer,onBack,!sharing&&!optionsOpen);
  const changeExpanded=(value:boolean)=>{if(!value&&tools.current?.contains(document.activeElement))document.getElementById(toolsId+'-toggle')?.focus({preventScroll:true});setExpanded(value);};
- return <div className={`un-card-viewer ${expanded?'is-expanded':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/747,'--viewer-peek-content':place?'136px':'112px'} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
+ return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/747,'--viewer-peek-content':place?'136px':'112px'} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
   <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;}}>
    <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong"/></div>
   </div>
