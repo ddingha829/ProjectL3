@@ -12,7 +12,16 @@ export default function FeedToolbar({query,onQueryChange,category,onCategoryChan
  const [open,setOpen]=useState<'filter'|'more'|null>(null),[searchOpen,setSearchOpen]=useState(false),[pinned,setPinned]=useState(false);
  const sentinel=useRef<HTMLDivElement>(null),shell=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null),searchSlot=useRef<HTMLDivElement>(null),search=useRef<AnimatedSearchHandle>(null),id=useId();
  const filterOpen=useCallback((value:boolean)=>setOpen(value?'filter':null),[]),moreOpen=useCallback((value:boolean)=>setOpen(value?'more':null),[]);
- useEffect(()=>{if(!sentinel.current||!shell.current)return;const top=parseFloat(getComputedStyle(shell.current).top)||12;const observer=new IntersectionObserver(([entry])=>setPinned(!entry.isIntersecting),{rootMargin:`-${top}px 0px 0px 0px`,threshold:0});observer.observe(sentinel.current);return()=>observer.disconnect();},[]);
+ useEffect(()=>{
+  let frame=0;
+  // Measure the flow marker instead of relying on WebKit's sticky/intersection
+  // notifications. Re-read the inset when Safari's viewport or safe area changes.
+  const update=()=>{frame=0;const marker=sentinel.current,bar=shell.current;if(!marker||!bar)return;const top=parseFloat(getComputedStyle(bar).top)||0;setPinned(marker.getBoundingClientRect().top<top-.5);};
+  const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
+  update();window.addEventListener('scroll',schedule,{capture:true,passive:true});window.addEventListener('resize',schedule);
+  const viewport=window.visualViewport;viewport?.addEventListener('resize',schedule);viewport?.addEventListener('scroll',schedule);
+  return()=>{cancelAnimationFrame(frame);window.removeEventListener('scroll',schedule,true);window.removeEventListener('resize',schedule);viewport?.removeEventListener('resize',schedule);viewport?.removeEventListener('scroll',schedule);};
+ },[]);
  useEffect(()=>{if(!searchOpen)return;input.current?.focus({preventScroll:true});const outside=(event:MouseEvent)=>{if(searchSlot.current&&!event.composedPath().includes(searchSlot.current))setSearchOpen(false);};const keyboard=(event:KeyboardEvent)=>{if(event.key==='Escape'){setSearchOpen(false);searchButton.current?.focus({preventScroll:true});}};document.addEventListener('click',outside);document.addEventListener('keydown',keyboard);return()=>{document.removeEventListener('click',outside);document.removeEventListener('keydown',keyboard);};},[searchOpen]);
  const filtered=category!=='all'||sort!=='recent'||photosOnly;
  const modes=([['cards','카드',Grid2X2],['list','리스트',List],...(allowCalendar?[['calendar','캘린더',CalendarDays] as const]:[])] as const);
