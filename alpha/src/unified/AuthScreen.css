@@ -1,0 +1,39 @@
+/* Form hierarchy informed by shadcn login-01; motion uses the existing Tween UI button. */
+.un-login.un-auth-screen{--auth-canvas:#fff;--auth-ink:#202124;--auth-muted:#71757b;--auth-line:#e7e8eb;--auth-field:#fafafb;--auth-button:#242528;--auth-button-ink:#fff;--auth-hover:#f4f5f6;--auth-focus:#6d7179;min-height:100svh;width:100%;max-width:none;margin:0;padding:40px 26px max(32px,env(safe-area-inset-bottom));display:grid;place-items:center;background:var(--auth-canvas);color:var(--auth-ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR','Malgun Gothic',sans-serif;font-weight:400;letter-spacing:-.025em}
+html:not(.light) .un-login.un-auth-screen{--auth-canvas:#101113;--auth-ink:#f0f1f2;--auth-muted:#a0a3aa;--auth-line:#2c2e33;--auth-field:#191a1e;--auth-button:#ededef;--auth-button-ink:#202124;--auth-hover:#23252a;--auth-focus:#9a9ea8}
+.un-login.un-auth-screen{grid-template-columns:minmax(0,1fr);justify-content:stretch}
+.un-auth-panel{width:100%;min-width:0;max-width:352px;margin:0 auto}
+.un-login .un-auth-heading{margin:0 0 32px;font-family:inherit;font-size:29px;font-weight:620;letter-spacing:-.065em;line-height:1.25}
+.un-login .un-auth-form>label{display:grid;gap:9px;margin:0 0 20px;font-size:13px;line-height:1.5;font-weight:500;color:var(--auth-ink)}
+.un-login .un-auth-form>label>input,.un-login .un-auth-password{width:100%;height:54px;min-height:54px;padding:0 16px;border:1px solid var(--auth-line);border-radius:12px;background:var(--auth-field);color:var(--auth-ink);box-shadow:0 1px 2px #00000002;transition:border-color .18s,box-shadow .18s,background .18s}
+.un-login .un-auth-form input{font:400 16px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR','Malgun Gothic',sans-serif;letter-spacing:-.02em;outline:none;min-width:0}
+.un-login .un-auth-form input::placeholder{color:var(--auth-muted);opacity:.8;font-size:14px;font-weight:400}
+.un-login .un-auth-password{display:flex;align-items:center;padding-right:4px}
+.un-auth-password>input{flex:1;width:100%;height:52px;border:0;background:none;color:var(--auth-ink)}
+.un-auth-password>button{display:grid;place-items:center;width:44px;min-width:44px;height:44px;border-radius:9px;color:var(--auth-muted);transition:color .15s,background .15s}
+.un-auth-password>button:hover{background:var(--auth-hover);color:var(--auth-ink)}
+.un-login .un-auth-form>label>input:focus,.un-login .un-auth-password:focus-within{border-color:var(--auth-focus);background:var(--auth-canvas);box-shadow:0 0 0 3px color-mix(in srgb,var(--auth-focus) 9%,transparent)}
+.un-login .un-auth-form input:focus-visible{outline:none}
+.un-login .un-auth-form>label>input[aria-invalid=true],.un-login .un-auth-password:has(input[aria-invalid=true]){border-color:#c84f47}
+.un-login .un-auth-error{margin:-4px 0 16px;padding:0;font-size:12px;line-height:1.7;color:#ba433b}
+html:not(.light) .un-login .un-auth-error{color:#f18e85}
+.un-login .un-auth-form>.un-auth-submit{display:flex;justify-content:space-between;gap:12px;width:100%;height:54px;min-height:54px;margin:8px 0 0;padding:0 15px 0 20px;border:1px solid transparent;border-radius:12px;background:var(--auth-button);color:var(--auth-button-ink);box-shadow:0 2px 4px #00000008;transition:filter .18s,transform .18s}
+.un-auth-submit:hover{filter:brightness(1.12)}.un-auth-submit:active{transform:scale(.985)}
+.un-auth-submit .tween-slide-label{font-family:inherit;font-size:14px;letter-spacing:-.015em}
+.un-auth-submit .tween-slide-label>span{font-size:14px;font-weight:550}
+.un-auth-submit .tween-slide-badge{width:27px;height:27px;background:color-mix(in srgb,var(--auth-button-ink) 12%,transparent)}
+.un-auth-submit .tween-slide-badge>svg{stroke:var(--auth-button-ink);stroke-width:1.8}
+.un-login .un-auth-switch{display:flex;align-items:center;justify-content:center;gap:5px;margin:15px 0 6px;color:var(--auth-muted);font-size:12px;line-height:1.5}
+.un-auth-switch>button{min-height:44px;padding:0 5px;color:var(--auth-ink);font-size:12px;font-weight:550;text-decoration:underline;text-decoration-color:var(--auth-line);text-underline-offset:4px;transition:text-decoration-color .18s}
+.un-auth-switch>button:hover{text-decoration-color:var(--auth-ink)}
+.un-auth-demo{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:46px;padding:0 12px;border:1px solid var(--auth-line);border-radius:12px;background:none;color:var(--auth-muted);font-size:12px;font-weight:400;transition:background .18s,color .18s}
+.un-auth-demo:hover{background:var(--auth-hover);color:var(--auth-ink)}.un-auth-demo>svg{transition:transform .18s}.un-auth-demo:hover>svg{transform:translateX(2px)}
+.un-auth-footer{margin-top:28px;padding-top:17px;border-top:1px solid var(--auth-line)}
+.un-auth-notice>summary{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;width:100%;border-radius:8px;color:var(--auth-muted);font-size:11px;list-style:none;cursor:pointer;user-select:none}
+.un-auth-notice>summary::-webkit-details-marker{display:none}.un-auth-notice>summary>svg{flex:none}.un-auth-notice>summary>svg:last-child{transition:transform .2s}.un-auth-notice[open]>summary>svg:last-child{transform:rotate(180deg)}
+.un-auth-notice>p{margin:8px 0 0;padding:13px 15px;border-radius:10px;background:var(--auth-field);font-size:12px;line-height:1.85;color:var(--auth-muted);text-align:left}
+.un-login .un-auth-connection{margin:14px 0 0;font-size:12px;line-height:1.7;color:var(--auth-muted)}
+.un-login.un-auth-screen :is(button,summary):focus-visible{outline:2px solid var(--auth-focus);outline-offset:3px}
+.un-login.un-auth-screen button:disabled{opacity:.48;cursor:default}.un-login.un-auth-screen button[aria-busy=true]{cursor:wait}
+@media(max-height:620px){.un-login.un-auth-screen{padding-top:28px;padding-bottom:24px}.un-login .un-auth-heading{margin-bottom:25px}.un-auth-footer{margin-top:22px}}
+@media(prefers-reduced-motion:reduce){.un-login.un-auth-screen *{transition:none!important}.un-auth-submit:active{transform:none}}
