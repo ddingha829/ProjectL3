@@ -33,6 +33,15 @@ Sites 통합 UI를 표준 Next.js 앱으로 옮겨 기존 Vercel 프로젝트의
 - 업로드 후보 파일과 클라이언트 번들에서 서버 비밀 키 노출 없음.
 - 실제 기기의 카메라·GPS·설치 앱 업데이트·공유 시트는 Preview에서 최종 확인한다.
 
+## Preview 배포 완료
+
+- 고정 브랜치 주소: https://project-l3-git-codex-unified-vercel-ddingha829s-projects.vercel.app/
+- 검증 배포: https://project-l3-7l9inpflr-ddingha829s-projects.vercel.app/ (소스 04ab0b1).
+- 배포 서버 API·PWA 13개 검사 통과. Gemini는 실제 AI 응답/캐시를 확인했다.
+- 브라우저 예시 계정 진입·카드 확대·플립·편집/공유 메뉴 및 이미지 다운로드 확인. 예시 앞면은 1080×1920, 413,767바이트로 저장됐다.
+- Vercel 접근 보호를 유지한다. 미리보기 접속 시 기존 Vercel 계정 로그인이 필요할 수 있다.
+- Production은 master의 기존 3b5c659 배포를 유지한다.
+
 ## 전환 순서
 
 1. 이 브랜치만 GitHub에 푸시하고 Vercel Preview를 생성한다.
