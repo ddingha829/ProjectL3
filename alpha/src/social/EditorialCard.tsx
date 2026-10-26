@@ -18,7 +18,6 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const needed=Boolean(log.image&&(s.finish==='film'||s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
- const signature=<span className="ec-signature">@{author.replace(/^@/,'')}</span>;
  const rating=log.rating?<span className="ec-rating"><Star size={15} fill="currentColor"/>{log.rating}</span>:null;
  const category=<span className="ec-category"><Icon size={13}/>{labels[log.category]}</span>;
  const photoBadges=<div className="ec-photo-badges"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div>;
@@ -30,7 +29,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
  if(side==='front')return <div data-ec-face="front" data-ec-layout={s.front} data-ec-material={materialState} className={`ec-face ec-front ec-${s.front} ${materialClass} ${s.ratio==='1:1'?'ec-square':''}`} style={variables}>
-  {s.front==='cover'?<>{photo}<div className="ec-cover-shade"/><div className="ec-cover-top"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div><div className="ec-cover-bottom"><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div></>:s.front==='ticket'?<><div className="ec-ticket-photo">{photo}{photoBadges}</div><div className="ec-ticket-stub"><div><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div><div className="ec-ticket-code"><i className="ec-barcode" aria-hidden="true"/>{signature}</div></div><span className="ec-notch ec-notch-left"/><span className="ec-notch ec-notch-right"/></>:<><div className="ec-polaroid-photo">{photo}{photoBadges}</div><div className="ec-polaroid-meta"><span>{place}</span><span className="ec-meta">{date}<WeatherMark value={log.weather}/></span></div><h2>{title}</h2><p className="ec-polaroid-caption">{log.body}</p>{signature}</>}
+  {s.front==='cover'?<>{photo}<div className="ec-cover-shade"/><div className="ec-cover-top"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div><div className="ec-cover-bottom"><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div></>:s.front==='ticket'?<><div className="ec-ticket-photo">{photo}{photoBadges}</div><div className="ec-ticket-stub"><div><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div><div className="ec-ticket-code"><i className="ec-barcode" aria-hidden="true"/></div></div><span className="ec-notch ec-notch-left"/><span className="ec-notch ec-notch-right"/></>:<><div className="ec-polaroid-photo">{photo}{photoBadges}</div><div className="ec-polaroid-meta"><span>{place}</span><span className="ec-meta">{date}<WeatherMark value={log.weather}/></span></div><h2>{title}</h2><p className="ec-polaroid-caption">{log.body}</p></>}
   {surface}
  </div>;
  return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${s.ratio==='1:1'?'ec-square':''}`} style={variables}>
@@ -49,7 +48,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
    {log.body&&<blockquote className="ec-quote ec-flow-block" data-ec-quote>{log.body}</blockquote>}
    {specsView}
   </div></div>
-  <footer className="ec-back-footer"><span>{s.back==='passport'?`<<<<${author.replace(/\s/g,'').toUpperCase()}<<<<`:date}</span><WeatherMark value={log.weather}/>{signature}</footer>
+  <footer className="ec-back-footer"><span>{s.back==='passport'?`<<<<${author.replace(/\s/g,'').toUpperCase()}<<<<`:date}</span><WeatherMark value={log.weather}/></footer>
  </div>;
 }
 
