@@ -138,3 +138,13 @@
 .ec-rotator{transition:none}
 .ec-plane{transform-style:flat;transform-origin:center;backface-visibility:visible;-webkit-backface-visibility:visible;will-change:transform}
 .ec-back-plane{transform:none}
+
+/* Feed-only 10:16 portraits preserve the original inset photo dimensions. */
+.ec-feed-preview .ec-ticket-photo{inset:16px 16px auto;height:calc(745px * .73 - 31px)}
+.ec-feed-preview .ec-ticket-stub{top:calc(745px * .73);padding:12px 25px 14px}
+.ec-feed-preview .ec-ticket-stub p{margin-top:5px}
+.ec-feed-preview .ec-notch{top:calc(745px * .73)}
+.ec-feed-preview .ec-polaroid-photo{height:calc(705px * .62)}
+.ec-feed-preview .ec-polaroid-meta{margin-top:12px;padding-bottom:7px}
+.ec-feed-preview .ec-polaroid>h2{margin-top:11px;margin-bottom:8px}
+.ec-feed-preview .ec-polaroid>.ec-signature{bottom:18px}

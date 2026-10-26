@@ -15,7 +15,7 @@ const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
  studio:[{targets:['.un-studio-tools'],title:'내 스타일을 프리셋으로',body:'앞면·뒷면·색·질감을 고르고 이름을 붙여 저장해요. 기본으로 지정하면 새 로그에 적용돼요. 기존 로그의 디자인은 바뀌지 않아요.'}],
  today:[
   {targets:['.lab-main [data-log-id]:first-child .lab-poster-art','.lab-main .lab-empty'],title:'로그는 카드로 모여요',body:'카드를 누르면 크게 펼쳐져요. 펼친 카드를 한 번 더 누르면 뒤집혀 감상을 읽을 수 있어요. 카드 안쪽 아래에 작성자 이름이 보여요. 카드 어디를 눌러도 상세 화면이 열려요.'},
-  {targets:['.un-header-search','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'상단 돋보기를 누르면 작은 검색창이 펼쳐져요. 아래 한 줄에서 카테고리·필터·보기모드·보관함을 골라요. 도구 모음은 스크롤해도 위에 남아요.'},
+  {targets:['.flc-search-slot','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'피드 도구 모음의 돋보기를 누르면 검색창이 펼쳐지고 나머지 도구는 오른쪽 아이콘으로 모여요. 다른 도구나 카드를 누르면 검색창이 접혀요. 검색어는 유지되고, 도구 모음은 스크롤해도 위에 남아요.'},
   {targets:['.un-header-v2','.un-navigation .lab-nav-rail'],title:'남기고, 찾아보고',body:'로고 옆 드롭다운에서 마이로그나 모임을 골라요. 모임을 만들면 초대 코드가 나오고, 받은 6자리 코드로 바로 참여할 수 있어요. 아래에서 피드·지도·타일·스튜디오를 오가고, ＋로 기록을 남겨요.'},
  ],
  library:[{targets:['.flc-shell'],title:'내 기록을 다시 찾는 곳',body:'내 로그·모임 로그·담아둔 로그를 나눠 보고, 검색으로 찾아보세요. 오른쪽 보관함에서 로그를 선택해 묶거나 취향 선반을 열 수 있어요.'}],

@@ -18,3 +18,28 @@
 @media(max-width:360px){.flc-category-label{display:none}.flc-category-anchor .flc-tool-trigger{padding-inline:4px}.flc-input-group{padding-left:10px;gap:5px}}
 @supports not (backdrop-filter:blur(10px)){.flc-shell.un-log-controls.is-pinned{background:var(--flc-bg)}}
 @media(prefers-reduced-motion:reduce){.flc-shell,.flc-input-group,.flc-tool-trigger,.flc-filter-trigger:before{transition:none!important}.flc-menu{animation:none}}
+
+/* One stable row: search unfolds on the left; tools gather on the right. */
+.flc-shell.un-log-controls.is-expandable-search{display:grid;grid-template-columns:minmax(44px,0fr) minmax(176px,1fr);gap:4px;min-height:44px;transition:grid-template-columns 280ms cubic-bezier(.22,.8,.25,1),background .2s,box-shadow .2s}
+.flc-shell.un-log-controls.is-expandable-search.is-search-open{grid-template-columns:minmax(44px,1fr) minmax(176px,0fr)}
+.flc-search-slot{position:relative;height:44px;min-width:0;border:1px solid transparent;border-radius:999px;transition:background .24s,border-color .24s,box-shadow .24s}
+.is-search-open .flc-search-slot{border-color:var(--flc-line);background:var(--flc-bg);box-shadow:0 2px 10px color-mix(in srgb,var(--flc-ink) 4%,transparent)}
+.flc-search-slot:focus-within{border-color:color-mix(in srgb,var(--flc-accent) 45%,var(--flc-bg))}
+.flc-search-toggle{position:absolute;inset:-1px auto -1px -1px;width:44px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--flc-ink)}
+.flc-search-toggle:hover{background:var(--flc-soft)}.flc-search-toggle>i{position:absolute;right:7px;top:8px;width:5px;height:5px;background:var(--flc-accent);border-radius:50%}
+.flc-search-field{position:absolute;inset:0 7px 0 40px;display:flex;align-items:center;gap:2px;min-width:0;opacity:0;clip-path:inset(0 100% 0 0);transition:opacity .16s,clip-path .28s cubic-bezier(.22,.8,.25,1);pointer-events:none}
+.is-search-open .flc-search-field{opacity:1;clip-path:inset(0);pointer-events:auto;transition-delay:.05s}
+.flc-search-field input{width:100%;min-width:0;min-height:42px;border:0;background:none;color:var(--flc-ink);font:400 16px/1.4 var(--font-sans);letter-spacing:-.03em;outline:none;appearance:none;-webkit-appearance:none}
+.flc-search-field input::placeholder{font-size:12px;color:var(--flc-muted)}.flc-search-field input::-webkit-search-cancel-button{display:none}
+.is-expandable-search .flc-toolbar{display:grid;grid-template-columns:repeat(4,minmax(44px,1fr));min-width:0;width:100%;gap:0}
+.flc-shell.is-expandable-search .flc-tool-trigger,.flc-shell.is-expandable-search .flc-filter-trigger{min-width:44px;height:44px;gap:3px;padding:0}
+.flc-shell.is-expandable-search .flc-tool-label,.flc-shell.is-expandable-search .flc-category-label{display:inline-block;overflow:hidden;max-width:70px;opacity:1;transition:max-width .28s cubic-bezier(.22,.8,.25,1),opacity .15s;white-space:nowrap}
+.is-expandable-search.is-search-open .flc-tool-label,.is-expandable-search.is-search-open .flc-category-label{max-width:0;opacity:0}
+.flc-shell.is-expandable-search.is-search-open .flc-tool-trigger,.flc-shell.is-expandable-search.is-search-open .flc-filter-trigger{gap:0;padding:0}
+.is-expandable-search.is-search-open .flc-tool-trigger>svg:last-child:not(:first-child){width:0;opacity:0}
+.is-expandable-search .flc-tool-trigger>svg{flex-shrink:0;transition:width .24s,opacity .15s}
+.is-expandable-search .flc-filter-count{right:1px;top:2px}
+.flc-shell.is-expandable-search.is-search-open .flc-category-anchor .flc-menu{left:auto;right:0}
+@media(max-width:699px){.flc-shell.is-expandable-search .flc-tool-label,.flc-shell.is-expandable-search .flc-category-label{font-size:10.5px}}
+@media(max-width:360px){.flc-shell.is-expandable-search .flc-tool-label,.flc-shell.is-expandable-search .flc-category-label{font-size:10px}.flc-shell.is-expandable-search .flc-tool-trigger>svg:last-child:not(:first-child){display:none}}
+@media(prefers-reduced-motion:reduce){.flc-shell.un-log-controls.is-expandable-search,.flc-search-slot,.flc-search-field,.is-expandable-search .flc-tool-label,.is-expandable-search .flc-category-label,.is-expandable-search .flc-tool-trigger>svg{transition:none!important}}

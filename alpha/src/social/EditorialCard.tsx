@@ -53,9 +53,9 @@ export function EditorialFace({log,author,side,appearance}:{log:LabLog;author:st
  </div>;
 }
 
-export default function EditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal'}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong'}){
+export default function EditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal',compactPreview=false}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
  const scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!log.image);
- const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image);
+ const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=compactPreview&&s.ratio!=='1:1';
  const targetBack=useRef(back);targetBack.current=back;
  const turn=useCardTurn(scene,initialSide==='back'||!log.image);
  useLayoutEffect(()=>{const initial=initialSide==='back'||!log.image;setBack(initial);turn.reset(initial);},[log.id,Boolean(log.image),initialSide,turn.reset]);
@@ -70,7 +70,7 @@ export default function EditorialCard({log,author,appearance,interactive=true,in
  },[log.id,canFlip,turn.hint,turn.reset,hintStrength]);
  useLayoutEffect(()=>{const element=scene.current;if(!element)return;const update=()=>setScale(element.clientWidth/420);update();const observer=new ResizeObserver(update);observer.observe(element);return()=>observer.disconnect();},[]);
  const flip=()=>{hintSeen.current=true;setHint(false);if(canFlip&&!window.getSelection()?.toString())setBack(value=>!value);};
- return <div ref={scene} className={`ec-scene ${log.image&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!log.image?'ec-single':''}`} style={{aspectRatio:s.ratio==='1:1'?'1':'420/747','--ec-scale':scale,'--ec-height':s.ratio==='1:1'?'420px':'747px'} as CSSProperties} data-card-preview data-card-side={!log.image||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
+ return <div ref={scene} className={`ec-scene ${compact?'ec-feed-preview':''} ${log.image&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!log.image?'ec-single':''}`} style={{aspectRatio:s.ratio==='1:1'?'1':compact?'420/672':'420/747','--ec-scale':scale,'--ec-height':s.ratio==='1:1'?'420px':compact?'672px':'747px'} as CSSProperties} data-card-preview data-card-side={!log.image||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
   onPointerDown={event=>{start.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{if(start.current&&Math.hypot(event.clientX-start.current.x,event.clientY-start.current.y)<7)flip();start.current=null;}} onPointerCancel={()=>{start.current=null;}}
   onClick={event=>{if(event.detail===0)flip();}} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();flip();}}}>
   <div className="ec-logical">{log.image?<div className={`ec-hint-stage ${hint?'ec-hint-active':''}`}><div className="ec-rotator">
