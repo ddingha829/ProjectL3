@@ -23,7 +23,7 @@ const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 로그';
 const LOG_DETAIL_ZOOM=13;
 // Keep city context on phone widths, including after the first GPS response.
-const CITY_VIEW_ZOOM=9.5;
+const CITY_VIEW_ZOOM=11;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);

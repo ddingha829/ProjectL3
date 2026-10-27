@@ -11,6 +11,7 @@ import { logTime } from '@/lib/logCalendar';
 import 'leaflet/dist/leaflet.css';
 import './LogbookMap.css';
 import MapEntrance,{useMapEntrance} from './MapEntrance';
+import {simpleMapLayer} from '@/social/simpleMapLayer';
 
 interface Props {
   items: ArchiveItem[];
@@ -51,7 +52,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
       const map = L.map(containerRef.current, { zoomControl: false, scrollWheelZoom: false, attributionControl: true, zoomAnimation: !reduced(), fadeAnimation: !reduced(), markerZoomAnimation: !reduced() }).setView([36.3, 127.8], 7);
       mapRef.current = map;
       let errors = 0;
-      const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      const tiles = simpleMapLayer(L, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
         maxZoom: 19, updateWhenIdle: true, keepBuffer: 1,
       }).addTo(map);

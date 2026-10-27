@@ -5,7 +5,8 @@ export const mosaicWork=(log:UnifiedLog)=>isWork(log.work);
 export type MosaicPlacement={logId:string;slotIndex:number;placedBy:string;placedAt:number};
 export type MosaicBoardState={personalBoard:Record<number,string>;groupBoards:Record<string,Record<number,MosaicPlacement>>};
 export const emptyMosaic=():MosaicBoardState=>({personalBoard:{},groupBoards:{}});
-export const MOSAIC_PAGE_SIZE=25,MAX_MOSAIC_SLOTS=500;
+export const MOSAIC_COLUMNS=4,MOSAIC_PAGE_SIZE=MOSAIC_COLUMNS*MOSAIC_COLUMNS,MAX_MOSAIC_SLOTS=500;
+export const MOSAIC_PAGE_COUNT=Math.ceil(MAX_MOSAIC_SLOTS/MOSAIC_PAGE_SIZE);
 const slot=(value:string)=>/^(0|[1-9]\d*)$/.test(value)&&Number(value)>=0&&Number(value)<MAX_MOSAIC_SLOTS;
 export function validMosaic(value:unknown):value is MosaicBoardState{
  if(!value||typeof value!=='object')return false;const b=value as MosaicBoardState;
