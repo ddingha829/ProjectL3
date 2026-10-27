@@ -22,6 +22,8 @@ const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 로그';
 const LOG_DETAIL_ZOOM=13;
+// Keep city context on phone widths, including after the first GPS response.
+const CITY_VIEW_ZOOM=9.5;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
@@ -76,7 +78,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(gone||!host.current)return;engine.current=L;
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
    const nearby=currentPoint&&!compact&&!current.current.onPick&&!focusedLog?currentPoint:null;
-   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:nearby?15:14.25);
+   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM);
    map.current=m;
    userMoved.current=false;
    m.on('dragstart zoomstart',()=>{userMoved.current=true;});
@@ -148,7 +150,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(request!==locationRequest.current)return;setLocating(false);
    const lat=position.coords.latitude,lng=position.coords.longitude;
    if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){locateIcon.current?.stopAnimation();setLocationError('현재 위치를 확인하지 못했어요. 다시 눌러주세요.');return;}
-   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;if(m&&(!automatic||!userMoved.current))m.setView([lat,lng],15,{animate:!automatic&&!matchMedia('(prefers-reduced-motion: reduce)').matches});
+   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;if(m&&(!automatic||!userMoved.current))m.setView([lat,lng],automatic?CITY_VIEW_ZOOM:m.getZoom(),{animate:!automatic&&!matchMedia('(prefers-reduced-motion: reduce)').matches});
   },error=>{
    if(request!==locationRequest.current)return;setLocating(false);locateIcon.current?.stopAnimation();
    setLocationError(error.code===1?'위치 권한을 허용하면 현재 위치를 볼 수 있어요.':'현재 위치를 확인하지 못했어요. 잠시 후 다시 눌러주세요.');

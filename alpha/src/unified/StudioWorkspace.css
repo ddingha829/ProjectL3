@@ -84,10 +84,9 @@
  .studio-save-bar{padding:6px 10px;gap:8px;background:var(--surface)}
  .studio-save-bar>.un-primary{min-width:128px}
  .studio-options .lab-main-colors{gap:8px;margin-bottom:8px}
- .studio-options .lab-main-colors label{grid-template-columns:30px minmax(0,1fr);grid-template-rows:14px 44px;gap:4px;font-size:10px}
+ .studio-options .lab-main-colors label{grid-template-columns:minmax(0,1fr);grid-template-rows:14px 44px;gap:4px;font-size:10px}
  .studio-options .lab-color-label{grid-column:1/-1}
- .studio-options .lab-main-colors input[type=color]{grid-column:1;grid-row:2;width:30px;height:44px;min-height:44px;padding:2px}
- .studio-options .lab-main-colors input:not([type=color]){grid-column:2;grid-row:2;min-height:44px;padding:3px;font-size:16px;letter-spacing:-.085em}
+ .studio-options .lab-main-colors input[type=color]{grid-column:1;grid-row:2;width:100%;height:44px;min-height:44px;padding:2px}
  .studio-options .lab-editorial-themes{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px;touch-action:pan-x pinch-zoom;scrollbar-width:thin}
  .studio-options .lab-editorial-themes>button{flex:0 0 auto;min-width:122px;white-space:nowrap}
  .studio-options .lab-finish-choices{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;touch-action:pan-x pinch-zoom;scrollbar-width:thin}
