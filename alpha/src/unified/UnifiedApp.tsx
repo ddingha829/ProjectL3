@@ -35,6 +35,8 @@ import PhotoEditor from './PhotoEditor';
 import useUnifiedState from './useUnifiedState';
 import useNotifications from './useNotifications';
 import NotificationSettings from './NotificationSettings';
+import NotificationOnboarding from './NotificationOnboarding';
+import useNotificationOnboarding from './useNotificationOnboarding';
 import {audienceIds,defaultStyle,inScope,destinations,type Destination,type UnifiedLog,type Collection} from './store';
 import {backupOwn} from './backup';
 import '@/social/SocialLab.css';import '@/social/SocialMaterial.css';import '@/social/CollectionFocus.css';import '@/social/MapPolish.css';import '@/social/CameraComposer.css';import '@/social/StoryWriting.css';import './UnifiedApp.css';import './EntryFlow.css';
@@ -71,8 +73,6 @@ export default function UnifiedApp(){
  const navigate=(next:Destination)=>{setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,scrollY);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
  const changeScope=(next:string)=>{setMapFocus('');savedScroll.current.set(route,scrollY);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollTo({top:0,behavior:'instant'}));};
  const startCompose=useCallback(()=>{setInitialWork(undefined);setComposing(true);},[]);
- const pageSwipeEnabled=Boolean(session&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!selecting&&!collection&&backupProgress===null);
- usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  useEffect(()=>{const distance=swipeEntry.current||16,slide=swipeEntry.current>0;swipeEntry.current=0;if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const elements=Array.from(mainRoot.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0),animations=elements.map(element=>element.animate([{opacity:slide?1:.6,transform:`translateX(${navDirection.current*distance}px)`},{opacity:1,transform:'translateX(0)'}],{duration:slide?240:220,easing:'cubic-bezier(.2,.75,.2,1)'}));return()=>animations.forEach(animation=>animation.cancel());},[view]);
  const cardNavigation=useCardHistory({id:selectedId,canLeave:()=>{
   const top=Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]')).at(-1);
@@ -87,6 +87,9 @@ export default function UnifiedApp(){
   if(target.kind==='map'){setSelectedId('');setMapFocus(log.id);setView('map');}else{setMapFocus('');setView('logs');cardNavigation.open(log.id);}
   requestAnimationFrame(()=>scrollTo({top:0,behavior:'instant'}));return true;
  }});
+ const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
+ const pageSwipeEnabled=Boolean(session&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!selecting&&!collection&&backupProgress===null);
+ usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
  if(!ready||!state||!actor)return <div className="lab-boot"><span className="lab-brand">L2<span>.</span></span>{error?<p role="alert">{error}</p>:<span className="un-subtle">기록을 펼치고 있어요</span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
@@ -150,7 +153,8 @@ export default function UnifiedApp(){
  {composing&&<CameraComposer storageMode={accountMode==='cloud'?'cloud':'demo'} initialWork={initialWork} nearbyLogs={scoped} actor={actor} circles={circles} audience={null} dark={dark} onSave={save} onClose={()=>setComposing(false)}/>}
  {editing&&<CameraComposer key={editing.id} storageMode={accountMode==='cloud'?'cloud':'demo'} actor={actor} circles={circles} audience={editing.circleId} nearbyLogs={scoped} dark={dark} editing={editing} onSave={save} onClose={()=>setEditing(null)}/>}
  {work&&<WorkDetail work={work} logs={readable} actor={actor} people={state.people} intents={state.intents||[]} onClose={()=>setWork(undefined)} onLog={openLog} onRecord={()=>record(work)} onToggleIntent={intend}/>}
- <FirstUseGuide context={panel||photoOpen||designOpen||work||editing?null:composing?'compose':selected?mine?'own-detail':'detail':view==='studio'?'studio':view==='map'?'map':view==='mosaic'?'mosaic':'today'} replay={guideReplay} owned={!!mine} shared={!!selected&&audienceIds(selected).length>0} onActiveChange={setGuideActive}/>
+ <FirstUseGuide context={panel||photoOpen||designOpen||work||editing||notificationGuide.open?null:composing?'compose':selected?mine?'own-detail':'detail':view==='studio'?'studio':view==='map'?'map':view==='mosaic'?'mosaic':'today'} replay={guideReplay} owned={!!mine} shared={!!selected&&audienceIds(selected).length>0} onActiveChange={setGuideActive}/>
+ <NotificationOnboarding open={notificationGuide.open} onLater={notificationGuide.dismiss} onConfigure={()=>{notificationGuide.dismiss();setPanel('settings');requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById('notification-heading');heading?.scrollIntoView({block:'start',behavior:'instant'});heading?.focus({preventScroll:true});}));}}/>
  <AlphaSupport open={panel==='alpha'} onClose={()=>setPanel(null)} view={view} mode={accountMode==='cloud'?'cloud':'demo'} sync={syncStatus}/>
  {backupProgress!==null&&<div className="un-backup-overlay" role="dialog" aria-modal="true" aria-label="백업 저장 중"><div><Download size={26}/><strong aria-live="polite">{backupProgress}%</strong><progress value={backupProgress} max={100}/><span>내 기록을 파일로 묶고 있어요</span></div></div>}
  {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}
