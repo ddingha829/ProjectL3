@@ -32,4 +32,10 @@ Relevant primary references:
 
 ## Release status
 
-Prepared and locally verified; deployment status is recorded after the reviewed GitHub build is released. Backend reset is a separate, explicitly confirmed action.
+Released to https://project-l3-nine.vercel.app/ from source `18db137`.
+
+- Ready production deployment: `dpl_HcEb7FKevsGSSXARfx3FKH2GncMX` / `project-l3-gwccgx9vr-ddingha829s-projects.vercel.app`.
+- Promoted by rebuilding the reviewed GitHub Preview, preserving the existing project/domain. Previous production deployment `dpl_3FwQdnEVL5y2g2vW2VFhwoK7r7AN` remains the rollback baseline.
+- All 11 live HTTP integration checks passed, including search, address/nearby, weather, images, summary cache and cross-site blocking.
+- Live browser settings reports `alpha · 18db137`; the sole scroll body starts at 0 and the title stays visible. A fresh local production reload shows no duplicate GoTrue-client warning; an invalid recovery route shows the intended error with no console errors.
+- The optional backend generation remains unset. No live database/account/photo reset was performed as part of this UI release; the exact destructive reset is waiting for final user confirmation.
