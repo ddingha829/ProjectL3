@@ -12,7 +12,7 @@ type Step={targets:string[];title:string;body:string};
 type Rect={left:number;top:number;width:number;height:number};
 const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
  mosaic:[{targets:['.mosaic-frame','.mosaic-tray'],title:'취향을 원하는 칸에',body:'작품을 연결한 로그만 타일로 보여요. 하단 플로팅 트레이를 옆으로 넘겨 내 타일을 찾고, 위로 끌어 빈 칸(+)에 놓아요. 타일 선택 후 빈 칸을 눌러도 돼요. 채운 타일을 누르면 양면 카드를 볼 수 있고, 위치 이동에서 자리를 바꿀 수 있어요. 모임 보드에서는 내 타일만 빈 칸으로 옮길 수 있어요. 보드 위 좌우 스와이프는 앱 메뉴를 넘기고, 판은 아래 이전·다음 버튼으로 골라요.'}],
- studio:[{targets:['.un-studio-tools'],title:'내 스타일을 프리셋으로',body:'앞면·뒷면·색·질감을 고르고 이름을 붙여 저장해요. 기본으로 지정하면 새 로그에 적용돼요. 기존 로그의 디자인은 바뀌지 않아요.'}],
+ studio:[{targets:['.un-studio-tools'],title:'내 스타일을 프리셋으로',body:'카드를 보면서 앞면·뒷면·색상·질감 탭에서 꾸며요. 이름과 기본 적용은 이름·기본 설정에서 바꾸고, 프리셋 저장을 한 번 누르면 모두 저장돼요. 기존 로그는 바뀌지 않아요.'}],
  today:[
   {targets:['.lab-main [data-log-id]:first-child .lab-poster-art','.lab-main .lab-empty'],title:'로그는 카드로 모여요',body:'카드를 누르면 크게 펼쳐져요. 펼친 카드를 한 번 더 누르면 뒤집혀 감상을 읽을 수 있어요. 카드 안쪽 아래에 작성자 이름이 보여요. 카드 어디를 눌러도 상세 화면이 열려요.'},
    {targets:['.flc-search-slot','.flc-shell'],title:'찾고 싶은 순간을 바로',body:'전체 드롭다운에서 카테고리·정렬·사진 필터를 한 번에 골라요. 돋보기는 검색, 더보기는 카드·리스트·캘린더와 보관함을 열어요. 다른 곳을 누르면 검색창은 접히고 검색어는 유지돼요. 도구 모음은 스크롤해도 위에 남아요.'},
