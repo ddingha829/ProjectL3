@@ -28,12 +28,8 @@ try{
  create table public.l2_archives(id integer primary key); insert into public.l2_archives values(42);
  create table public.posts(id integer primary key); insert into public.posts values(17);`);
  for(let i=0;i<3;i++)await pg.query('insert into auth.users values($1,$2,$3)',[uid[i],`test${i}@example.invalid`,'{}']);
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_001_unified.sql',import.meta.url),'utf8'));
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_002_sync_events.sql',import.meta.url),'utf8'));
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_003_media_proxy.sql',import.meta.url),'utf8'));
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_004_kick_invites.sql',import.meta.url),'utf8'));
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_005_invite_codes.sql',import.meta.url),'utf8'));
- await pg.exec(await fs.readFile(new URL('../supabase/migrations/20261026_006_vercel_integrations.sql',import.meta.url),'utf8'));
+ const migrationDirectory=new URL('../supabase/migrations/',import.meta.url);
+ for(const file of(await fs.readdir(migrationDirectory)).filter(name=>name.endsWith('.sql')).sort())await pg.exec(await fs.readFile(new URL(file,migrationDirectory),'utf8'));
  await actor(0); await snapshot();
  await op([{kind:'group',id:group,name:'Test group',capacity:2,expected:0},{kind:'log',id:ids[0],payload:payload('private'),groups:[],expected:0},{kind:'log',id:ids[1],payload:payload('shared'),groups:[group],expected:0}]);
  assert((await snapshot()).logs.length===2,'owner sees private and shared');

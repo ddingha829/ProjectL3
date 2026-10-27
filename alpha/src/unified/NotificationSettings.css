@@ -1,0 +1,11 @@
+.un-notification-settings{margin-top:20px;padding-top:20px;border-top:1px solid var(--lab-line)}
+.un-notification-settings h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;font-weight:650}
+.un-notification-hint,.un-notification-rule,.un-notification-message{color:var(--lab-muted);font-size:12px;line-height:1.65;margin:8px 0}
+.un-notification-row{display:flex;align-items:center;gap:10px;min-height:66px;padding:8px 0}
+.un-notification-row>svg{flex:none;color:var(--lab-muted)}.un-notification-row>div{flex:1;min-width:0}.un-notification-row strong{font-size:14px;font-weight:600}.un-notification-row p{margin:4px 0 0;color:var(--lab-muted);font-size:12px;line-height:1.45}
+.un-notification-row [role=switch]{display:flex;align-items:center;justify-content:center;flex:none;width:52px;min-width:52px;height:44px;padding:0;position:relative;background:transparent;border:0;cursor:pointer;touch-action:manipulation}
+.un-notification-row [role=switch]::before{content:'';position:absolute;inset:8px 2px;border-radius:99px;background:color-mix(in srgb,var(--lab-muted) 22%,transparent);transition:background .2s}
+.un-notification-row [role=switch]>span{z-index:1;width:22px;height:22px;transform:translateX(-10px);border-radius:50%;background:var(--lab-card);box-shadow:0 1px 4px #0003;transition:transform .2s}
+.un-notification-row [role=switch][aria-checked=true]::before{background:var(--lab-orange)}.un-notification-row [role=switch][aria-checked=true]>span{transform:translateX(10px);background:#fff}.un-notification-row [role=switch]:disabled{opacity:.4;cursor:default}.un-notification-row [role=switch]:focus-visible{outline:2px solid var(--lab-orange);outline-offset:2px;border-radius:18px}
+.un-notification-permission{margin-top:10px;padding:10px 12px;border:1px solid var(--lab-line);border-radius:14px}.un-notification-permission p{font-size:12px;line-height:1.6;color:var(--lab-muted);margin:0}.un-notification-permission button,.un-notification-connect{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:var(--lab-orange);font-size:12px;font-weight:600;cursor:pointer}
+.un-notification-message{color:var(--lab-fg)}@media(prefers-reduced-motion:reduce){.un-notification-row [role=switch]::before,.un-notification-row [role=switch]>span{transition:none}}

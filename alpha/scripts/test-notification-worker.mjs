@@ -1,0 +1,23 @@
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const events=new Map(),stored=new Map(),shown=[],opened=[],messages=[];let focused=0,windows=[];
+const indexedDB={open(){const request={};queueMicrotask(()=>{request.result={close(){},transaction(){const tx={objectStore(){return {get(key){const item={};queueMicrotask(()=>{item.result=stored.get(key);item.onsuccess?.();queueMicrotask(()=>tx.oncomplete?.());});return item;},put(value,key){const item={};queueMicrotask(()=>{stored.set(key,value);item.onsuccess?.();queueMicrotask(()=>tx.oncomplete?.());});return item;}}}};return tx;}};request.onsuccess();});return request;}};
+const self={location:{origin:'https://app.test'},addEventListener:(name,fn)=>events.set(name,fn),registration:{showNotification:async(title,options)=>shown.push({title,...options}),getNotifications:async()=>shown.map(note=>({close:()=>note.closed=true}))},clients:{matchAll:async()=>windows,openWindow:async url=>opened.push(url)}};
+vm.runInNewContext(await fs.readFile('public/sw.js','utf8'),{self,indexedDB,URL,console,caches:{},fetch:()=>{throw Error('Unexpected real network');}});
+async function emit(name,data){let pending;events.get(name)({...data,waitUntil(value){pending=value;}});await pending;}
+const user='12345678-1234-4234-8234-123456789000',log='12345678-1234-4234-8234-123456789001',group='12345678-1234-4234-8234-123456789002',url=`/?view=map&scope=${group}&focus=${log}`;
+const payload={ownerId:user,id:log,title:'친구의 새 로그',body:'근처의 카페',url};
+await emit('push',{data:{json:()=>payload}});assert.equal(shown.length,0,'push cannot display before its account is connected');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:user}});
+await emit('push',{data:{json:()=>payload}});assert.equal(shown.length,1);assert.equal(shown[0].data.url,url);
+await emit('push',{data:{json:()=>({...payload,url:'https://evil.invalid/steal'})}});assert.equal(shown.length,1,'external push link is rejected');
+const notification={data:{url,ownerId:user},close(){}};
+await emit('notificationclick',{notification});assert.equal(opened[0],url,'notification opens the target map when the app is closed');
+windows=[{url:'https://app.test/?view=logs',focus:async()=>focused++,postMessage:message=>messages.push(message)}];
+await emit('notificationclick',{notification});assert.equal(focused,1);assert.equal(messages[0].type,'L2_NOTIFICATION_OPEN');assert.equal(messages[0].url,url);
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:'another-account'}});assert.equal(shown[0].closed,true,'changing accounts closes old account notifications');
+await emit('notificationclick',{notification});assert.equal(focused,1,'old notification cannot open private content in another account');
+await emit('push',{data:{json:()=>payload}});assert.equal(shown.length,1,'stale push is suppressed after account switch');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:null}});assert.equal(stored.get('owner'),null);
+console.log('Notification worker: owner isolation, safe links, map navigation and stale-push suppression passed.');

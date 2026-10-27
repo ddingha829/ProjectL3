@@ -35,6 +35,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const userMoved=useRef(false),autoLocated=useRef(false);
  const reduceMotion=useMotionPreference();
  const focusedRef=useRef(focused);focusedRef.current=focused;
+ const notificationFocusRef=useRef('');
  const floatingCard=useRef<HTMLDivElement>(null);
  useEffect(()=>()=>{locationRequest.current++;},[]);
  const located=logs.filter(l=>l.place&&Number.isFinite(l.place.lat)&&Number.isFinite(l.place.lng));
@@ -109,6 +110,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   }
  },[geometry,markerContent,ready,people]);
  useEffect(()=>{setFocused(focusedLog||'');},[focusedLog,scopeKey]);
+ useEffect(()=>{if(!focusedLog){notificationFocusRef.current='';return;}const m=map.current,place=logs.find(log=>log.id===focusedLog)?.place;if(!ready||!m||!place)return;const key=`${focusedLog}:${place.lat}:${place.lng}`;if(notificationFocusRef.current===key)return;notificationFocusRef.current=key;m.flyTo([place.lat,place.lng],Math.max(14.25,m.getZoom()),{animate:!matchMedia('(prefers-reduced-motion:reduce)').matches,duration:.65});},[focusedLog,ready,logs]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!ready||!m||!L||!currentPoint)return;
   const point=L.circleMarker([currentPoint.lat,currentPoint.lng],{radius:7,color:'#fff',weight:2,fillColor:'#ff4500',fillOpacity:1,className:'scratch-current-location',interactive:false}).addTo(m);
