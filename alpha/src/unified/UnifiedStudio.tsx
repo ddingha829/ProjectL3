@@ -1,23 +1,13 @@
 'use client';
-import {useLayoutEffect,useRef,useState} from 'react';
-import {Plus,ChevronDown,Check,Palette,Layers,SlidersHorizontal,Image,Type,RotateCw,Settings2,Trash2,ArrowUp,ArrowDown} from 'lucide-react';
+import {useState} from 'react';
+import {Plus,ChevronDown,Check,Settings2,Trash2,ArrowUp,ArrowDown} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
-import EditorialCard from '@/social/EditorialCard';
-import CardDesignEditor from '@/social/CardDesignEditor';
-import {FRONT_NAMES,BACK_NAMES,type EditorialStyle} from '@/social/editorialStyle';
+import CardDesignWorkspace from './CardDesignWorkspace';
+import {FRONT_NAMES,BACK_NAMES} from '@/social/editorialStyle';
 import './StudioWorkspace.css';
 import {DEFAULT_PHOTO,type Preset,type UnifiedState,type UnifiedLog} from './store';
 export default function UnifiedStudio({state,commit,notify}:{state:UnifiedState;commit:(change:(s:UnifiedState)=>UnifiedState)=>boolean;notify:(text:string)=>void}){
  const [selected,setSelected]=useState(state.presets[0].id),[draft,setDraft]=useState<Preset>({...state.presets[0],style:{...state.presets[0].style},defaults:[...state.presets[0].defaults]}),[open,setOpen]=useState<'library'|'settings'|null>(null),[photo,setPhoto]=useState(true),[order,setOrder]=useState(false);
- const [designTab,setDesignTab]=useState<'front'|'back'|'color'|'details'>('front');
- const [side,setSide]=useState<'front'|'back'>('front');
- const options=useRef<HTMLDivElement>(null);
- useLayoutEffect(()=>{
-  if(designTab!=='back')return;
-  const strip=options.current?.querySelector<HTMLElement>('.lab-back-choices'),active=strip?.querySelector<HTMLElement>('[aria-pressed=true]');
-  if(strip&&active&&strip.scrollWidth>strip.clientWidth){const row=strip.getBoundingClientRect(),item=active.getBoundingClientRect();strip.scrollLeft+=item.left-row.left-(row.width-item.width)/2;}
- },[designTab,selected,draft.style.back]);
- const chooseTab=(tab:typeof designTab)=>{setDesignTab(tab);if(tab==='front'||tab==='back')setSide(tab);};
  const saved=state.presets.find(p=>p.id===selected),dirty=JSON.stringify(saved)!==JSON.stringify(draft);
  const sample:UnifiedLog={id:'studio-preview',authorId:'me',circleId:null,design:'cover',likes:[],bookmarks:[],comments:[],photo:{...DEFAULT_PHOTO},title:photo?'오후의 한 잔':'천천히 남기는 문장',body:photo?'햇빛이 테이블에 오래 머문 오후. 커피가 식을 때까지 아무것도 서두르지 않았다.':'빠르게 지나간 하루에도 남겨두고 싶은 순간은 있다. 오늘의 문장을 한 장씩 모아본다.',image:photo?'/images/studio-cafe.png':'',category:'dining',rating:'4.5',good:'고소한 라테와 조용한 창가',bad:'창가 자리는 조금 좁다',note:'평일 오후가 한적하다',place:{id:'preview-cafe',name:'창가의 작은 카페',area:'서울 성수동',lat:37.5445,lng:127.0557},createdAt:Date.now()};
  const select=(preset:Preset)=>{setSelected(preset.id);setDraft({...preset,style:{...preset.style},defaults:[...preset.defaults]});setOpen(null);};
@@ -30,21 +20,7 @@ export default function UnifiedStudio({state,commit,notify}:{state:UnifiedState;
   <button className="studio-preset-picker" onClick={()=>setOpen('library')} aria-label="프리셋 목록 열기"><span className="un-preset-swatch" style={{background:`linear-gradient(125deg,${draft.style.bg} 50%,${draft.style.accent} 50%)`}}/><span><small>편집 중인 프리셋</small><strong>{draft.name||'이름 없는 프리셋'}</strong></span><ChevronDown size={16}/></button>
   <button className="studio-icon-button" onClick={create} disabled={state.presets.length>=20} aria-label="새 프리셋 만들기"><Plus size={20}/></button>
  </header>
- <div className="un-studio-preview studio-canvas">
-  <div className="studio-card-stage" data-ratio={draft.style.ratio}><EditorialCard key={`${selected}:${photo}`} log={sample} author="나" appearance={draft.style} interactive={false} initialSide={side}/></div>
-  <div className="studio-preview-bar" data-no-page-swipe>
-   <button onClick={()=>setSide(side==='front'?'back':'front')} disabled={!photo} aria-label="미리보기 앞뒤 전환"><RotateCw size={14}/>{!photo||side==='back'?'뒷면':'앞면'}</button>
-   <div className="studio-ratios" aria-label="카드 비율">{(['9:16','1:1'] as const).map(ratio=><button key={ratio} aria-pressed={draft.style.ratio===ratio} onClick={()=>setDraft({...draft,style:{...draft.style,ratio}})}>{ratio}</button>)}</div>
-   <button aria-label="사진 없는 카드 미리보기" aria-pressed={!photo} onClick={()=>{setPhoto(!photo);if(photo&&designTab==='front')chooseTab('back');}}>{photo?<Image size={16}/>:<Type size={16}/>}<span>{photo?'사진':'글'}</span></button>
-  </div>
- </div>
- <div className="un-studio-tools studio-workbench" data-editor-section={designTab} data-no-page-swipe>
-  <div className="studio-tabs" aria-label="프리셋 편집 메뉴">{([['front','앞면',Image],['back','뒷면',Layers],['color','색상',Palette],['details','질감·글꼴',SlidersHorizontal]] as const).map(([tab,label,Icon])=><button key={tab} aria-pressed={designTab===tab} aria-controls="studio-options" onClick={()=>chooseTab(tab)}><Icon size={16}/>{label}</button>)}</div>
-  <div ref={options} className="studio-options" id="studio-options" key={designTab} role="region" aria-label={`${designTab==='front'?'앞면':designTab==='back'?'뒷면':designTab==='color'?'색상':'질감·글꼴'} 설정`} tabIndex={0}>
-   <CardDesignEditor key={selected} section={designTab} hideApply value={draft.style} hasPhoto={photo} onChange={(style:EditorialStyle)=>setDraft({...draft,style})} dirty={dirty} onApply={save}/>
-  </div>
-  <footer className="studio-save-bar"><button className="studio-settings" onClick={()=>setOpen('settings')}><Settings2 size={17}/>이름·기본 설정</button><button className="un-primary" disabled={!dirty||!draft.name.trim()} onClick={save}><Check size={16}/>{dirty?'프리셋 저장':'저장됨'}</button></footer>
- </div>
+ <CardDesignWorkspace key={selected} log={sample} author="나" value={draft.style} onChange={style=>setDraft({...draft,style})} onPhotoToggle={()=>setPhoto(!photo)} footer={<><button className="studio-settings" onClick={()=>setOpen('settings')}><Settings2 size={17}/>이름·기본 설정</button><button className="un-primary" disabled={!dirty||!draft.name.trim()} onClick={save}><Check size={16}/>{dirty?'프리셋 저장':'저장됨'}</button></>}/>
  <AccessibleDialog open={open==='library'} title="프리셋 목록" onClose={()=>setOpen(null)} panelClassName="lab-dialog un-presets-dialog"><div className="un-dialog-toolbar"><span>{state.presets.length}개의 프리셋</span><button onClick={()=>setOrder(!order)} aria-pressed={order}>{order?'순서 편집 완료':'순서 편집'}</button></div><div className="un-preset-list">{state.presets.map((p,index)=><div key={p.id} className="un-preset-list-row"><button aria-pressed={p.id===selected} onClick={()=>{if(dirty&&!confirm('저장하지 않은 변경을 두고 다른 프리셋을 열까요?'))return;select(p);}}><span className="un-preset-swatch" style={{background:`linear-gradient(125deg,${p.style.bg} 50%,${p.style.accent} 50%)`}}/><span><strong>{p.name}</strong><small>{FRONT_NAMES[p.style.front]} · {BACK_NAMES[p.style.back]}{p.defaults.length?' · 기본':''}</small></span>{p.id===selected&&<Check size={17}/>}</button>{order?<div className="un-order-actions"><button aria-label={`${p.name} 앞으로 이동`} disabled={index===0} onClick={()=>move(p.id,-1)}><ArrowUp size={17}/></button><button aria-label={`${p.name} 뒤로 이동`} disabled={index===state.presets.length-1} onClick={()=>move(p.id,1)}><ArrowDown size={17}/></button></div>:<button className="un-preset-delete" disabled={state.presets.length===1} aria-label={`${p.name} 프리셋 삭제`} onClick={()=>{if(!confirm(`‘${p.name}’ 프리셋을 삭제할까요? 이미 적용한 카드 디자인은 유지됩니다.`))return;if(commit(s=>({...s,presets:s.presets.filter(v=>v.id!==p.id)}))&&p.id===selected)select(state.presets.find(v=>v.id!==p.id)!);}}><Trash2 size={16}/></button>}</div>)}</div><button className="un-outline un-full" disabled={state.presets.length>=20} onClick={create}><Plus size={17}/>새 프리셋</button></AccessibleDialog>
  <AccessibleDialog open={open==='settings'} title="프리셋 설정" onClose={()=>setOpen(null)} panelClassName="lab-dialog studio-settings-dialog">
  <label className="studio-name-field">프리셋 이름<input aria-label="프리셋 이름" maxLength={40} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>
