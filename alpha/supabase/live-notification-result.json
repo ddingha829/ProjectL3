@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "checks": 17,
+  "names": [
+    "fresh-password-login",
+    "fresh-password-login",
+    "live-push-runtime-ready",
+    "notifications-default-off",
+    "private-keys-not-exposed",
+    "anonymous-settings-denied",
+    "cross-origin-settings-denied",
+    "unauthorized-worker-denied",
+    "private-network-subscription-denied",
+    "explicit-nearby-opt-in",
+    "shared-nearby-reservation",
+    "nearby-opens-map",
+    "delivery-receipt-recorded",
+    "same-place-not-repeated",
+    "six-hour-global-cooldown",
+    "receipt-persists-across-client",
+    "opt-out-saved"
+  ],
+  "actualOsDeliveryTested": false,
+  "at": "2026-10-27T22:00:12.048Z"
+}

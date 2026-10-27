@@ -7,11 +7,13 @@ let removedFiles=0;
 async function objects(prefix){const r=await admin.storage.from('l2u-photos').list(prefix,{limit:1000});if(r.error)throw r.error;let paths=[];for(const o of r.data){const key=prefix+'/'+o.name;if(o.id)paths.push(key);else paths.push(...await objects(key));}return paths;}
 for(const id of ids){const files=await objects(id);if(files.some(f=>!f.startsWith(id+'/')))throw Error('Outside generated user folder.');if(files.length){const r=await admin.storage.from('l2u-photos').remove(files);if(r.error)throw r.error;removedFiles+=files.length;}}
 for(const [table,column]of [['l2u_groups','owner_id'],['l2u_logs','author_id']]){const r=await admin.from(table).delete().in(column,ids);if(r.error)throw r.error;}
-// Ticgle's existing signup trigger also created a profile for these exact test
-// users. Its non-cascading auth FK requires removing only those test profiles.
-const legacyProfiles=await admin.from('profiles').delete({count:'exact'}).in('id',ids);if(legacyProfiles.error)throw legacyProfiles.error;
+// Compatibility with QA runs made before the unified backend reset: Ticgle's
+// old signup trigger created profiles with a non-cascading auth foreign key.
+const legacyProfiles=await admin.from('profiles').delete({count:'exact'}).in('id',ids);
+// The fresh unified backend no longer contains Ticgle's profiles table.
+if(legacyProfiles.error&&!['PGRST205','42P01'].includes(legacyProfiles.error.code))throw legacyProfiles.error;
 for(const id of ids){const r=await admin.auth.admin.deleteUser(id);if(r.error)throw r.error;}
 // Remove this workflow's plaintext disposable credentials, never real env files.
 await fs.unlink('.test-data/cloud-qa-accounts.json');
-const summary={status:'passed',generatedAccountsRemoved:ids.length,generatedPhotosRemovedThisRun:removedFiles,generatedLegacyProfilesRemoved:legacyProfiles.count,finishedAt:new Date().toISOString()};
+const summary={status:'passed',generatedAccountsRemoved:ids.length,generatedPhotosRemovedThisRun:removedFiles,generatedLegacyProfilesRemoved:legacyProfiles.count||0,finishedAt:new Date().toISOString()};
 await fs.writeFile('supabase/qa-cleanup-result.json',JSON.stringify(summary,null,2)+'\n');console.log(JSON.stringify(summary));
