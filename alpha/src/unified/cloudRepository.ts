@@ -2,13 +2,20 @@
 import {createClient,type SupabaseClient} from '@supabase/supabase-js';
 import {compressPhotoBlob} from '@/lib/imageCompression';
 import {initialUnified,parseUnified,audienceIds,type UnifiedLog,type UnifiedState} from './store';
+import {backendSessionKey} from './backendSession';
 import type {Person,Circle} from '@/social/model';
 export type CloudOperation=Record<string,unknown>&{kind:string};
 type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
-export async function configureCloud():Promise<SupabaseClient|null>{
+let configuredClient:{signature:string;client:SupabaseClient}|undefined;
+export async function configureCloud(detectSessionInUrl=false):Promise<SupabaseClient|null>{
  const response=await fetch('/api/backend/config',{cache:'no-store'});if(!response.ok)throw Error('서버 연결 설정을 확인하지 못했어요.');
- const config=await response.json();if(!config.enabled)return null;
- return createClient(config.url,config.key,{auth:{storageKey:'l2_unified_supabase_auth_v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+ const config=await response.json();if(!config.enabled){configuredClient?.client.auth.stopAutoRefresh();configuredClient=undefined;return null;}
+ const storageKey=backendSessionKey(config.generation,localStorage),signature=JSON.stringify([config.url,config.key,storageKey,detectSessionInUrl]);
+ // StrictMode and repeated dialog visits must share one auth refresher.
+ if(configuredClient?.signature===signature)return configuredClient.client;
+ configuredClient?.client.auth.stopAutoRefresh();
+ const client=createClient(config.url,config.key,{auth:{storageKey,persistSession:true,autoRefreshToken:true,detectSessionInUrl}});
+ configuredClient={signature,client};return client;
 }
 export const emptyCloudState=():UnifiedState=>({...initialUnified(),logs:[],people:[{id:'me',name:'나',initial:'나',color:'#df653f',note:''}],circles:[],collections:[],intents:[],mosaic:{personalBoard:{},groupBoards:{}}});
 export function cloudError(error:unknown){

@@ -20,11 +20,11 @@ export function bindPageSwipe(read:()=>Live,suppress:{current:number}){
  const cancel=(spring=true)=>{if(gesture)resetMotion(gesture,spring);gesture=null;};
  const begin=(id:number,kind:string,x:number,y:number,target:EventTarget|null)=>{
   cancel(false);suppress.current=0;
-  if(!(target instanceof Element)||!target.closest('.un-app')||x<24||x>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target))return;
+  if(!(target instanceof Element)||!target.closest('.un-app')&&!target.closest('.un-navigation')||x<24||x>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target))return;
   let edge:'left'|'right'|undefined;const map=target.closest('.leaflet-container');
   if(map){if(!target.closest('[data-page-swipe-map]'))return;const bounds=map.getBoundingClientRect();edge=x-bounds.left<=44?'left':bounds.right-x<=44?'right':undefined;if(!edge)return;}
   const button=target.closest('button');if(button&&!button.closest('.un-main,.lab-nav-rail'))return;
-  for(let node=target;node&&!node.matches('.un-app');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return;}
+  for(let node=target;node&&!node.matches('.un-app')&&!node.matches('.un-navigation');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return;}
   gesture={id,kind,x,y,time:performance.now(),claimed:false,offset:0,target,edge,surfaces:[]};return Boolean(edge);
  };
  const move=(id:number,x:number,y:number,event:Event)=>{
@@ -72,7 +72,7 @@ export function bindPageSwipe(read:()=>Live,suppress:{current:number}){
 export function usePageSwipe(enabled:boolean,onSwipe:(direction:SwipeDirection,offset:number)=>void,options:Options){
  const live=useRef<Live>({onSwipe,...options}),suppress=useRef(0);live.current={onSwipe,...options};
  useEffect(()=>{
-  const stopClick=(event:MouseEvent)=>{if(event.detail>0&&performance.now()<suppress.current&&event.target instanceof Element&&event.target.closest('.un-app')){event.preventDefault();event.stopImmediatePropagation();}};
+  const stopClick=(event:MouseEvent)=>{if(event.detail>0&&performance.now()<suppress.current&&event.target instanceof Element&&(event.target.closest('.un-app')||event.target.closest('.un-navigation'))){event.preventDefault();event.stopImmediatePropagation();}};
   document.addEventListener('click',stopClick,true);return()=>document.removeEventListener('click',stopClick,true);
  },[]);
  useEffect(()=>enabled?bindPageSwipe(()=>live.current,suppress):undefined,[enabled]);

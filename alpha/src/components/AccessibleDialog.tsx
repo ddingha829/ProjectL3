@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import {isolateDialog} from '@/lib/dialogIsolation';
+import './AccessibleDialog.css';
 
 interface AccessibleDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface AccessibleDialogProps {
   initialFocusId?: string;
   panelClassName?: string;
   panelStyle?: CSSProperties;
+  scrollBody?: boolean;
 }
 
 /** A small modal primitive shared by the optional composer controls. */
@@ -33,16 +35,39 @@ export default function AccessibleDialog({
   initialFocusId,
   panelClassName = '',
   panelStyle,
+  scrollBody = false,
 }: AccessibleDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open || !mounted || !scrollBody) return;
+    const viewport = window.visualViewport;
+    const syncViewport = () => {
+      overlayRef.current?.style.setProperty('--dialog-height', `${viewport?.height || innerHeight}px`);
+      overlayRef.current?.style.setProperty('--dialog-top', `${viewport?.offsetTop || 0}px`);
+    };
+    // A new settings visit always starts at the beginning of its sole scroll owner.
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    syncViewport();
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    return () => {
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+    };
+  }, [open, mounted, scrollBody]);
 
   useEffect(() => {
     if (!open || !mounted) return;
@@ -103,6 +128,7 @@ export default function AccessibleDialog({
     <div
       ref={overlayRef}
       data-dialog-overlay="true"
+      data-dialog-scroll-body={scrollBody || undefined}
       className="quick-dialog-backdrop fixed inset-0 z-[100] flex items-end justify-center bg-black/65 p-3 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
     >
@@ -113,6 +139,7 @@ export default function AccessibleDialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
+        data-scroll-body={scrollBody || undefined}
         className={`quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7 ${panelClassName}`}
         style={panelStyle}
       >
@@ -124,7 +151,7 @@ export default function AccessibleDialog({
           {headerAdornment}
           <button type="button" onClick={onClose} aria-label={closeLabel} className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl">{closeIcon??'×'}</button>
         </div>
-        {children}
+        {scrollBody ? <div ref={bodyRef} className="quick-dialog-body">{children}</div> : children}
       </div>
     </div>,
     document.body

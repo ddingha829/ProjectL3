@@ -7,5 +7,6 @@ export async function GET(){
  let publicKey=Boolean(key?.startsWith('sb_publishable_'));
  if(key?.startsWith('eyJ'))try{publicKey=JSON.parse(atob(key.split('.')[1])).role==='anon';}catch{}
  if(env.L2_UNIFIED_BACKEND!=='enabled'||!url||!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(url)||!key||!publicKey)return json({enabled:false});
- return json({enabled:true,url,key});
+ const generation=env.L2_BACKEND_GENERATION;
+ return json({enabled:true,url,key,...(generation&&/^[-a-zA-Z0-9._]{1,64}$/.test(generation)?{generation}:{})});
 }

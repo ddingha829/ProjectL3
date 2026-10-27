@@ -10,12 +10,12 @@ const {bindPageSwipe}=await import(pathToFileURL(outfile));
 // Exercise the production event subscriptions, including iOS pointer cancellation.
 class Node extends EventTarget {
  constructor(flags={}){super();Object.assign(this,{flags,isConnected:true,clientWidth:390,scrollWidth:390,parentElement:null,style:{transform:'',removeProperty(key){delete this[key];}},attributes:new Map()});}
- closest(selector){if(selector==='.un-app')return app;if(selector==='button')return this.flags.button?this:null;if(selector==='.un-main,.lab-nav-rail')return root;if(selector==='.leaflet-container')return this.flags.map?this:null;if(selector==='[data-page-swipe-map]')return this.flags.mapEdges?this:null;if(selector.includes('[data-no-swipe]'))return this.flags.blocked?this:null;return null;}
+ closest(selector){if(selector==='.un-app')return this.flags.portal?null:app;if(selector==='.un-navigation')return this.flags.portal?dock:null;if(selector==='button')return this.flags.button?this:null;if(selector==='.un-main,.lab-nav-rail')return root;if(selector==='.leaflet-container')return this.flags.map?this:null;if(selector==='[data-page-swipe-map]')return this.flags.mapEdges?this:null;if(selector.includes('[data-no-swipe]'))return this.flags.blocked?this:null;return null;}
  matches(selector){return selector==='.un-app'&&this===app;}
  querySelectorAll(){return [surface];} getBoundingClientRect(){return {left:18,right:372,width:354};} getClientRects(){return [{}];} getAnimations(){return [];} animate(){return {cancel(){}};}
  setAttribute(k,v){this.attributes.set(k,v);} removeAttribute(k){this.attributes.delete(k);}
 }
-const app=new Node(),root=new Node(),surface=new Node(),target=new Node({button:true});target.parentElement=app;
+const app=new Node(),dock=new Node(),root=new Node(),surface=new Node(),target=new Node({button:true});target.parentElement=app;
 class BrowserEvents extends EventTarget {
  addEventListener(type,fn,options){super.addEventListener(type,fn,typeof options==='boolean'?{capture:options}:options);}
  removeEventListener(type,fn,options){super.removeEventListener(type,fn,typeof options==='boolean'?{capture:options}:options);}
@@ -44,6 +44,8 @@ test('tile tray and local controls retain their gestures',()=>{target.flags.bloc
 test('native horizontal lists keep scrolling',()=>{target.flags.scroll=true;target.scrollWidth=700;touch('touchstart',[point(300)]);assert.equal(touch('touchmove',[point(160)]).defaultPrevented,false);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});
 test('system back edge is excluded',()=>{touch('touchstart',[point(10)]);touch('touchmove',[point(100)]);touch('touchend',[],[point(200)]);assert.deepEqual(calls,[]);});
 test('open dialog blocks navigation',()=>{modal=true;touch('touchstart',[point(300)]);touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});
+test('body-level floating dock keeps swipe navigation',()=>{target.flags={button:true,portal:true};target.parentElement=dock;touch('touchstart',[point(300)]);touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);assert.deepEqual(calls,['map']);});
+test('modal also blocks the body-level floating dock',()=>{target.flags={button:true,portal:true};target.parentElement=dock;modal=true;touch('touchstart',[point(300)]);touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});
 test('mouse drag still navigates',()=>{pointer('pointerdown',300);pointer('pointermove',170);pointer('pointerup',80);assert.deepEqual(calls,['map']);});
 test('mouse pointer cancellation resets the gesture',()=>{pointer('pointerdown',300);pointer('pointermove',170);pointer('pointercancel',170);pointer('pointerup',80);assert.deepEqual(calls,[]);});
 test('detached target cannot navigate',()=>{touch('touchstart',[point(300)]);target.isConnected=false;touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});

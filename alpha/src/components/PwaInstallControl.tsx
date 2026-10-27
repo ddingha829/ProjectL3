@@ -13,6 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 export type PwaPlatform = 'ios' | 'android' | 'desktop';
 
 export interface PwaState {
+  ready: boolean;
   isStandalone: boolean;
   canPromptNative: boolean;
   platform: PwaPlatform;
@@ -26,6 +27,7 @@ export interface PwaState {
 const DISMISS_KEY = 'l2_pwa_banner_dismissed_v1';
 
 export function usePwaInstall(): PwaState {
+  const [ready, setReady] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState<PwaPlatform>('desktop');
@@ -35,11 +37,14 @@ export function usePwaInstall(): PwaState {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const media = window.matchMedia('(display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay)');
     const checkStandalone = () => {
       const standalone =
         Boolean((window.navigator as unknown as { standalone?: boolean }).standalone) ||
-        window.matchMedia('(display-mode: standalone)').matches;
+        media.matches;
       setIsStandalone(standalone);
+      setReady(true);
+      if (standalone) setGuideOpen(false);
       if (standalone) {
         document.documentElement.dataset.standalone = 'true';
       } else {
@@ -48,8 +53,8 @@ export function usePwaInstall(): PwaState {
     };
 
     checkStandalone();
-    const media = window.matchMedia('(display-mode: standalone)');
     media.addEventListener?.('change', checkStandalone);
+    window.addEventListener('pageshow', checkStandalone);
 
     const ua = window.navigator.userAgent.toLowerCase();
     const isIOS =
@@ -83,6 +88,7 @@ export function usePwaInstall(): PwaState {
 
     return () => {
       media.removeEventListener?.('change', checkStandalone);
+      window.removeEventListener('pageshow', checkStandalone);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -90,11 +96,14 @@ export function usePwaInstall(): PwaState {
 
   const triggerInstall = async (): Promise<'installed' | 'guide'> => {
     if (deferredPrompt) {
+      // The browser allows each captured install event to be prompted only once.
+      const prompt = deferredPrompt;
+      setDeferredPrompt(null);
       try {
-        await deferredPrompt.prompt();
-        const choice = await deferredPrompt.userChoice;
+        await prompt.prompt();
+        const choice = await prompt.userChoice;
         if (choice.outcome === 'accepted') {
-          setDeferredPrompt(null);
+          setGuideOpen(false);
           return 'installed';
         }
       } catch {
@@ -106,6 +115,7 @@ export function usePwaInstall(): PwaState {
   };
 
   return {
+    ready,
     isStandalone,
     canPromptNative: Boolean(deferredPrompt),
     platform,

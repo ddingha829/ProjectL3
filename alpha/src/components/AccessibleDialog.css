@@ -1,0 +1,6 @@
+/* The sheet owns geometry; its body alone owns scrolling. Avoid a second root
+   scroll range and reserve the physical safe areas inside the visual viewport. */
+.quick-dialog-backdrop[data-dialog-overlay][data-dialog-scroll-body=true]{--dialog-gap-top:max(12px,env(safe-area-inset-top,0px));--dialog-gap-bottom:max(12px,env(safe-area-inset-bottom,0px));top:var(--dialog-top,0px);bottom:auto;height:var(--dialog-height,100dvh);padding:var(--dialog-gap-top) max(12px,env(safe-area-inset-right,0px)) var(--dialog-gap-bottom) max(12px,env(safe-area-inset-left,0px));overflow:hidden}
+.quick-dialog-panel[data-scroll-body=true]{display:flex;flex-direction:column;min-height:0;max-height:calc(var(--dialog-height,100dvh) - var(--dialog-gap-top) - var(--dialog-gap-bottom))!important;overflow:hidden}
+.quick-dialog-panel[data-scroll-body=true]>.quick-dialog-header{flex:none;min-height:44px;align-items:center;filter:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.quick-dialog-body{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scroll-padding-block:12px;padding-right:2px}
