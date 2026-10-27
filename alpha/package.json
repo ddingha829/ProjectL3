@@ -8,7 +8,8 @@
     "start": "next start -H 127.0.0.1 -p 3014",
     "typecheck": "tsc --noEmit --incremental false",
     "test:db": "node scripts/test-unified-schema.mjs",
-    "test:weather": "node scripts/test-weather.mjs"
+    "test:weather": "node scripts/test-weather.mjs",
+    "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",
