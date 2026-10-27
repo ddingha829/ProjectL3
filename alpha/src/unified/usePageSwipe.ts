@@ -2,7 +2,7 @@
 import {useEffect,useRef,type RefObject} from 'react';
 import {swipeAxis,swipeIntent,swipeOffset,type SwipeDirection} from './pageSwipe';
 
-type Gesture={id:number;kind:string;x:number;y:number;time:number;claimed:boolean;offset:number;target:Element;surfaces:HTMLElement[]};
+type Gesture={id:number;kind:string;x:number;y:number;time:number;claimed:boolean;offset:number;target:Element;edge?:'left'|'right';surfaces:HTMLElement[]};
 type Options={root:RefObject<HTMLElement|null>;canSwipe:(direction:SwipeDirection)=>boolean};
 type Live=Options&{onSwipe:(direction:SwipeDirection,offset:number)=>void};
 
@@ -20,15 +20,18 @@ export function bindPageSwipe(read:()=>Live,suppress:{current:number}){
  const cancel=(spring=true)=>{if(gesture)resetMotion(gesture,spring);gesture=null;};
  const begin=(id:number,kind:string,x:number,y:number,target:EventTarget|null)=>{
   cancel(false);suppress.current=0;
-  if(!(target instanceof Element)||!target.closest('.un-app')||x<24||x>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target)||target.closest('.leaflet-container'))return;
+  if(!(target instanceof Element)||!target.closest('.un-app')||x<24||x>innerWidth-24||document.querySelector('[aria-modal="true"]')||blocked(target))return;
+  let edge:'left'|'right'|undefined;const map=target.closest('.leaflet-container');
+  if(map){if(!target.closest('[data-page-swipe-map]'))return;const bounds=map.getBoundingClientRect();edge=x-bounds.left<=44?'left':bounds.right-x<=44?'right':undefined;if(!edge)return;}
   const button=target.closest('button');if(button&&!button.closest('.un-main,.lab-nav-rail'))return;
   for(let node=target;node&&!node.matches('.un-app');node=node.parentElement!){const overflow=getComputedStyle(node).overflowX;if(node.scrollWidth>node.clientWidth+2&&(overflow==='auto'||overflow==='scroll'))return;}
-  gesture={id,kind,x,y,time:performance.now(),claimed:false,offset:0,target,surfaces:[]};
+  gesture={id,kind,x,y,time:performance.now(),claimed:false,offset:0,target,edge,surfaces:[]};return Boolean(edge);
  };
  const move=(id:number,x:number,y:number,event:Event)=>{
   const g=gesture;if(!g||g.id!==id)return;
   if(!g.target.isConnected||document.querySelector('[aria-modal="true"]')||blocked(g.target)){cancel();return;}
   const dx=x-g.x,dy=y-g.y,axis=swipeAxis(dx,dy);
+  if(g.edge){event.stopPropagation();if(g.edge==='left'&&dx< -12||g.edge==='right'&&dx>12){cancel(false);return;}}
   if(!g.claimed&&axis==='vertical'){suppress.current=performance.now()+500;cancel(false);return;}
   if(!g.claimed&&axis==='horizontal'){
    g.claimed=true;g.surfaces=Array.from(read().root.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0);
@@ -47,13 +50,17 @@ export function bindPageSwipe(read:()=>Live,suppress:{current:number}){
   if(g.claimed)suppress.current=performance.now()+500;
   resetMotion(g,!navigate);if(navigate&&direction)read().onSwipe(direction,g.offset);
  };
- const pointerDown=(event:PointerEvent)=>{if(event.pointerType==='touch'||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey)return;begin(event.pointerId,event.pointerType,event.clientX,event.clientY,event.target);};
- const pointerMove=(event:PointerEvent)=>{if(event.pointerType==='touch')return;if(gesture?.kind==='mouse'&&event.buttons!==1){cancel();return;}move(event.pointerId,event.clientX,event.clientY,event);};
- const pointerUp=(event:PointerEvent)=>{if(event.pointerType!=='touch')finish(event.pointerId,event.clientX,event.clientY);};
- const pointerCancel=(event:PointerEvent)=>{if(event.pointerType!=='touch'&&gesture?.id===event.pointerId)cancel();};
- const touchStart=(event:TouchEvent)=>{if(event.touches.length!==1){cancel();return;}const touch=event.touches[0];begin(touch.identifier,'touch',touch.clientX,touch.clientY,event.target);};
+ const pointerDown=(event:PointerEvent)=>{
+  if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey)return;
+  if(event.pointerType==='touch'&&gesture?.kind==='touch'){if(gesture.edge)event.stopPropagation();return;}
+  if(begin(event.pointerId,event.pointerType==='touch'?'touch-pointer':event.pointerType,event.clientX,event.clientY,event.target))event.stopPropagation();
+ };
+ const pointerMove=(event:PointerEvent)=>{if(event.pointerType==='touch'&&gesture?.kind==='touch')return;if(gesture?.kind==='mouse'&&event.buttons!==1){cancel();return;}move(event.pointerId,event.clientX,event.clientY,event);};
+ const pointerUp=(event:PointerEvent)=>{if(event.pointerType==='touch'&&gesture?.kind==='touch')return;if(gesture?.edge)event.stopPropagation();finish(event.pointerId,event.clientX,event.clientY);};
+ const pointerCancel=(event:PointerEvent)=>{if(event.pointerType==='touch'&&gesture?.kind==='touch')return;if(gesture?.id===event.pointerId)cancel();};
+ const touchStart=(event:TouchEvent)=>{if(event.touches.length!==1){cancel();return;}const touch=event.touches[0];if(begin(touch.identifier,'touch',touch.clientX,touch.clientY,event.target))event.stopPropagation();};
  const touchMove=(event:TouchEvent)=>{if(event.touches.length!==1){cancel();return;}const touch=event.touches[0];move(touch.identifier,touch.clientX,touch.clientY,event);};
- const touchEnd=(event:TouchEvent)=>{if(event.touches.length){cancel();return;}const touch=Array.from(event.changedTouches).find(touch=>touch.identifier===gesture?.id);if(touch)finish(touch.identifier,touch.clientX,touch.clientY);};
+ const touchEnd=(event:TouchEvent)=>{if(event.touches.length){cancel();return;}if(gesture?.edge)event.stopPropagation();const touch=Array.from(event.changedTouches).find(touch=>touch.identifier===gesture?.id);if(touch)finish(touch.identifier,touch.clientX,touch.clientY);};
  const touchCancel=()=>cancel(),blur=()=>cancel(false),preventNativeDrag=(event:DragEvent)=>{if(gesture)event.preventDefault();};
  window.addEventListener('pointerdown',pointerDown,true);window.addEventListener('pointermove',pointerMove,{passive:false,capture:true});window.addEventListener('pointerup',pointerUp,true);window.addEventListener('pointercancel',pointerCancel,true);
  window.addEventListener('touchstart',touchStart,{passive:true,capture:true});window.addEventListener('touchmove',touchMove,{passive:false,capture:true});window.addEventListener('touchend',touchEnd,true);window.addEventListener('touchcancel',touchCancel,true);

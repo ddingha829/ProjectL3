@@ -21,13 +21,13 @@ export default function CardDesignWorkspace({log,author,value,onChange,footer,on
  return <>
   <div className="un-studio-preview studio-canvas">
    <div className="studio-card-stage" data-ratio={value.ratio}><EditorialCard key={`${log.id}:${photo}`} log={log} author={author} appearance={value} interactive={false} initialSide={side}/></div>
-   <div className="studio-preview-bar" data-no-page-swipe>
+   <div className="studio-preview-bar">
     <button onClick={()=>setSide(side==='front'?'back':'front')} disabled={!photo} aria-label="미리보기 앞뒤 전환"><RotateCw size={14}/>{!photo||side==='back'?'뒷면':'앞면'}</button>
     <div className="studio-ratios" aria-label="카드 비율">{(['9:16','1:1'] as const).map(ratio=><button key={ratio} aria-pressed={value.ratio===ratio} onClick={()=>onChange({...value,ratio})}>{ratio}</button>)}</div>
     {onPhotoToggle?<button aria-label="사진 없는 카드 미리보기" aria-pressed={!photo} onClick={()=>{onPhotoToggle();if(photo&&section==='front')choose('back');}}>{photo?<Image size={16}/>:<Type size={16}/>}<span>{photo?'사진':'글'}</span></button>:<span className="studio-preview-kind">{photo?<Image size={14}/>:<Type size={14}/>}</span>}
    </div>
   </div>
-  <div className="un-studio-tools studio-workbench" data-editor-section={section} data-no-page-swipe>
+  <div className="un-studio-tools studio-workbench" data-editor-section={section}>
    <div className="studio-tabs" aria-label="카드 편집 메뉴">{([['front','앞면',Image],['back','뒷면',Layers],['color','색상',Palette],['details','질감·글꼴',SlidersHorizontal]] as const).map(([key,label,Icon])=><button key={key} aria-pressed={section===key} aria-controls={id} onClick={()=>choose(key)}><Icon size={16}/>{label}</button>)}</div>
    <div ref={options} className="studio-options" id={id} key={section} role="region" aria-label={`${section==='front'?'앞면':section==='back'?'뒷면':section==='color'?'색상':'질감·글꼴'} 설정`} tabIndex={0}>
     <CardDesignEditor key={log.id} section={section} hideApply value={value} hasPhoto={photo} onChange={onChange} dirty onApply={()=>{}}/>

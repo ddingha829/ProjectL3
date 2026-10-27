@@ -10,9 +10,9 @@ const {bindPageSwipe}=await import(pathToFileURL(outfile));
 // Exercise the production event subscriptions, including iOS pointer cancellation.
 class Node extends EventTarget {
  constructor(flags={}){super();Object.assign(this,{flags,isConnected:true,clientWidth:390,scrollWidth:390,parentElement:null,style:{transform:'',removeProperty(key){delete this[key];}},attributes:new Map()});}
- closest(selector){if(selector==='.un-app')return app;if(selector==='button')return this.flags.button?this:null;if(selector==='.un-main,.lab-nav-rail')return root;if(selector==='.leaflet-container')return this.flags.map?this:null;if(selector.includes('[data-no-swipe]'))return this.flags.blocked?this:null;return null;}
+ closest(selector){if(selector==='.un-app')return app;if(selector==='button')return this.flags.button?this:null;if(selector==='.un-main,.lab-nav-rail')return root;if(selector==='.leaflet-container')return this.flags.map?this:null;if(selector==='[data-page-swipe-map]')return this.flags.mapEdges?this:null;if(selector.includes('[data-no-swipe]'))return this.flags.blocked?this:null;return null;}
  matches(selector){return selector==='.un-app'&&this===app;}
- querySelectorAll(){return [surface];} getClientRects(){return [{}];} getAnimations(){return [];} animate(){return {cancel(){}};}
+ querySelectorAll(){return [surface];} getBoundingClientRect(){return {left:18,right:372,width:354};} getClientRects(){return [{}];} getAnimations(){return [];} animate(){return {cancel(){}};}
  setAttribute(k,v){this.attributes.set(k,v);} removeAttribute(k){this.attributes.delete(k);}
 }
 const app=new Node(),root=new Node(),surface=new Node(),target=new Node({button:true});target.parentElement=app;
@@ -48,5 +48,12 @@ test('mouse drag still navigates',()=>{pointer('pointerdown',300);pointer('point
 test('mouse pointer cancellation resets the gesture',()=>{pointer('pointerdown',300);pointer('pointermove',170);pointer('pointercancel',170);pointer('pointerup',80);assert.deepEqual(calls,[]);});
 test('detached target cannot navigate',()=>{touch('touchstart',[point(300)]);target.isConnected=false;touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});
 test('tiles and studio swipe in both directions',()=>{for(const [from,expected]of [['mosaic','studio'],['studio',null]]){current=from;touch('touchstart',[point(300)]);touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);if(expected)assert.equal(calls.at(-1),expected);}assert.deepEqual(calls,['studio']);current='studio';touch('touchstart',[point(100)]);touch('touchmove',[point(200)]);touch('touchend',[],[point(300)]);assert.equal(calls.at(-1),'mosaic');});
+test('right map edge swipes inward to tiles',()=>{current='map';target.flags={map:true,mapEdges:true};touch('touchstart',[point(350)]);const moved=touch('touchmove',[point(240)]);assert.equal(moved.defaultPrevented,true);assert.equal(moved.cancelBubble,true);touch('touchend',[],[point(120)]);assert.deepEqual(calls,['mosaic']);});
+test('left map edge swipes inward to feed',()=>{current='map';target.flags={map:true,mapEdges:true};touch('touchstart',[point(40)]);touch('touchmove',[point(140)]);touch('touchend',[],[point(240)]);assert.deepEqual(calls,['logs']);});
+test('center of a paging-enabled map still pans',()=>{current='map';target.flags={map:true,mapEdges:true};touch('touchstart',[point(220)]);assert.equal(touch('touchmove',[point(120)]).defaultPrevented,false);touch('touchend',[],[point(80)]);assert.deepEqual(calls,[]);});
+test('map zoom buttons remain native at the edge',()=>{current='map';target.flags={map:true,mapEdges:true,blocked:true};touch('touchstart',[point(350)]);assert.equal(touch('touchmove',[point(240)]).defaultPrevented,false);touch('touchend',[],[point(120)]);assert.deepEqual(calls,[]);});
+test('outward map edge swipe does not navigate',()=>{current='map';target.flags={map:true,mapEdges:true};touch('touchstart',[point(40)]);touch('touchmove',[point(25)]);touch('touchend',[],[point(10)]);assert.deepEqual(calls,[]);});
+test('pointer-only touch devices can page',()=>{pointer('pointerdown',300,300,{pointerType:'touch'});pointer('pointermove',170,300,{pointerType:'touch'});pointer('pointerup',80,300,{pointerType:'touch'});assert.deepEqual(calls,['map']);});
+test('pointer-first touch events do not navigate twice',()=>{pointer('pointerdown',300,300,{pointerType:'touch'});touch('touchstart',[point(300)]);pointer('pointermove',170,300,{pointerType:'touch'});touch('touchmove',[point(170)]);pointer('pointerup',80,300,{pointerType:'touch'});touch('touchend',[],[point(80)]);assert.deepEqual(calls,['map']);});
 test('cleanup removes touch and pointer subscriptions',()=>{release();touch('touchstart',[point(300)]);touch('touchmove',[point(160)]);touch('touchend',[],[point(80)]);pointer('pointerdown',300);pointer('pointermove',170);pointer('pointerup',80);assert.deepEqual(calls,[]);});
 release();console.log(JSON.stringify({status:'passed',checks:tests}));

@@ -105,3 +105,8 @@
  .studio-workbench[data-editor-section=color] .studio-options,.studio-workbench[data-editor-section=details] .studio-options{height:96px}
 }
 @media(prefers-reduced-motion:reduce){.studio-tabs button{transition:none}}
+
+/* Reserve horizontal touch gestures on the canvas and fixed control rows. */
+.un-app[data-page-swipe=true] :is(.studio-canvas,.studio-preview-bar,.studio-tabs,.studio-save-bar){touch-action:pan-y pinch-zoom}
+
+.un-app[data-page-swipe=true] .studio-workbench[data-editor-section=front] :is(.studio-options,.lab-front-choices){touch-action:pan-y pinch-zoom}

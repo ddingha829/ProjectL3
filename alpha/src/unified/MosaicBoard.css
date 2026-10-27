@@ -91,3 +91,6 @@ html:not(.light) .mosaic-tray{background:color-mix(in srgb,var(--surface) 62%,tr
 .mosaic-tray[data-empty=true] .mosaic-unplaced{flex:1;min-width:0;padding:0;overflow:visible}
 .mosaic-tray[data-empty=true] .mosaic-tray-empty{min-height:38px;gap:7px;min-width:0;font-size:11px;line-height:1.5}
 .mosaic-tray-empty>svg{flex:none;width:17px;height:17px}.mosaic-tray-empty>span{min-width:0;overflow-wrap:anywhere}
+
+.un-app[data-page-swipe=true] .mosaic-frame{touch-action:pan-y pinch-zoom}
+.un-app[data-page-swipe=true] .mosaic-frame.is-editing{touch-action:none}

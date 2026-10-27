@@ -18,3 +18,7 @@
 @media(min-width:1000px){.un-map-nearby-list{height:62px;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 36px)/4);gap:12px;overflow-x:auto;overflow-y:hidden}.un-map-nearby-log{min-width:0;height:62px}.un-map-nearby-meta{display:none}}
 
 .un-map-explorer .un-map-entrance-placeholder{position:relative;height:100%;min-height:0}
+
+/* The map keeps its center gesture; side handles mark inward screen paging. */
+.un-map-page-edge{position:absolute;z-index:3;top:50%;width:4px;height:44px;transform:translateY(-50%);border:1px solid color-mix(in srgb,var(--fg) 14%,transparent);border-radius:99px;background:color-mix(in srgb,var(--surface) 75%,transparent);box-shadow:0 1px 4px #0002;pointer-events:none}
+.un-map-page-edge.is-left{left:5px}.un-map-page-edge.is-right{right:5px}
