@@ -7,7 +7,7 @@ export type MapViewport={zoom:number;bounds:[number,number,number,number];center
 export const MAP_TIER_LABEL:Record<MapTier,string>={dong:'동네',district:'시·군·구',province:'시·도',country:'국가'};
 const thresholds:Record<MapTier,readonly number[]>={dong:[1,2,3,4],district:[1,4,10,20],province:[1,6,18,40],country:[1,10,30,80]};
 const cache=new Map<WideMapTier,Promise<DongCollection>>();
-export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.5?'dong':zoom>=11?'district':zoom>=8?'province':'country';
+export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.25?'dong':zoom>=10.75?'district':zoom>=7.75?'province':'country';
 export function regionStrength(count:number,tier:MapTier):DongCount['level']{
  return Math.max(1,thresholds[tier].filter(n=>count>=n).length) as DongCount['level'];
 }

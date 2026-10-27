@@ -13,7 +13,7 @@ const log=(id,lat,lng)=>({id,place:{lat,lng},createdAt:1});
 const jamsil=log('jamsil',37.5133,127.1025),seongsu=log('seongsu',37.5445,127.0557),busan=log('busan',35.1588,129.1603),tokyo=log('tokyo',35.68,139.76);
 const checks=[];
 const test=(name,run)=>{run();checks.push(name);};
-test('zoom uses four contiguous tiers',()=>assert.deepEqual([15,13.5,13.25,11,10.75,8,7.75,2].map(mapTierForZoom),['dong','dong','district','district','province','province','country','country']));
+test('regional expansion waits an extra quarter zoom step at every boundary',()=>assert.deepEqual([15,13.5,13.25,13,11,10.75,10.5,8,7.75,7.5,2].map(mapTierForZoom),['dong','dong','dong','district','district','district','province','province','province','country','country']));
 test('Jamsil resolves to its dong, Songpa, Seoul, Korea',()=>{assert.match(regionalCoverage([jamsil],dong,'dong').dongs[0].feature.properties.name,/잠실/);assert.match(regionalCoverage([jamsil],district,'district').dongs[0].feature.properties.name,/송파구/);assert.equal(regionalCoverage([jamsil],province,'province').dongs[0].feature.properties.code,'11');assert.equal(regionalCoverage([jamsil],country,'country').dongs[0].feature.properties.code,'KOR');});
 test('different districts stay separate, merge only at province zoom',()=>{const result=regionalCoverage([jamsil,seongsu],district,'district');assert.equal(result.dongs.length,2);assert.deepEqual(regionalCoverage([jamsil,seongsu],province,'province').dongs.map(d=>d.count),[2]);});
 test('Seoul and Busan stay separate until country zoom',()=>{assert.equal(regionalCoverage([jamsil,busan],province,'province').dongs.length,2);assert.deepEqual(regionalCoverage([jamsil,busan],country,'country').dongs.map(d=>d.count),[2]);});
