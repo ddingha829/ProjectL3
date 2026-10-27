@@ -3,11 +3,12 @@ import {useState} from 'react';
 import {ArrowRight,ChevronDown,Eye,EyeOff,Info} from 'lucide-react';
 import SlideArrowButton from '@/components/tweenui/slide-arrow-button';
 import './AuthScreen.css';
+import AlphaSupport from './AlphaSupport';
 
 export default function PreviewLogin({onEnter,onAuthenticate,enabled=false}:{onEnter:(name:string)=>void;onAuthenticate:(email:string,password:string,signup:boolean)=>Promise<void>;enabled?:boolean}){
- const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[show,setShow]=useState(false),[error,setError]=useState(''),[signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
+ const [support,setSupport]=useState(false),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[show,setShow]=useState(false),[error,setError]=useState(''),[signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
  const switchMode=()=>{if(busy)return;setSignup(value=>!value);setShow(false);setError('');};
- return <main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="un-auth-title">
+ return <><main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="un-auth-title">
   <h1 id="un-auth-title" className="un-auth-heading">{signup?'회원가입':'로그인'}</h1>
   <form className="un-auth-form" aria-label={signup?'회원가입':'로그인'} noValidate onSubmit={async event=>{
    event.preventDefault();if(busy||!enabled)return;
@@ -24,6 +25,6 @@ export default function PreviewLogin({onEnter,onAuthenticate,enabled=false}:{onE
   </form>
   <p className="un-auth-switch"><span>{signup?'이미 계정이 있나요?':'처음이신가요?'}</span><button type="button" disabled={busy} onClick={switchMode}>{signup?'로그인':'회원가입'}</button></p>
   <button className="un-auth-demo" type="button" aria-label="예시 계정으로 먼저 둘러보기" disabled={busy} onClick={()=>onEnter('나')}>먼저 둘러보기<ArrowRight size={15} strokeWidth={1.5}/></button>
-  <footer className="un-auth-footer"><details className="un-auth-notice"><summary><Info size={13} strokeWidth={1.5}/><span>알파 테스트 안내</span><ChevronDown size={12}/></summary><p>현재 알파 버전이며, 별도의 이메일 인증 없이 가입할 수 있습니다. 테스트 종료 후 모든 데이터는 정식 서비스에서 사용할 수 있는 형식으로 백업한 뒤, 테스트 환경에서 삭제할 예정입니다.</p></details>{!enabled&&<p className="un-auth-connection" role="status">계정 연결을 준비 중입니다. 먼저 둘러보기로 화면을 확인할 수 있어요.</p>}</footer>
- </section></main>;
+  <footer className="un-auth-footer"><details className="un-auth-notice"><summary><Info size={13} strokeWidth={1.5}/><span>알파 테스트 안내</span><ChevronDown size={12}/></summary><p>현재 알파 버전이며, 별도의 이메일 인증 없이 가입할 수 있습니다. 테스트 종료 후 모든 데이터는 정식 서비스에서 사용할 수 있는 형식으로 백업한 뒤, 테스트 환경에서 삭제할 예정입니다.</p></details><button className="un-auth-feedback" onClick={()=>setSupport(true)}>문제 알리기</button>{!enabled&&<p className="un-auth-connection" role="status">계정 연결을 준비 중입니다. 먼저 둘러보기로 화면을 확인할 수 있어요.</p>}</footer>
+ </section></main><AlphaSupport open={support} onClose={()=>setSupport(false)} initialTab="report"/></>;
 }

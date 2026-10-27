@@ -30,3 +30,11 @@ Rollback baseline: immutable deployment dpl_FhyHqWh2wcP9ZT2SV8pTeqFoP4Em. Config
 - Browser demo confirmed a 16-cell board and tray clear of navigation on the live domain.
 - The tester guide is docs/ALPHA_TEST_GUIDE_KO.md. Physical-device camera/GPS/share/PWA compatibility remains the invited alpha test scope.
 - Git pushes still produce Preview deployments. Production changes should use an explicit release of the reviewed GitHub deployment; local CLI author verification remains unchanged.
+
+## Alpha tester support added
+
+- Settings now contains an alpha guide, copyable invitation and a feedback report with build revision, browser, viewport, installed-mode and sync status. Login has the same report entry for signup/login failures.
+- Reports use a strict context allowlist and do not automatically include account IDs, emails, tokens, log payloads, coordinates or invitation URLs. Copy/download only; there is no automatic external submission.
+- Public revision is compiled from the Vercel Git commit (local Git fallback); no private environment values are exposed.
+- Re-ran 171 isolated checks and 11 live HTTP integration checks; added 6 report-format/privacy checks. The owner launch instructions are docs/ALPHA_OWNER_CHECKLIST_KO.md.
+- Browser verified guide/report tabs, empty-submit protection, copy feedback, correct report preview, saved UTF-8 report file and login-before-auth reporting. Phone viewport checks at 390x844 and 375x667; no browser errors.
