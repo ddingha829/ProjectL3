@@ -7,8 +7,10 @@
 .studio-preset-picker strong{font-size:15px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .studio-preset-picker>svg{flex:none}
 .studio-icon-button{display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:50%;background:var(--surface)}
-.un-studio-workspace .studio-canvas{gap:6px;padding:12px 12px 0;border-radius:20px;background:color-mix(in srgb,var(--fg) 3%,var(--bg));overflow:hidden}
-.un-studio-workspace .studio-canvas>.ec-scene{height:clamp(190px,32svh,350px);width:auto;max-width:100%;flex:none}
+.un-studio-workspace .studio-canvas{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 44px;justify-content:stretch;gap:6px;padding:12px 12px 0;border-radius:20px;background:color-mix(in srgb,var(--fg) 3%,var(--bg));overflow:hidden}
+.studio-card-stage{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;width:100%;height:100%;container-type:size;touch-action:pan-y pinch-zoom}
+.studio-card-stage>.ec-scene{width:min(100cqw,calc(100cqh * 420 / 747));height:auto;max-width:100%;flex:none}
+.studio-card-stage[data-ratio="1:1"]>.ec-scene{width:min(100cqw,100cqh)}
 .studio-preview-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;color:var(--muted)}
 .studio-preview-bar button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:44px;min-height:44px;font-size:11px;border-radius:9px}
 .studio-preview-bar button:disabled{opacity:.45}
@@ -49,11 +51,58 @@
 @media(min-width:780px){
  .un-studio.un-studio-workspace{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px 30px;margin:12px auto}
  .studio-preset-bar{grid-column:1/-1}
- .un-studio-workspace .studio-canvas{padding:24px 22px 4px}
- .un-studio-workspace .studio-canvas>.ec-scene{height:min(58svh,560px);max-width:100%}
+ .un-studio-workspace .studio-canvas{height:min(65svh,640px);padding:24px 22px 4px}
  .studio-workbench{align-self:center}
  .studio-options{height:350px;padding:20px}
 }
 @media(max-width:380px){.studio-tabs button{font-size:10px;gap:4px}.studio-tabs svg{width:14px}.studio-save-bar{gap:6px}.studio-options{padding:12px}}
-@media(max-height:700px) and (max-width:779px){.un-studio.un-studio-workspace{gap:8px}.un-studio-workspace .studio-canvas{padding-top:8px;gap:0}.un-studio-workspace .studio-canvas>.ec-scene{height:180px}.studio-options{height:112px}.studio-save-bar{padding-block:6px}}
+/* Fit the entire mobile editor above the floating navigation, including PWA safe areas. */
+@media(max-width:779px){
+ .un-app[data-page=studio]{padding-bottom:0!important}
+ .un-app[data-page=studio] .un-main{min-height:0;touch-action:auto}
+ .un-studio.un-studio-workspace{height:calc(var(--lab-vvh,100svh) - 56px - env(safe-area-inset-top,0px) - max(16px,env(safe-area-inset-bottom,0px)) - 80px);grid-template-rows:44px minmax(0,1fr) auto;gap:8px;align-items:stretch}
+ .studio-preset-picker{min-height:44px;gap:8px}
+ .studio-preset-picker small{display:none}
+ .studio-preset-picker .un-preset-swatch{width:26px;height:31px}
+ .studio-preset-picker strong{font-size:14px}
+ .studio-icon-button{min-width:40px;width:44px;min-height:44px}
+ .un-studio-workspace .studio-canvas{min-height:0;gap:0;padding:8px 10px 0;border-radius:18px}
+ .studio-preview-bar{gap:4px}
+ .studio-workbench{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;border-radius:18px}
+ .studio-tabs{padding:4px;gap:2px}
+ .studio-tabs button{gap:4px;border-radius:11px}
+ .studio-options{height:96px;min-height:0;padding:8px 10px;overscroll-behavior:contain;touch-action:auto}
+ .studio-workbench[data-editor-section=back] .studio-options{height:80px}
+ .studio-workbench[data-editor-section=color] .studio-options{height:136px}
+ .studio-workbench[data-editor-section=details] .studio-options{height:136px}
+ .studio-options .lab-front-choices,.studio-options .lab-back-choices{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:0 1px 6px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;scroll-snap-type:x proximity;touch-action:pan-x pinch-zoom}
+ .studio-options .lab-front-choices>button,.studio-options .lab-back-choices>button{flex:0 0 88px;scroll-snap-align:start;min-height:68px;padding:8px;font-size:11px}
+ .studio-options .lab-front-choices>button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;flex-basis:calc((100% - 12px)/3)}
+ .studio-options .lab-front-choices>button:before{width:19px;height:30px;border-radius:3px}
+ .studio-options .lab-front-choices>button:nth-child(3):before{box-shadow:inset 0 -8px 0 currentColor}
+ .studio-options .lab-back-choices>button{display:flex;align-items:center;justify-content:center;min-height:68px}
+ .studio-save-bar{padding:6px 10px;gap:8px;background:var(--surface)}
+ .studio-save-bar>.un-primary{min-width:128px}
+ .studio-options .lab-main-colors{gap:8px;margin-bottom:8px}
+ .studio-options .lab-main-colors label{grid-template-columns:30px minmax(0,1fr);grid-template-rows:14px 44px;gap:4px;font-size:10px}
+ .studio-options .lab-color-label{grid-column:1/-1}
+ .studio-options .lab-main-colors input[type=color]{grid-column:1;grid-row:2;width:30px;height:44px;min-height:44px;padding:2px}
+ .studio-options .lab-main-colors input:not([type=color]){grid-column:2;grid-row:2;min-height:44px;padding:3px;font-size:16px;letter-spacing:-.085em}
+ .studio-options .lab-editorial-themes{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px;touch-action:pan-x pinch-zoom;scrollbar-width:thin}
+ .studio-options .lab-editorial-themes>button{flex:0 0 auto;min-width:122px;white-space:nowrap}
+ .studio-options .lab-finish-choices{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;touch-action:pan-x pinch-zoom;scrollbar-width:thin}
+ .studio-options .lab-finish-choices>button{flex:0 0 auto;padding-inline:12px;white-space:nowrap}
+ .studio-options .lab-material-settings fieldset+fieldset{margin-top:12px}
+ .studio-options .lab-mood-choices{display:flex;overflow-x:auto;padding-bottom:4px;touch-action:pan-x pinch-zoom;scrollbar-width:thin}
+ .studio-options .lab-mood-choices>button{flex:0 0 130px}
+}
+@media(max-height:560px) and (max-width:779px){
+ .studio-preset-picker .un-preset-swatch{display:none}
+ .un-studio.un-studio-workspace{gap:4px}
+ .studio-options{height:76px}
+ .studio-workbench[data-editor-section=color] .studio-options,.studio-workbench[data-editor-section=details] .studio-options{height:96px}
+}
+@media(max-height:700px) and (max-width:779px){
+ .studio-workbench[data-editor-section=color] .studio-options,.studio-workbench[data-editor-section=details] .studio-options{height:96px}
+}
 @media(prefers-reduced-motion:reduce){.studio-tabs button{transition:none}}

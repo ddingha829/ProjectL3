@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useLayoutEffect,useRef,useState} from 'react';
 import {Plus,ChevronDown,Check,Palette,Layers,SlidersHorizontal,Image,Type,RotateCw,Settings2,Trash2,ArrowUp,ArrowDown} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard from '@/social/EditorialCard';
@@ -11,6 +11,12 @@ export default function UnifiedStudio({state,commit,notify}:{state:UnifiedState;
  const [selected,setSelected]=useState(state.presets[0].id),[draft,setDraft]=useState<Preset>({...state.presets[0],style:{...state.presets[0].style},defaults:[...state.presets[0].defaults]}),[open,setOpen]=useState<'library'|'settings'|null>(null),[photo,setPhoto]=useState(true),[order,setOrder]=useState(false);
  const [designTab,setDesignTab]=useState<'front'|'back'|'color'|'details'>('front');
  const [side,setSide]=useState<'front'|'back'>('front');
+ const options=useRef<HTMLDivElement>(null);
+ useLayoutEffect(()=>{
+  if(designTab!=='back')return;
+  const strip=options.current?.querySelector<HTMLElement>('.lab-back-choices'),active=strip?.querySelector<HTMLElement>('[aria-pressed=true]');
+  if(strip&&active&&strip.scrollWidth>strip.clientWidth){const row=strip.getBoundingClientRect(),item=active.getBoundingClientRect();strip.scrollLeft+=item.left-row.left-(row.width-item.width)/2;}
+ },[designTab,selected,draft.style.back]);
  const chooseTab=(tab:typeof designTab)=>{setDesignTab(tab);if(tab==='front'||tab==='back')setSide(tab);};
  const saved=state.presets.find(p=>p.id===selected),dirty=JSON.stringify(saved)!==JSON.stringify(draft);
  const sample:UnifiedLog={id:'studio-preview',authorId:'me',circleId:null,design:'cover',likes:[],bookmarks:[],comments:[],photo:{...DEFAULT_PHOTO},title:photo?'오후의 한 잔':'천천히 남기는 문장',body:photo?'햇빛이 테이블에 오래 머문 오후. 커피가 식을 때까지 아무것도 서두르지 않았다.':'빠르게 지나간 하루에도 남겨두고 싶은 순간은 있다. 오늘의 문장을 한 장씩 모아본다.',image:photo?'/images/studio-cafe.png':'',category:'dining',rating:'4.5',good:'고소한 라테와 조용한 창가',bad:'창가 자리는 조금 좁다',note:'평일 오후가 한적하다',place:{id:'preview-cafe',name:'창가의 작은 카페',area:'서울 성수동',lat:37.5445,lng:127.0557},createdAt:Date.now()};
@@ -25,16 +31,16 @@ export default function UnifiedStudio({state,commit,notify}:{state:UnifiedState;
   <button className="studio-icon-button" onClick={create} disabled={state.presets.length>=20} aria-label="새 프리셋 만들기"><Plus size={20}/></button>
  </header>
  <div className="un-studio-preview studio-canvas">
-  <EditorialCard key={`${selected}:${photo}`} log={sample} author="나" appearance={draft.style} interactive={false} initialSide={side}/>
+  <div className="studio-card-stage" data-ratio={draft.style.ratio}><EditorialCard key={`${selected}:${photo}`} log={sample} author="나" appearance={draft.style} interactive={false} initialSide={side}/></div>
   <div className="studio-preview-bar" data-no-page-swipe>
    <button onClick={()=>setSide(side==='front'?'back':'front')} disabled={!photo} aria-label="미리보기 앞뒤 전환"><RotateCw size={14}/>{!photo||side==='back'?'뒷면':'앞면'}</button>
    <div className="studio-ratios" aria-label="카드 비율">{(['9:16','1:1'] as const).map(ratio=><button key={ratio} aria-pressed={draft.style.ratio===ratio} onClick={()=>setDraft({...draft,style:{...draft.style,ratio}})}>{ratio}</button>)}</div>
    <button aria-label="사진 없는 카드 미리보기" aria-pressed={!photo} onClick={()=>{setPhoto(!photo);if(photo&&designTab==='front')chooseTab('back');}}>{photo?<Image size={16}/>:<Type size={16}/>}<span>{photo?'사진':'글'}</span></button>
   </div>
  </div>
- <div className="un-studio-tools studio-workbench" data-no-page-swipe>
+ <div className="un-studio-tools studio-workbench" data-editor-section={designTab} data-no-page-swipe>
   <div className="studio-tabs" aria-label="프리셋 편집 메뉴">{([['front','앞면',Image],['back','뒷면',Layers],['color','색상',Palette],['details','질감·글꼴',SlidersHorizontal]] as const).map(([tab,label,Icon])=><button key={tab} aria-pressed={designTab===tab} aria-controls="studio-options" onClick={()=>chooseTab(tab)}><Icon size={16}/>{label}</button>)}</div>
-  <div className="studio-options" id="studio-options" key={designTab} role="region" aria-label={`${designTab==='front'?'앞면':designTab==='back'?'뒷면':designTab==='color'?'색상':'질감·글꼴'} 설정`} tabIndex={0}>
+  <div ref={options} className="studio-options" id="studio-options" key={designTab} role="region" aria-label={`${designTab==='front'?'앞면':designTab==='back'?'뒷면':designTab==='color'?'색상':'질감·글꼴'} 설정`} tabIndex={0}>
    <CardDesignEditor key={selected} section={designTab} hideApply value={draft.style} hasPhoto={photo} onChange={(style:EditorialStyle)=>setDraft({...draft,style})} dirty={dirty} onApply={save}/>
   </div>
   <footer className="studio-save-bar"><button className="studio-settings" onClick={()=>setOpen('settings')}><Settings2 size={17}/>이름·기본 설정</button><button className="un-primary" disabled={!dirty||!draft.name.trim()} onClick={save}><Check size={16}/>{dirty?'프리셋 저장':'저장됨'}</button></footer>
