@@ -1,0 +1,14 @@
+[data-map-revealed]{isolation:isolate}
+[data-map-revealed]>.scratch-map-canvas,[data-map-revealed]>.logbook-map-canvas{opacity:0;transform:scale(1.035);transition:opacity .55s ease,transform .8s cubic-bezier(.2,.8,.2,1)}
+[data-map-revealed=true]>.scratch-map-canvas,[data-map-revealed=true]>.logbook-map-canvas{opacity:1;transform:none}
+.map-entrance{position:absolute;inset:0;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:17px;background:var(--surface);color:var(--muted);pointer-events:none;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s}
+.map-entrance:before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;opacity:.35;mask-image:radial-gradient(ellipse at center,#000,transparent 70%)}
+.map-entrance-mark{position:relative;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--accent);box-shadow:0 4px 20px #00000008}
+.map-entrance-mark>i{position:absolute;inset:-6px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:50%;animation:map-entrance-pulse 1.7s ease-out infinite}
+.map-entrance-label{position:relative;font-size:11px;font-weight:400;letter-spacing:-.02em}
+[data-map-revealed=true]>.map-entrance{opacity:0;visibility:hidden}
+[data-map-revealed=true]>.map-entrance .map-entrance-mark>i{animation:none}
+@keyframes map-entrance-pulse{from{transform:scale(.9);opacity:.8}to{transform:scale(1.35);opacity:0}}
+@media(prefers-reduced-motion:reduce){[data-map-revealed]>.scratch-map-canvas,[data-map-revealed]>.logbook-map-canvas,.map-entrance{transition:none;transform:none}.map-entrance-mark>i{animation:none}}
+html[data-motion=off] [data-map-revealed]>.scratch-map-canvas,html[data-motion=off] [data-map-revealed]>.logbook-map-canvas,html[data-motion=off] .map-entrance{transition:none;transform:none}
+html[data-motion=off] .map-entrance-mark>i{animation:none}

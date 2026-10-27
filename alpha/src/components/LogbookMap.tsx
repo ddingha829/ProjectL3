@@ -10,6 +10,7 @@ import { experienceTime, experienceDate } from '@/lib/logDate';
 import { logTime } from '@/lib/logCalendar';
 import 'leaflet/dist/leaflet.css';
 import './LogbookMap.css';
+import MapEntrance,{useMapEntrance} from './MapEntrance';
 
 interface Props {
   items: ArchiveItem[];
@@ -29,6 +30,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [revision, setRevision] = useState(0);
+  const {revealed,markPainted}=useMapEntrance(ready,failed,revision);
   const [focusedId, setFocusedId] = useState('');
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState('');
@@ -54,7 +56,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
         maxZoom: 19, updateWhenIdle: true, keepBuffer: 1,
       }).addTo(map);
       tiles.on('tileerror', () => { if (++errors >= 3 && !canceled) setFailed(true); });
-      tiles.on('tileload', () => { errors = 0; if (!canceled) setFailed(false); });
+      tiles.on('tileload', () => { errors = 0; if (!canceled) {setFailed(false);markPainted();} });
       markersRef.current = L.layerGroup().addTo(map);
       routeRef.current = L.layerGroup().addTo(map);
       map.attributionControl.setPrefix(false);
@@ -161,8 +163,9 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
     finally { setResolving(false); }
   };
 
-  return <div className={`logbook-map ${route?'is-route-map':''}`} aria-label="로그 지도" data-route-playing={playing}>
+  return <div className={`logbook-map ${route?'is-route-map':''}`} aria-label="로그 지도" data-map-revealed={revealed} aria-busy={!revealed} data-no-page-swipe data-route-playing={playing}>
     <div ref={containerRef} className="logbook-map-canvas" aria-label="OpenStreetMap 지도"/>
+    <MapEntrance revealed={revealed}/>
     <div className="logbook-map-caption"><MapPin size={12}/><span>MAP</span><small>{located.length} / {items.length}</small></div>
     {route&&<button type="button" className="logbook-route-play" aria-label="경로 다시 보기" disabled={located.length<2||!ready} onClick={()=>{fitAll();setReplay(value=>value+1);}}><Play size={12} fill="currentColor"/>{playing?'따라가는 중':'경로 재생'}</button>}
     <div className="logbook-map-controls"><button type="button" aria-label="모든 장소 보기" disabled={!located.length || !ready} onClick={fitAll}><LocateFixed size={16}/></button><button type="button" aria-label="지도 확대" disabled={!ready} onClick={() => mapRef.current?.zoomIn()}><Plus size={18}/></button><button type="button" aria-label="지도 축소" disabled={!ready} onClick={() => mapRef.current?.zoomOut()}><Minus size={18}/></button></div>

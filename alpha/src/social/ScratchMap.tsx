@@ -5,6 +5,7 @@ import type * as Leaflet from 'leaflet';
 import type {FeatureCollection} from 'geojson';
 import {archive,timeAgo,type LabLog,type Person,type Place} from './model';
 import EditorialCard from './EditorialCard';
+import MapEntrance,{useMapEntrance} from '@/components/MapEntrance';
 import {LocateFixedIcon,type LocateFixedIconHandle} from '@/components/icons/locate-fixed';
 import {RotateCcwIcon,type RotateCcwIconHandle} from '@/components/icons/rotate-ccw';
 import './InteractionPolish.css';
@@ -24,6 +25,7 @@ const LOG_DETAIL_ZOOM=13;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
+ const {revealed,markPainted}=useMapEntrance(ready,failed,scopeKey);
  const [currentPoint,setCurrentPoint]=useState<{lat:number;lng:number}|null>(null),[locating,setLocating]=useState(false),[locationError,setLocationError]=useState('');
  const locationRequest=useRef(0),locateIcon=useRef<LocateFixedIconHandle>(null),replayIcon=useRef<RotateCcwIconHandle>(null);
  const [replaying,setReplaying]=useState(false);
@@ -65,7 +67,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   cancelAnimationFrame(revealRaf.current);setReplaying(manual);if(manual)replayIcon.current?.startAnimation();else replayIcon.current?.stopAnimation();
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){progress.current=1;redraw();setReplaying(false);replayIcon.current?.stopAnimation();return;}
   const start=performance.now();progress.current=0;redraw();
-  const frame=(now:number)=>{const t=Math.min(1,(now-start)/(manual?950:360));progress.current=1-Math.pow(1-t,3);redraw();if(t<1)revealRaf.current=requestAnimationFrame(frame);else{setReplaying(false);replayIcon.current?.stopAnimation();}};
+  const frame=(now:number)=>{const t=Math.min(1,(now-start)/(manual?950:650));progress.current=1-Math.pow(1-t,3);redraw();if(t<1)revealRaf.current=requestAnimationFrame(frame);else{setReplaying(false);replayIcon.current?.stopAnimation();}};
   revealRaf.current=requestAnimationFrame(frame);
  };
  useEffect(()=>{
@@ -81,7 +83,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    const gray=m.createPane('scratch-base');gray.style.zIndex='200';gray.classList.add('scratch-base-pane');
    panes.current=[1,2,3,4].map(level=>{const pane=m.createPane(`scratch-color-${level}`);pane.style.zIndex=String(240+level);pane.style.pointerEvents='none';pane.style.clipPath='path("M 0 0")';pane.classList.add('scratch-color-pane');pane.dataset.level=String(level);return pane;});
    const boundaryPane=m.createPane('scratch-boundaries');boundaryPane.style.zIndex='350';
-   (current.current.onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}):simpleMapLayer(L,{pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'})).addTo(m).on('tileerror',()=>{if(!gone)setFailed(true);}).on('tileload',()=>{if(!gone)setFailed(false);});
+   (current.current.onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}):simpleMapLayer(L,{pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'})).addTo(m).on('tileerror',()=>{if(!gone)setFailed(true);}).on('tileload',()=>{if(!gone){setFailed(false);markPainted();}});
    L.control.zoom({position:'bottomleft'}).addTo(m);markers.current=L.layerGroup().addTo(m);outlines.current=L.layerGroup().addTo(m);
    const update=()=>{if(gone)return;cancelAnimationFrame(raf.current);raf.current=requestAnimationFrame(redraw);};m.on('move zoom viewreset resize',update);
    const detailZoom=()=>{if(gone||map.current!==m||!host.current?.isConnected)return;const zoom=m.getZoom(),visible=zoom>=LOG_DETAIL_ZOOM,nextTier=current.current.onPick?'dong':mapTierForZoom(zoom);setTier(nextTier);setShowLogDetails(visible);if(host.current){host.current.dataset.logDetails=String(visible);host.current.dataset.zoom=String(zoom);host.current.dataset.regionTier=nextTier;}if(!visible)setFocused('');const bounds=m.getBounds(),center=m.getCenter();current.current.onViewportChange?.({zoom,bounds:[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()],center:[center.lat,center.lng]});};m.on('zoomend moveend resize',detailZoom);detailZoom();
@@ -136,7 +138,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   }
   redraw();
  },[activeCoverage,ready,onPick,highlightedDong]);
- useEffect(()=>{if(ready)replay();},[activeCoverage,ready]);
+ useEffect(()=>{if(ready&&revealed)replay();},[activeCoverage,ready,revealed]);
  const fit=()=>{const m=map.current,L=engine.current;if(m&&L&&places.length)m.fitBounds(L.latLngBounds(places.map(p=>[p.lat,p.lng])),{padding:[45,55],maxZoom:14,animate:!matchMedia('(prefers-reduced-motion: reduce)').matches});};
  const locate=(automatic=false)=>{
   if(locating)return;setFocused('');setLocationError('');
@@ -162,9 +164,10 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   return()=>{m.off('move zoom viewreset resize',position);};
  },[focused,geometry,ready]);
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
- return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
+ return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
   <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 로그 지도'}/>
-  {(!ready||!boundaries&&!boundaryError)&&<div className="scratch-loading" role="status"><LoaderCircle size={22}/>{ready?'행정동 경계를 불러오는 중':'지도를 펼치고 있어요'}</div>}
+  <MapEntrance revealed={revealed}/>
+  {revealed&&!boundaries&&!boundaryError&&<div className="scratch-loading" role="status"><LoaderCircle size={22}/>{ready?'행정동 경계를 불러오는 중':'지도를 펼치고 있어요'}</div>}
   {ready&&<div className="scratch-map-tools" data-no-swipe><button onClick={fit} aria-label="공유한 장소 전체 보기" title="전체 보기"><Expand size={13}/></button><button onClick={()=>replay(true)} aria-label="지도 색 채움 다시 보기" aria-busy={replaying} data-replaying={replaying||undefined} title="색 채움 다시 보기"><RotateCcwIcon ref={replayIcon} size={14} isAnimated={false} duration={1.15}/></button>{!onPick&&<button onClick={()=>locate()} disabled={locating} aria-label="내 현재 위치 보기" aria-busy={locating} data-location-state={locating?'locating':locationError?'error':currentPoint?'found':'idle'} title="내 현재 위치"><LocateFixedIcon ref={locateIcon} size={14} isAnimated={false} duration={.75}/></button>}</div>}
   {locationError&&<div className="scratch-location-status" role="status">{locationError}<button onClick={()=>setLocationError('')} aria-label="위치 안내 닫기"><X size={13}/></button></div>}
   {!onPick&&boundaries&&<div className="scratch-caption"><span className="scratch-dot"/><span>{activeCoverage.dongs.length?`${MAP_TIER_LABEL[tier]} ${activeCoverage.dongs.length}곳 · 로그 ${matched}개`:located.length?MAP_TIER_LABEL[tier]:'장소가 있는 로그부터 남겨보세요'}</span></div>}

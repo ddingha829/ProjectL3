@@ -6,7 +6,8 @@ import {timeAgo,type LabLog,type Person} from '@/social/model';
 import type {DongCount} from '@/social/adminDong';
 import {logsInViewport,type MapViewport} from '@/social/mapRegions';
 import './MapExplorer.css';
-const ScratchMap=dynamic(()=>import('@/social/ScratchMap'),{ssr:false,loading:()=> <div className="lab-map-placeholder">지도를 펼치고 있어요</div>});
+import MapEntrance from '@/components/MapEntrance';
+const ScratchMap=dynamic(()=>import('@/social/ScratchMap'),{ssr:false,loading:()=> <div className="lab-map-placeholder un-map-entrance-placeholder" data-map-revealed={false} aria-busy="true"><MapEntrance revealed={false}/></div>});
 type Props={logs:LabLog[];people:Person[];dark:boolean;scopeKey:string;onSelect:(log:LabLog)=>void;onDistrictSelect:(region:DongCount)=>void};
 export default function MapExplorer({logs,people,dark,scopeKey,onSelect,onDistrictSelect}:Props){
  const [viewport,setViewport]=useState<MapViewport|null>(null);

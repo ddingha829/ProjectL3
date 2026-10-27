@@ -1,5 +1,7 @@
 .view-calendar{height:100dvh;min-height:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}.view-calendar .test-main{display:flex;flex:1;min-height:0;padding-top:12px}
 .log-calendar{display:grid;grid-template-rows:auto minmax(175px,1fr);gap:12px;width:100%;min-width:0;min-height:0;flex:1}
+/* Unified feed: header + toolbar above, floating navigation and safe areas below. */
+.un-app .log-calendar{height:calc(var(--lab-vvh,100dvh) - 208px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:510px}
 .calendar-panel{position:relative;min-width:0;border:1px solid var(--line);border-radius:24px;background:var(--surface);overflow:hidden}
 .calendar-board{padding:10px 14px 8px}.calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.calendar-month{display:flex;align-items:center;gap:4px;min-height:44px}.calendar-month strong{font-size:22px;letter-spacing:-.04em;font-weight:850}.calendar-month-arrows{display:flex;gap:2px}.calendar-month-arrows .calendar-range-button{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}.calendar-month-arrows button{display:grid;place-items:center;width:44px;height:44px;border-radius:50%}
 .calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.calendar-weekdays{font-size:10px;line-height:22px;text-align:center;color:var(--muted)}.calendar-weekdays span:first-child{color:var(--accent)}

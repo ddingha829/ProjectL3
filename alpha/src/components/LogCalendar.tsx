@@ -9,7 +9,8 @@ import { isGeoPoint } from '@/lib/mapLocations';
 import { allowsMotion } from '@/lib/motion';
 import AccessibleDialog from './AccessibleDialog';
 import './LogCalendar.css';
-const LogbookMap=dynamic(()=>import('./LogbookMap'),{ssr:false,loading:()=> <div className="logbook-map" role="status" aria-label="지도 불러오는 중"/>});
+import MapEntrance from './MapEntrance';
+const LogbookMap=dynamic(()=>import('./LogbookMap'),{ssr:false,loading:()=> <div className="logbook-map" data-map-revealed={false} aria-busy="true" aria-label="지도 불러오는 중"><MapEntrance revealed={false}/></div>});
 const shortDay=(key:string)=>`${Number(key.slice(5,7))}월 ${Number(key.slice(8))}일`;
 const dayLabel=(key:string)=>`${key.slice(0,4)}년 ${shortDay(key)}`;
 
