@@ -4,8 +4,9 @@ import {compressPhotoBlob} from '@/lib/imageCompression';
 import {initialUnified,parseUnified,audienceIds,type UnifiedLog,type UnifiedState} from './store';
 import {backendSessionKey} from './backendSession';
 import type {Person,Circle} from '@/social/model';
+import {normalizeNickname,nicknameInitial} from './nickname';
 export type CloudOperation=Record<string,unknown>&{kind:string};
-type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
+type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
 let configuredClient:{signature:string;client:SupabaseClient}|undefined;
 export async function configureCloud(detectSessionInUrl=false):Promise<SupabaseClient|null>{
  const response=await fetch('/api/backend/config',{cache:'no-store'});if(!response.ok)throw Error('서버 연결 설정을 확인하지 못했어요.');
@@ -31,7 +32,7 @@ export function cloudError(error:unknown){
 export async function fetchCloudState(client:SupabaseClient):Promise<UnifiedState>{
  const {data,error}=await client.rpc('l2u_snapshot');if(error)throw error;const snapshot=data as Snapshot;
  const me=(id:string)=>id===snapshot.actorId?'me':id,base=emptyCloudState();
- const people=snapshot.people.map(p=>({...p,id:me(p.id),initial:p.name.slice(0,1),note:''}));
+ const people=snapshot.people.map(p=>({...p,id:me(p.id),initial:nicknameInitial(p.name),note:''}));
  const logs=await Promise.all(snapshot.logs.map(async log=>{
   let image=log.image;
   if(log.imagePath){const result=await client.storage.from('l2u-photos').createSignedUrl(log.imagePath,60);image=result.data?.signedUrl||'';}
@@ -61,7 +62,7 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
   for(const comment of log.comments)if(comment.authorId==='me'&&!old?.comments.some(c=>c.id===comment.id))ops.push({kind:'comment',id:comment.id,logId:log.id,body:comment.body});
  }
  for(const old of before.logs)if(old.authorId==='me'&&!after.logs.some(l=>l.id===old.id))ops.push({kind:'delete_log',id:old.id,expected:old.serverRevision||0});
- const prefs=(s:UnifiedState)=>({presets:s.presets,collections:s.collections,intents:s.intents||[]});
+ const prefs=(s:UnifiedState)=>({presets:s.presets,collections:s.collections,intents:s.intents||[],nicknameConfigured:s.nicknameConfigured===true});
  if(!same(prefs(before),prefs(after)))ops.push({kind:'preferences',payload:prefs(after),expected:before.serverPreferencesRevision||0});
  const scopes=new Set(['mine',...Object.keys(before.mosaic.groupBoards),...Object.keys(after.mosaic.groupBoards)]);
  for(const scope of scopes){
@@ -71,6 +72,14 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
   for(const [slot,id]of Object.entries(next))if(old[Number(slot)]!==id&&after.logs.find(l=>l.id===id)?.authorId==='me')ops.push({kind:'place',id,groupId:scope==='mine'?null:scope,slot:Number(slot)});
  }
  return ops;
+}
+/** The profile and first-login marker are one existing database transaction.
+ * Never dismiss onboarding before the server acknowledges both writes. */
+export async function persistNickname(client:SupabaseClient,before:UnifiedState,value:string):Promise<UnifiedState>{
+ const name=normalizeNickname(value),next:UnifiedState={...before,nicknameConfigured:true,people:before.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)};
+ const operations=cloudOperations(before,next);
+ if(operations.length){const result=await client.rpc('l2u_apply',{p_operations:operations,p_operation_id:crypto.randomUUID()});if(result.error)throw result.error;}
+ return {...next,serverPreferencesRevision:(before.serverPreferencesRevision||0)+(operations.some(op=>op.kind==='preferences')?1:0)};
 }
 export async function prepareCloudOperations(client:SupabaseClient,userId:string,operations:CloudOperation[]){
  const result=structuredClone(operations);

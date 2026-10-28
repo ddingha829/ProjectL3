@@ -150,3 +150,10 @@
 .ec-portrait.ec-polaroid>.ec-signature{bottom:18px}
 
 .ec-face.ec-mood-neo h2,.ec-face.ec-mood-neo .ec-quote,.ec-face.ec-mood-neo .ec-polaroid-caption{font-family:'NanumSquareNeo','NanumBarunGothic',sans-serif}
+
+/* Readable metadata at feed scale; card geometry stays unchanged. */
+.ec-cover-top .ec-glass,.ec-photo-badges .ec-glass{font-size:12px;padding:8px 10px}
+.ec-cover-top .ec-glass>svg,.ec-photo-badges .ec-glass>svg{width:16px;height:16px}
+.ec-cover-top .ec-rating,.ec-photo-badges .ec-rating{font-size:13px}
+.ec-cover-top .ec-rating>svg,.ec-photo-badges .ec-rating>svg{width:17px;height:17px}
+.ec-back .ec-category{font-size:12px}.ec-back .ec-category>svg{width:15px;height:15px}.ec-square .ec-back-topline .ec-category{font-size:11px}

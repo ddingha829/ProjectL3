@@ -1,15 +1,17 @@
 'use client';
-import type {CSSProperties} from 'react';
+import {useState,type CSSProperties} from 'react';
 import {ArrowUpRight,CalendarDays,Download,HelpCircle,LogOut,Monitor,Moon,Palette,Sun,Users} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import IntegrationStatus from '@/social/IntegrationStatus';
+import {NicknameForm} from './NicknameForm';
 import NotificationSettings from './NotificationSettings';
 import type useNotifications from './useNotifications';
 import type {Person} from '@/social/model';
 export type SettingsAction='studio'|'calendar'|'groups'|'backup'|'guide'|'alpha'|'logout';
-export default function SettingsSheet({open,onClose,actor,email,cloud,notifications,theme,onTheme,onInstall,onAction}:{open:boolean;onClose:()=>void;actor:Person;email?:string;cloud:boolean;notifications:ReturnType<typeof useNotifications>;theme:'auto'|'light'|'dark';onTheme:(theme:'auto'|'light'|'dark')=>void;onInstall:()=>void;onAction:(action:SettingsAction)=>void}){
+export default function SettingsSheet({open,onClose,actor,email,cloud,notifications,theme,onTheme,onInstall,onAction,onNickname,nicknameBusy}:{open:boolean;onClose:()=>void;actor:Person;email?:string;cloud:boolean;notifications:ReturnType<typeof useNotifications>;theme:'auto'|'light'|'dark';onTheme:(theme:'auto'|'light'|'dark')=>void;onInstall:()=>void;onAction:(action:SettingsAction)=>void;onNickname:(name:string)=>Promise<void>;nicknameBusy:boolean}){
+ const [editing,setEditing]=useState(false);
  return <AccessibleDialog open={open} scrollBody title="설정" closeLabel="설정 닫기" onClose={onClose} panelClassName="lab-dialog un-settings">
-  <div className="un-profile"><span className="un-avatar" style={{'--person':actor.color} as CSSProperties}>{actor.initial}</span><span><strong>{actor.name}</strong><small>{cloud?email:'예시 계정 · 기기에만 저장'}</small></span></div>
+  <button className="un-profile un-profile-edit" onClick={()=>setEditing(true)} aria-label="닉네임 변경"><span className="un-avatar" style={{'--person':actor.color} as CSSProperties}>{actor.initial}</span><span><strong>{actor.name}</strong><small>{cloud?email:'예시 계정 · 기기에만 저장'}</small></span><span>닉네임 변경 ↗</span></button>{editing&&<AccessibleDialog open title="닉네임 변경" onClose={()=>{if(!nicknameBusy)setEditing(false);}} panelClassName="lab-dialog"><NicknameForm initialName={actor.name} busy={nicknameBusy} onSave={async name=>{await onNickname(name);setEditing(false);}}/></AccessibleDialog>}
   <IntegrationStatus/>
   <NotificationSettings controller={notifications} cloud={cloud} onInstall={onInstall}/>
   <div className="un-settings-section"><h3>화면</h3><div className="un-theme-choice">{([['auto','시스템',Monitor],['light','라이트',Sun],['dark','다크',Moon]] as const).map(([id,label,Icon])=><button key={id} aria-pressed={theme===id} onClick={()=>onTheme(id)}><Icon size={17}/>{label}</button>)}</div></div>

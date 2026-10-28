@@ -31,6 +31,7 @@ import UnifiedChrome from './UnifiedChrome';
 import useAppViewport from './useAppViewport';
 import TicgleWordmark from '@/components/TicgleBrand';
 import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
+import NicknameSetup from './NicknameForm';
 import PreviewLogin from './PreviewLogin';
 import AlphaSupport from './AlphaSupport';
 import CloudMembers from './CloudMembers';
@@ -51,20 +52,21 @@ const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||
 function Avatar({person}:{person:Person}){return <span className="un-avatar" style={{'--person':person.color} as CSSProperties}>{person.initial}</span>;}
 export default function UnifiedApp(){
  const pwa=usePwaInstall();
- const {state,commit,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[scope,setScope]=useState('mine'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
+ const {state,commit,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[scope,setScope]=useState('mine'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
  const session=identity?.name||null;
+ const needsNickname=accountMode==='cloud'&&state?.nicknameConfigured!==true&&syncStatus==='idle';
  const [mode,setMode]=useState<'cards'|'list'|'calendar'>('cards'),[section,setSection]=useState<'all'|'saved'|'collections'|'taste'>('all'),[query,setQuery]=useState(''),[category,setCategory]=useState('all'),[selecting,setSelecting]=useState(false),[picked,setPicked]=useState<string[]>([]),[collectionName,setCollectionName]=useState(''),[collection,setCollection]=useState<Collection|null>(null),[cardDraft,setCardDraft]=useState<EditorialStyle|null>(null),[designOpen,setDesignOpen]=useState(false),[presetName,setPresetName]=useState(''),[audienceDraft,setAudienceDraft]=useState<string[]>([]),[comment,setComment]=useState(''),[backupProgress,setBackupProgress]=useState<number|null>(null),[guideReplay,setGuideReplay]=useState(0),[guideActive,setGuideActive]=useState(false),[district,setDistrict]=useState<{name:string;ids:string[]}|null>(null);
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
  const [mosaicFocus,setMosaicFocus]=useState(''),[mapFocus,setMapFocus]=useState('');
  const handledInvite=useRef('');
- useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(history.state,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join]);
+ useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||needsNickname||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(history.state,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join,needsNickname]);
  const [calendar,setCalendar]=useState<CalendarView>({month:todayKey().slice(0,7),start:'',end:'',timelineOpen:false});
  const cardRoot=useRef<HTMLDivElement>(null),mainRoot=useRef<HTMLElement>(null),navDirection=useRef(1),swipeEntry=useRef(0),savedScroll=useRef(new Map<string,number>()),saveLock=useRef(false);
  const {theme,changeTheme:chooseTheme}=useThemePreference();
  const [systemDark,setSystemDark]=useState(false);const dark=theme==='dark'||theme==='auto'&&systemDark;
  useEffect(()=>{const m=matchMedia('(prefers-color-scheme:dark)'),sync=()=>setSystemDark(m.matches);sync();m.addEventListener('change',sync);return()=>m.removeEventListener('change',sync);},[]);
  useEffect(()=>{const params=new URLSearchParams(location.search),v=params.get('view'),s=params.get('scope');if(['logs','map','mosaic','studio'].includes(v||''))setView(v as Destination);if(s)setScope(s);},[]);
- useAppViewport(ready&&!!session,pwa.ready&&pwa.platform==='ios'&&pwa.isStandalone);
+ useAppViewport(ready&&!!session&&!needsNickname,pwa.ready&&pwa.platform==='ios'&&pwa.isStandalone);
  const actor=state?.people.find(p=>p.id==='me'),circles=state?.circles.filter(c=>c.members.includes('me'))||[],activeCircle=circles.find(c=>c.id===scope),own=state?.logs.filter(l=>l.authorId==='me')||[];
  // A removed share can disappear while its viewer is open. Clear the old
  // selection as well so the hidden viewer does not keep swipe entry disabled.
@@ -84,7 +86,7 @@ export default function UnifiedApp(){
   if(top&&!top.classList.contains('un-detail-dialog')){top.querySelector<HTMLButtonElement>(':scope > .quick-dialog-header > button')?.click();return false;}
   return !cardDraft||confirm('적용하지 않은 디자인 변경을 닫을까요?');
  },onChange:id=>{setSelectedId(id);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setPanel(null);setWork(undefined);if(!id){setEditing(null);requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));}}});
- const notifications=useNotifications({userId:identity?.id||'',ready:ready&&accountMode==='cloud',logs:state?.logs||[],refresh,onNotice:setToast,onOpen:target=>{
+ const notifications=useNotifications({userId:identity?.id||'',ready:ready&&!needsNickname&&accountMode==='cloud',logs:state?.logs||[],refresh,onNotice:setToast,onOpen:target=>{
   const log=state?.logs.find(item=>item.id===target.logId),group=state?.circles.find(item=>item.id===target.scope&&item.members.includes('me'));
   if(!log||!group||!audienceIds(log).includes(group.id))return false;
   if((composing||editing||cardDraft)&&!confirm('작성 중인 내용을 닫고 알림의 기록으로 이동할까요?'))return true;
@@ -92,12 +94,13 @@ export default function UnifiedApp(){
   if(target.kind==='map'){setSelectedId('');setMapFocus(log.id);setView('map');}else{setMapFocus('');setView('logs');cardNavigation.open(log.id);}
   requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));return true;
  }});
- const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
- const pageSwipeEnabled=Boolean(session&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!selecting&&!collection&&backupProgress===null);
+ const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(needsNickname||guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
+ const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
  if(!ready||!state||!actor)return <div className="lab-boot"><TicgleWordmark/>{error?<p role="alert">{error}</p>:<span className="un-subtle">티끌을 펼치고 있어요</span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
+ if(needsNickname)return <NicknameSetup busy={nicknameBusy} onSave={saveNickname} onLogout={()=>void logout()} initialName={actor.name!==identity?.email?.split('@')[0]&&actor.name!=='나'?actor.name:''}/>;
  const readable=state.logs.filter(l=>l.authorId==='me'||audienceIds(l).some(id=>circles.some(c=>c.id===id)));
  const scoped=readable.filter(l=>inScope(l,scope,actor.id));
  const logs=(section==='saved'?scoped.filter(l=>l.bookmarks.includes(actor.id)):scoped).filter(l=>(!district||district.ids.includes(l.id))&&(category==='all'||l.category===category)&&(!photosOnly||!!l.image)&&(!query||`${l.title} ${l.body} ${l.locationLabel||''} ${l.place?.name||''}`.toLowerCase().includes(query.toLowerCase()))).sort((a,b)=>sort==='recent'?b.createdAt-a.createdAt:a.createdAt-b.createdAt);
@@ -135,7 +138,7 @@ export default function UnifiedApp(){
  </main>
  <GroupEntrySheet open={panel==='scope'} onClose={()=>setPanel(null)} enabled={accountMode==='cloud'} pending={syncStatus!=='idle'} join={joinCode} onJoined={id=>{changeScope(id);notify('모임에 참여했어요.');}} onCreate={(name,capacity)=>{const id=crypto.randomUUID();if(commit(s=>({...s,circles:[...s.circles,{id,name,description:'',members:[actor.id],ownerId:actor.id,capacity}]}))){changeScope(id);if(accountMode==='cloud')setPanel('members');notify(accountMode==='cloud'?'모임을 저장하고 있어요.':'모임을 만들었어요.');return true;}return false;}}/>
  <AccessibleDialog open={panel==='groups'} title="모임 관리" onClose={()=>setPanel(null)} panelClassName="lab-dialog un-group-management"><div className="un-scope-list">{circles.map(c=><button key={c.id} onClick={()=>{setScope(c.id);setPanel('members');}}><Users size={18}/><span>{c.name}<small>{c.members.length}명 · 초대 코드와 모임원 관리</small></span><ArrowUpRight size={17}/></button>)}</div>{!circles.length&&<p className="un-subtle">아직 참여한 모임이 없어요.</p>}<button className="un-primary un-full" onClick={()=>setPanel('scope')}>모임 참여 · 만들기</button></AccessibleDialog>
- <SettingsSheet open={panel==='settings'} onClose={()=>setPanel(null)} actor={actor} email={identity?.email} cloud={accountMode==='cloud'} notifications={notifications} theme={theme} onTheme={chooseTheme} onInstall={()=>{setPanel(null);pwa.openGuide();}} onAction={action=>{if(action==='studio'){setPanel(null);navigate('studio');}else if(action==='calendar'){setPanel(null);changeScope('mine');setView('logs');setMode('calendar');}else if(action==='guide'){setPanel(null);setGuideReplay(v=>v+1);}else if(action==='logout'){void logout();setPanel(null);}else setPanel(action);}}/>
+ <SettingsSheet onNickname={saveNickname} nicknameBusy={nicknameBusy} open={panel==='settings'} onClose={()=>setPanel(null)} actor={actor} email={identity?.email} cloud={accountMode==='cloud'} notifications={notifications} theme={theme} onTheme={chooseTheme} onInstall={()=>{setPanel(null);pwa.openGuide();}} onAction={action=>{if(action==='studio'){setPanel(null);navigate('studio');}else if(action==='calendar'){setPanel(null);changeScope('mine');setView('logs');setMode('calendar');}else if(action==='guide'){setPanel(null);setGuideReplay(v=>v+1);}else if(action==='logout'){void logout();setPanel(null);}else setPanel(action);}}/>
 
  <AccessibleDialog open={panel==='collection'} title="티끌 묶음" onClose={()=>setPanel(null)} panelClassName="lab-dialog"><p className="un-subtle">선택한 {picked.length}개의 내 기록을 묶어요. 모임 공개 범위는 바뀌지 않아요.</p><label className="un-form-label">묶음 이름<input autoFocus maxLength={40} value={collectionName} onChange={e=>setCollectionName(e.target.value)} placeholder="함께 기억할 이름"/></label><button className="un-primary un-full" disabled={!collectionName.trim()||!picked.length} onClick={addCollection}>묶음 만들기</button></AccessibleDialog>
  <AccessibleDialog open={!!collection} title={collection?.name||'티끌 묶음'} onClose={()=>setCollection(null)} panelClassName="lab-dialog un-collection-dialog"><div className="lab-feed lab-poster-grid un-grid">{collection?.logIds.map(id=>own.find(l=>l.id===id)).filter((l):l is UnifiedLog=>!!l).map(renderCard)}</div></AccessibleDialog>
