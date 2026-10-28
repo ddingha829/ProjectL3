@@ -4,6 +4,7 @@ import {CalendarDays,Check,ChevronDown,Ellipsis,Grid2X2,List,SlidersHorizontal,X
 import CompactPopover from '@/components/logbook/CompactPopover';
 import {AnimatedSearch,type AnimatedSearchHandle} from '@/components/logbook/AnimatedSearch';
 import type {LogViewMode} from '@/components/logbook/FloatingLogControls';
+import {watchFeedToolbarPinned} from './feedToolbarPinned';
 import '@/components/logbook/FloatingLogControls.css';
 import './FeedToolbar.css';
 const categories=[['all','전체'],['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책']] as const;
@@ -13,14 +14,8 @@ export default function FeedToolbar({query,onQueryChange,category,onCategoryChan
  const sentinel=useRef<HTMLDivElement>(null),shell=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null),searchSlot=useRef<HTMLDivElement>(null),search=useRef<AnimatedSearchHandle>(null),viewSlot=useRef<HTMLDivElement>(null),viewButton=useRef<HTMLButtonElement>(null),id=useId(),viewId=useId();
  const filterOpen=useCallback((value:boolean)=>{setOpen(value?'filter':null);if(value){setSearchOpen(false);setViewOpen(false);}},[]),moreOpen=useCallback((value:boolean)=>{setOpen(value?'more':null);if(value){setSearchOpen(false);setViewOpen(false);}},[]);
  useEffect(()=>{
-  let frame=0;
-  // Measure the flow marker instead of relying on WebKit's sticky/intersection
-  // notifications. Re-read the inset when Safari's viewport or safe area changes.
-  const update=()=>{frame=0;const marker=sentinel.current,bar=shell.current;if(!marker||!bar)return;const scrollOwner=bar.closest('[data-app-scroll]'),top=(parseFloat(getComputedStyle(bar).top)||0)+(scrollOwner?.getBoundingClientRect().top||0);setPinned(marker.getBoundingClientRect().top<top-.5);};
-  const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
-  update();window.addEventListener('scroll',schedule,{capture:true,passive:true});window.addEventListener('resize',schedule);
-  const viewport=window.visualViewport;viewport?.addEventListener('resize',schedule);viewport?.addEventListener('scroll',schedule);
-  return()=>{cancelAnimationFrame(frame);window.removeEventListener('scroll',schedule,true);window.removeEventListener('resize',schedule);viewport?.removeEventListener('resize',schedule);viewport?.removeEventListener('scroll',schedule);};
+  const marker=sentinel.current,bar=shell.current;
+  if(marker&&bar)return watchFeedToolbarPinned(marker,bar,setPinned);
  },[]);
  useEffect(()=>{
   if(!searchOpen&&!viewOpen)return;
