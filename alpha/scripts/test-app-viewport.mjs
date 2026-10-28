@@ -13,7 +13,7 @@ const values=new Map(),dataset={},viewport=new EventTarget(),win=new EventTarget
 Object.assign(viewport,{height:844,offsetTop:0});
 Object.assign(win,{visualViewport:viewport,scrollY:0,scrollX:0,scrollTo:options=>calls.push({owner:'window',...options})});
 let owner={scrollTop:196,scrollLeft:0,scrollTo:options=>calls.push({owner:'pane',...options})},cleanup;
-const doc={documentElement:{dataset,style:{setProperty:(key,value)=>values.set(key,value)}},querySelector:()=>owner};
+const doc={documentElement:{dataset,clientHeight:844,style:{setProperty:(key,value)=>values.set(key,value)}},querySelector:()=>owner};
 const globals={window:win,document:doc,innerHeight:844,innerWidth:390,__viewportEffect:effect=>{cleanup=effect();}};
 for(const [key,value]of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
 const checks=[];
@@ -23,10 +23,14 @@ try{
  check(dataset.unifiedShell==='true','signed-in app owns the root viewport');
  check(values.get('--lab-vvh')==='844px'&&values.get('--lab-vvtop')==='0px','header and dock share visual viewport dimensions');
  check(values.get('--un-edge-clearance')==='12px','installed iPhone reserves space below the native top effect');
+ check(values.get('--un-bottom-inset-consumed')==='0px','a full visual viewport keeps its bottom safe-area allowance');
  check(calls.length===0,'viewport synchronization never scrolls or nudges the document');
+ Object.assign(viewport,{height:810,offsetTop:0});viewport.dispatchEvent(new Event('resize'));
+ check(values.get('--un-bottom-inset-consumed')==='34px'&&dataset.labKeyboard==='closed','installed iPhone does not apply an already excluded bottom inset twice');
  Object.assign(viewport,{height:540,offsetTop:24});viewport.dispatchEvent(new Event('resize'));
  check(values.get('--lab-vvh')==='540px'&&values.get('--lab-vvtop')==='24px'&&dataset.labKeyboard==='open','keyboard resize and visual offset update together');
- globalThis.innerHeight=390;globalThis.innerWidth=844;Object.assign(viewport,{height:390,offsetTop:0});win.dispatchEvent(new Event('resize'));
+ check(values.get('--un-bottom-inset-consumed')==='0px','keyboard occlusion is not mistaken for a bottom safe-area inset');
+ globalThis.innerHeight=390;globalThis.innerWidth=844;doc.documentElement.clientHeight=390;Object.assign(viewport,{height:390,offsetTop:0});win.dispatchEvent(new Event('resize'));
  check(values.get('--un-edge-clearance')==='0px'&&dataset.labKeyboard==='closed','landscape does not keep portrait-only status-bar spacing');
  assert.deepEqual(pageScrollPosition(),{top:196,left:0});checks.push('card return position comes from the content pane');
  scrollPageTo({top:196,behavior:'instant'});check(calls.at(-1).owner==='pane','navigation restores the content pane without moving chrome');

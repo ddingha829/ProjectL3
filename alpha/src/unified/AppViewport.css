@@ -1,6 +1,6 @@
 /* Do not let WebKit's document scrolling and bottom-fixed positioning choose
    different viewport edges for short and long pages. Only the main pane scrolls. */
-html[data-unified-shell=true]{height:100%;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-bottom:max(16px,env(safe-area-inset-bottom,0px));--un-dock-space:calc(64px + var(--un-dock-bottom) + 12px);--un-page-height:calc(var(--lab-vvh,100dvh) - var(--un-header-height))}
+html[data-unified-shell=true]{height:100%;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-edge-gap:clamp(6px,1dvh,10px);--un-dock-content-gap:clamp(10px,1.5dvh,16px);--un-dock-bottom:max(0px,calc(var(--un-dock-edge-gap) - var(--un-bottom-inset-consumed,0px)),calc(env(safe-area-inset-bottom,0px) - var(--un-bottom-inset-consumed,0px) - var(--un-dock-edge-gap)));--un-dock-space:calc(64px + var(--un-dock-bottom) + var(--un-dock-content-gap));--un-page-height:calc(var(--lab-vvh,100dvh) - var(--un-header-height))}
 html[data-unified-shell=true]>body{position:fixed;inset:0;margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
 html[data-unified-shell=true] .un-app{position:fixed;top:var(--lab-vvtop,0px);left:0;right:0;bottom:auto;height:var(--lab-vvh,100dvh);min-height:0;padding:0!important;overflow:hidden;background:var(--bg)}
 html[data-unified-shell=true] .un-app .un-main[data-app-scroll]{position:absolute;top:var(--un-header-height);bottom:0;left:0;right:0;width:100%;height:auto;min-height:0;margin:0 auto;padding-bottom:var(--un-dock-space);overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none;scroll-padding-top:8px;-webkit-overflow-scrolling:touch}
@@ -16,3 +16,12 @@ html[data-unified-shell=true] .un-mosaic,
 html[data-unified-shell=true] .un-map-explorer{height:calc(var(--un-page-height) - var(--un-dock-space));min-height:300px}
 @media(max-width:779px){html[data-unified-shell=true] .un-studio.un-studio-workspace{height:calc(var(--un-page-height) - var(--un-dock-space));min-height:400px}}
 html[data-unified-shell=true] .un-app .log-calendar{height:calc(var(--un-page-height) - var(--un-dock-space) - 49px)}
+/* Keep the four-column board usable on short phones by compacting its intro. */
+@media(max-width:400px) and (max-height:650px){
+ html[data-unified-shell=true] .mosaic-invitation{padding-block:0;margin-bottom:6px;gap:8px}
+ html[data-unified-shell=true] .mosaic-invitation-art{width:32px;height:32px;border-radius:10px}
+ html[data-unified-shell=true] .mosaic-invitation-art svg{width:21px;height:21px}
+ html[data-unified-shell=true] .mosaic-invitation h1{font-size:13px}
+ html[data-unified-shell=true] .mosaic-invitation p{display:none}
+ html[data-unified-shell=true] .mosaic-layout{gap:8px}
+}
