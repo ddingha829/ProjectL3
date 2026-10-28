@@ -10,11 +10,13 @@ https://project-l3-nine.vercel.app/
 불편한 부분은 설정 → 알파테스트 → 문제 알리기에서 보고서를 복사해 저에게 보내주세요. 화면 캡처나 녹화가 있으면 좋아요. 비밀번호는 보내지 마세요.
 
 현재 이메일 인증 없는 알파 버전입니다. 테스트 종료 후 데이터는 정식 서비스에서 사용할 수 있는 형태로 백업한 뒤 테스트 환경에서 삭제할 예정이에요.`;
-export type AlphaEnvironment={agent:string;width:number;height:number;standalone:boolean;online:boolean};
+export type AlphaLayout={screenHeight:number;layoutHeight:number;visualHeight:number;visualTop:number;frameBottom:number;dockBottom:number;dockInset:number};
+export type AlphaEnvironment={agent:string;width:number;height:number;standalone:boolean;online:boolean;layout?:AlphaLayout};
 type Context={view:AlphaView;mode:'guest'|'demo'|'cloud';sync:string;revision:string;environment:AlphaEnvironment};
 const oneLine=(value:string,limit=320)=>value.replace(/[\r\n\t]+/g,' ').slice(0,limit);
 export function alphaRevision(value:string){return /^[0-9a-f]{7,40}$/i.test(value)?value.slice(0,7):'local';}
 export function alphaReport(body:string,context:Context){
  const {environment:e}=context,mode={guest:'로그인 전',demo:'예시 계정',cloud:'실제 계정'}[context.mode];
- return `[알파테스트 피드백]\n화면: ${ALPHA_VIEWS[context.view]||'기타'}\n버전: alpha-${alphaRevision(context.revision)}\n사용: ${mode}\n실행: ${e.standalone?'홈 화면 설치 앱':'브라우저'}\n화면 크기: ${Math.round(e.width)} × ${Math.round(e.height)}\n네트워크 표시: ${e.online?'온라인':'오프라인'}\n저장 상태: ${oneLine(context.sync,30)}\n브라우저: ${oneLine(e.agent)}\n\n불편한 점 / 발생 순서:\n${body.trim().slice(0,1500)}\n\n가능하면 화면 캡처 또는 녹화를 함께 보내주세요.`;
+ const n=(v:number)=>Number.isFinite(v)?String(Math.round(v*100)/100):'미확인',l=e.layout,layout=l?`\n화면 위치(px): screen=${n(l.screenHeight)}, layout=${n(l.layoutHeight)}, visual=${n(l.visualHeight)}, visualTop=${n(l.visualTop)}, frameBottom=${n(l.frameBottom)}, dockBottom=${n(l.dockBottom)}, dockInset=${n(l.dockInset)}`:'';
+ return `[알파테스트 피드백]\n화면: ${ALPHA_VIEWS[context.view]||'기타'}\n버전: alpha-${alphaRevision(context.revision)}\n사용: ${mode}\n실행: ${e.standalone?'홈 화면 설치 앱':'브라우저'}\n화면 크기: ${Math.round(e.width)} × ${Math.round(e.height)}${layout}\n네트워크 표시: ${e.online?'온라인':'오프라인'}\n저장 상태: ${oneLine(context.sync,30)}\n브라우저: ${oneLine(e.agent)}\n\n불편한 점 / 발생 순서:\n${body.trim().slice(0,1500)}\n\n가능하면 화면 캡처 또는 녹화를 함께 보내주세요.`;
 }
