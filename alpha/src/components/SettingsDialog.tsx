@@ -250,7 +250,7 @@ export default function SettingsDialog(p: Props) {
           <div className="settings-row settings-font-row">
             <div className="settings-row-copy"><strong>글꼴</strong><span>화면과 카드에 적용돼요 · 이 기기에 저장됩니다</span></div>
             <div className="settings-segmented" role="group" aria-label="글꼴 선택">
-              <button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>세방고딕</button>
+              <button type="button" className={p.font==='sebang'?'active':''} aria-pressed={p.font==='sebang'} onClick={()=>p.onFont('sebang')}>나눔스퀘어 네오</button>
               <button type="button" className={p.font==='pretendard'?'active':''} aria-pressed={p.font==='pretendard'} onClick={()=>p.onFont('pretendard')}>기존</button>
               <button type="button" className={`settings-handwriting-choice ${p.font==='gaegu'?'active':''}`} aria-pressed={p.font==='gaegu'} onClick={()=>p.onFont('gaegu')}>손글씨</button>
               <button type="button" className={`settings-neat-handwriting-choice ${p.font==='single-day'?'active':''}`} aria-pressed={p.font==='single-day'} onClick={()=>p.onFont('single-day')}>또박 손글씨</button>

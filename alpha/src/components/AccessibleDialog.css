@@ -4,3 +4,8 @@
 .quick-dialog-panel[data-scroll-body=true]{display:flex;flex-direction:column;min-height:0;max-height:calc(var(--dialog-height,100dvh) - var(--dialog-gap-top) - var(--dialog-gap-bottom))!important;overflow:hidden}
 .quick-dialog-panel[data-scroll-body=true]>.quick-dialog-header{flex:none;min-height:44px;align-items:center;filter:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .quick-dialog-body{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scroll-padding-block:12px;padding-right:2px}
+/* Safari needs a definite sheet block size before laying out a scrollable
+   child. Account-only async notification content must not collapse that child. */
+.quick-dialog-panel.un-settings[data-scroll-body=true]{height:calc(var(--dialog-height,100dvh) - var(--dialog-gap-top) - var(--dialog-gap-bottom));display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch;flex-shrink:0}
+.un-settings[data-scroll-body=true]>.quick-dialog-body{height:100%;min-height:0;min-width:0;contain:layout;overflow-y:auto}
+.un-settings .un-profile>span{min-width:0}.un-settings .un-profile small{overflow-wrap:anywhere}

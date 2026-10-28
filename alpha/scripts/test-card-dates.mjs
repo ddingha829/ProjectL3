@@ -9,7 +9,7 @@ await build({entryPoints:['scripts/card-date-fixture.tsx'],outfile,bundle:true,p
 const {renderCard}=await import(pathToFileURL(outfile));
 const backs=['postcard','review','day','doodle','broadside','passport','vinyl','library','paint'];
 let checks=0;
-for(const back of backs)for(const ratio of ['9:16','1:1'])for(const rating of ['','4.5']){
+for(const back of backs)for(const ratio of ['10:16','9:16','1:1'])for(const rating of ['','4.5']){
  const html=renderCard(back,ratio,rating),dates=html.match(/2026\.10\.26/g)||[];
  assert.equal(dates.length,back==='day'?0:1,`${back}/${ratio}/${rating}: date must appear once`);
  if(back==='day')assert.match(html,/ec-calendar-date/);

@@ -81,7 +81,7 @@ html.light {
 .lab-dialog .quick-dialog-header>button{border-radius:50%;background:var(--surface-2)}
 .quick-dialog-backdrop:has(.lab-dialog){background:#0008;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
 .lab-primary{border-radius:15px;background:var(--accent);font-weight:850;letter-spacing:-.02em;min-height:50px}
-.lab-avatar,.lab-member-initial{font-family:"Sebang Gothic",sans-serif;font-style:normal;font-weight:900}
+.lab-avatar,.lab-member-initial{font-family:var(--font-sans);font-style:normal;font-weight:900}
 .lab-avatar{border:1px solid var(--line)}
 .lab-profile-intro h3{font-weight:900}
 .lab-dialog .lab-option-stack>button{border-radius:15px;background:var(--surface);min-height:70px}

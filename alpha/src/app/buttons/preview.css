@@ -1,4 +1,4 @@
-.l2-buttons-page{--study-bg:#f4f1eb;--study-card:#fffdf9;--study-ink:#25231f;--study-sub:#6d6860;--study-line:#e5e0d7;--study-accent:#c54725;min-height:100dvh;background:var(--study-bg);color:var(--study-ink);font-family:'Sebang Gothic',sans-serif;padding:28px max(22px,calc((100vw - 1080px)/2)) 40px}
+.l2-buttons-page{--study-bg:#f4f1eb;--study-card:#fffdf9;--study-ink:#25231f;--study-sub:#6d6860;--study-line:#e5e0d7;--study-accent:#c54725;min-height:100dvh;background:var(--study-bg);color:var(--study-ink);font-family:var(--font-sans);padding:28px max(22px,calc((100vw - 1080px)/2)) 40px}
 .l2-buttons-page.is-dark{--study-bg:#0d0d10;--study-card:#17171c;--study-ink:#f4f1eb;--study-sub:#a5a09b;--study-line:#303036}
 .l2-buttons-page>header{display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:12px}
 .l2-buttons-page>header>a{display:flex;align-items:center;min-height:44px;color:var(--study-sub)}
@@ -15,13 +15,13 @@
 .l2-buttons-grid h2{font-size:19px;letter-spacing:-.04em;font-weight:750;margin:0 0 11px}
 .l2-buttons-grid p{font-size:12px;line-height:1.85;color:var(--study-sub);margin:0 0 20px}
 .l2-buttons-grid article>a{font-size:10px;color:var(--study-sub);text-decoration:underline;text-underline-offset:4px;display:inline-flex;align-items:center;min-height:35px}
-.l2-tween-option{background:#c54725!important;color:#fff!important;border-radius:999px!important;min-height:48px!important;font-family:'Sebang Gothic',sans-serif!important;box-shadow:0 3px 8px #a4341a18!important;max-width:100%}
+.l2-tween-option{background:#c54725!important;color:#fff!important;border-radius:999px!important;min-height:48px!important;font-family:var(--font-sans)!important;box-shadow:0 3px 8px #a4341a18!important;max-width:100%}
 .l2-shiny-option{gap:9px!important;font-weight:700!important;padding-inline:25px!important}
 .l2-shiny-option .l2-save-icon{display:inline-flex;align-items:center;justify-content:center;line-height:0}
 .l2-slide-option>span:last-child,.l2-trail-option>span:first-child{background:#fff!important}
 .l2-slide-option svg{stroke:#c54725!important}
 .l2-trail-option svg{fill:#c54725!important}
-.l2-trail-option .l2-trail-label{font-family:'Sebang Gothic',sans-serif!important;font-size:14px;font-weight:700}
+.l2-trail-option .l2-trail-label{font-family:var(--font-sans)!important;font-size:14px;font-weight:700}
 .l2-buttons-notice{font-size:12px;min-height:24px;line-height:1.8;color:var(--study-sub);margin:22px 0 35px}
 .l2-buttons-page>footer{display:flex;gap:15px;justify-content:space-between;flex-wrap:wrap;font-size:10px;color:var(--study-sub);border-top:1px solid var(--study-line);padding-top:20px;line-height:1.8}
 .l2-buttons-page button:focus-visible,.l2-buttons-page a:focus-visible{outline:2px solid var(--study-accent);outline-offset:5px}

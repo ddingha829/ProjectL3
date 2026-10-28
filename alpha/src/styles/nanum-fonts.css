@@ -1,0 +1,12 @@
+/* NAVER 한글한글아름답게 official webfonts. Only the selected faces load.
+   WOFF sources avoid the legacy EOT-first export problem in the vendor CSS. */
+@font-face{font-family:'NanumBarunGothic';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumBarunGothic/NanumBarunGothicWeb.woff') format('woff');font-style:normal;font-weight:100 500;font-display:swap}
+@font-face{font-family:'NanumBarunGothic';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumBarunGothic/NanumBarunGothicWebBold.woff') format('woff');font-style:normal;font-weight:501 900;font-display:swap}
+@font-face{font-family:'NanumSquareNeo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareNeo/NanumSquareNeoTTF-bRg.woff') format('woff');font-style:normal;font-weight:100 500;font-display:swap}
+@font-face{font-family:'NanumSquareNeo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareNeo/NanumSquareNeoTTF-cBd.woff') format('woff');font-style:normal;font-weight:501 700;font-display:swap}
+@font-face{font-family:'NanumSquareNeo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareNeo/NanumSquareNeoTTF-dEb.woff') format('woff');font-style:normal;font-weight:701 800;font-display:swap}
+@font-face{font-family:'NanumSquareNeo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareNeo/NanumSquareNeoTTF-eHv.woff') format('woff');font-style:normal;font-weight:801 900;font-display:swap}
+@font-face{font-family:'NanumMyeongjo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjo/NanumMyeongjo.woff') format('woff');font-style:normal;font-weight:100 500;font-display:swap}
+@font-face{font-family:'NanumMyeongjo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjo/NanumMyeongjoBold.woff') format('woff');font-style:normal;font-weight:501 700;font-display:swap}
+@font-face{font-family:'NanumMyeongjo';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjo/NanumMyeongjoExtraBold.woff') format('woff');font-style:normal;font-weight:701 900;font-display:swap}
+@font-face{font-family:'NanumGeumEunBoHwa';src:url('https://hangeul.pstatic.net/hangeul_static/webfont/clova/NanumGeumEunBoHwa.woff') format('woff');font-style:normal;font-weight:100 900;font-display:swap}

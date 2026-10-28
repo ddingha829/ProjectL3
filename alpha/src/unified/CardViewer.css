@@ -42,3 +42,4 @@
 .un-card-viewer .un-detail-card>.ec-scene.ec-is-back,.un-card-viewer .un-detail-card>.ec-scene.ec-single{touch-action:pan-y}
 .un-card-viewer{touch-action:pan-y pinch-zoom}
 .un-detail-dialog[data-back-swiping=true]{user-select:none;-webkit-user-select:none}
+.un-viewer-icon-action.un-viewer-share{background:var(--accent);color:var(--accent-fg);border-color:transparent;box-shadow:0 3px 9px color-mix(in srgb,var(--accent) 20%,transparent)}

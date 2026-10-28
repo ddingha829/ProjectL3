@@ -2,12 +2,12 @@
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
 import {BookOpen,Clapperboard,Utensils,Compass,Star} from 'lucide-react';
 import type {LabLog} from './model';
-import {DEFAULT_EDITORIAL,editorialColors,cardCorner,mixColor,type EditorialStyle} from './editorialStyle';
+import {DEFAULT_EDITORIAL,normalizeEditorial,editorialColors,cardCorner,mixColor,type EditorialStyle} from './editorialStyle';
 import {photoMaterial,type PhotoMaterial} from './cardMaterial';
 import {WeatherMark} from './weather';
 import {useCardTurn} from './useCardTurn';
 import './EditorialCard.css';
-export function styleOf(log:LabLog):EditorialStyle{return log.card||{...DEFAULT_EDITORIAL,front:log.design,back:log.category==='book'?'library':log.category==='movie'?'review':'postcard'};}
+export function styleOf(log:LabLog):EditorialStyle{return normalizeEditorial(log.card||{...DEFAULT_EDITORIAL,front:log.design,back:log.category==='book'?'library':log.category==='movie'?'review':'postcard'});}
 const labels={daily:'DAILY',dining:'DINING',movie:'CINEMA',book:'BOOKS'};
 const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen};
 export const cardTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||new Date(log.createdAt).toLocaleDateString('ko-KR');
@@ -23,16 +23,16 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const photoBadges=<div className="ec-photo-badges"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div>;
  const settings=log.photo;
  const photo=<img style={settings?{objectFit:settings.fit,objectPosition:settings.x+'% '+settings.y+'%',transform:'translate('+((50-settings.x)*(settings.zoom-1))+'%, '+((50-settings.y)*(settings.zoom-1))+'%) scale('+settings.zoom+')',filter:'saturate('+settings.saturation/100+') brightness('+settings.brightness/100+') contrast('+settings.contrast/100+')'}:undefined} className="ec-photo" src={s.finish==='film'&&prepared?.value?prepared.value.film:log.image} alt="" draggable={false}/>;
- const variables={...editorialColors(s),'--ec-height':`${canvasHeight??(s.ratio==='1:1'?420:747)}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
+ const variables={...editorialColors(s),'--ec-height':`${canvasHeight??(s.ratio==='1:1'?420:672)}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
  const surface=<>{side==='back'&&(s.ambientBleed||s.finish==='acrylic')&&<div className={`ec-color-residue ${s.finish==='acrylic'?'ec-frosted':''}`} aria-hidden="true"/>}{s.finish==='satin'&&<div className="ec-satin-sheen" aria-hidden="true"/>}</>;
  const materialClass=`ec-finish-${s.finish||'none'} ${s.fontMood?`ec-mood-${s.fontMood}`:''}`;
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
- if(side==='front')return <div data-ec-face="front" data-ec-layout={s.front} data-ec-material={materialState} className={`ec-face ec-front ec-${s.front} ${materialClass} ${s.ratio==='1:1'?'ec-square':''}`} style={variables}>
+ if(side==='front')return <div data-ec-face="front" data-ec-layout={s.front} data-ec-material={materialState} className={`ec-face ec-front ec-${s.front} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
   {s.front==='cover'?<>{photo}<div className="ec-cover-shade"/><div className="ec-cover-top"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div><div className="ec-cover-bottom"><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div></>:s.front==='ticket'?<><div className="ec-ticket-photo">{photo}{photoBadges}</div><div className="ec-ticket-stub"><div><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div><div className="ec-ticket-code"><i className="ec-barcode" aria-hidden="true"/></div></div><span className="ec-notch ec-notch-left"/><span className="ec-notch ec-notch-right"/></>:<><div className="ec-polaroid-photo">{photo}{photoBadges}</div><div className="ec-polaroid-meta"><span>{place}</span><span className="ec-meta">{date}<WeatherMark value={log.weather}/></span></div><h2>{title}</h2><p className="ec-polaroid-caption">{log.body}</p></>}
   {surface}
  </div>;
- return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${s.ratio==='1:1'?'ec-square':''}`} style={variables}>
+ return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
   {surface}
   {s.back==='doodle'&&<i className="ec-tape" aria-hidden="true"/>}
   {s.back==='paint'&&<div className="ec-swatch" aria-hidden="true"/>}
@@ -54,7 +54,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
 
 export default function EditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal',compactPreview=false}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
  const scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!log.image);
- const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=compactPreview&&s.ratio!=='1:1',canvasHeight=s.ratio==='1:1'?420:compact?672:747;
+ const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=s.ratio!=='1:1',canvasHeight=s.ratio==='1:1'?420:672;
  const targetBack=useRef(back);targetBack.current=back;
  const turn=useCardTurn(scene,initialSide==='back'||!log.image);
  useLayoutEffect(()=>{const initial=initialSide==='back'||!log.image;setBack(initial);turn.reset(initial);},[log.id,Boolean(log.image),initialSide,turn.reset]);

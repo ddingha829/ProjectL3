@@ -6,7 +6,7 @@
 .un-header-center{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
 .un-header-action{display:grid;place-items:center;width:44px;height:44px;min-height:44px;border:0!important;background:transparent!important;border-radius:50%;color:var(--fg)}
 .un-header-action:hover{background:var(--surface-2)!important}
-.un-brand{flex-shrink:0;font-family:'Sebang Gothic',sans-serif;font-size:35px;line-height:1;letter-spacing:-.12em;font-weight:700;border:0;background:none;padding:0 5px 0 0;min-height:44px;color:var(--fg)}
+.un-brand{flex-shrink:0;font-family:var(--font-sans);font-size:35px;line-height:1;letter-spacing:-.12em;font-weight:700;border:0;background:none;padding:0 5px 0 0;min-height:44px;color:var(--fg)}
 .un-brand>span{color:var(--accent)}
 .un-header .un-scope{display:flex;align-items:center;min-width:0;margin:0;padding:0;min-height:44px}
 .un-header .un-scope[hidden]{display:none}
@@ -158,3 +158,5 @@
 .un-main{touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none}
 .un-main input,.un-main textarea,[contenteditable=true]{user-select:text;-webkit-user-select:text}
 .un-main[data-page-swipe-active=true] [data-page-swipe-surface]{cursor:grabbing}
+.un-group-entry-tabs{display:flex;gap:5px;padding:4px;border-radius:14px;background:var(--surface-2);margin-bottom:22px}.un-group-entry-tabs>button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 6px;border-radius:11px;font-size:12px;white-space:nowrap;color:var(--muted)}.un-group-entry-tabs>button[aria-selected=true]{background:var(--surface);color:var(--fg);box-shadow:0 2px 7px #00000009}.un-group-entry .un-code-join{border:0;padding:0;margin:0}.un-group-management>.un-primary{margin-top:18px}
+.un-invite-code>.un-invite-share-actions{display:flex;gap:7px;margin:12px 0 8px}.un-invite-share-actions>button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:12px;flex:1;white-space:nowrap}.un-invite-code .un-invite-share-actions>.un-invite-kakao{flex:1.5;background:#fee500;color:#191919;border-color:transparent;font-weight:700}.un-invite-share-actions>button:disabled{opacity:.45}

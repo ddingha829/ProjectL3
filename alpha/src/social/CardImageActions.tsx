@@ -1,8 +1,9 @@
 'use client';
 import {useEffect,useRef,useState,type RefObject} from 'react';
-import {Download,Copy,Columns2,Share2,LoaderCircle} from 'lucide-react';
+import {Download,Copy,Columns2,Share2,LoaderCircle,MessageCircle} from 'lucide-react';
 import {downloadCardFile,isShareCanceled} from '@/lib/cardExport';
-import {exportEditorialFace,exportEditorialMode,saveEditorialFiles,type EditorialExportMode} from './editorialExport';
+import {exportEditorialFace,exportEditorialMode,saveEditorialFiles,pairEditorialFiles,type EditorialExportMode} from './editorialExport';
+import {prepareKakaoCard,warmKakao} from '@/lib/kakaoCardShare';
 import './CardImageActions.css';
 import ExportActionIcon from './ExportActionIcon';
 
@@ -11,7 +12,16 @@ type Progress={stage:string;completed:number;total:number;message:string};
 export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<HTMLElement|null>;title:string;hasPhoto:boolean}){
  const [busy,setBusy]=useState<Mode|null>(null),[error,setError]=useState(''),[progress,setProgress]=useState<Progress|null>(null),[ready,setReady]=useState<{mode:Mode;files:File[]}|null>(null),[sharing,setSharing]=useState(false);
  const lock=useRef(false),alive=useRef(true),shareLock=useRef(false);
+ const [kakaoBusy,setKakaoBusy]=useState(false),[kakaoReady,setKakaoReady]=useState(false),[kakaoMessage,setKakaoMessage]=useState(''),kakaoOpen=useRef<(()=>void)|null>(null);
+ useEffect(()=>{kakaoOpen.current=null;setKakaoReady(false);setKakaoMessage('');},[ready]);
+ const kakao=async()=>{
+  if(!ready||shareLock.current)return;shareLock.current=true;setKakaoBusy(true);setError('');
+  try{if(!kakaoOpen.current){const file=ready.files.length>1?await pairEditorialFiles(ready.files[0],ready.files[1],'#ffffff',title):ready.files[0];const open=await prepareKakaoCard(file,title);if(!alive.current)return;kakaoOpen.current=open;setKakaoReady(true);}kakaoOpen.current();setKakaoMessage('카카오톡에서 받을 사람을 선택해주세요. 창이 안 열리면 한 번 더 눌러주세요.');}
+  catch(e){if(alive.current)setError(e instanceof Error?e.message:'카카오톡 공유를 열지 못했어요.');}
+  finally{shareLock.current=false;if(alive.current)setKakaoBusy(false);}
+ };
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ useEffect(()=>{void warmKakao().catch(()=>{});},[]);
  const report=(value:Progress)=>{if(alive.current)setProgress(value);};
  const zipProgress=(percent:number)=>report({stage:'zip',completed:percent,total:100,message:`ZIP ${Math.round(percent)}%`});
  const save=async(mode:Mode)=>{
@@ -38,11 +48,12 @@ export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<H
   finally{lock.current=false;if(alive.current)setBusy(null);}
  };
  const canShare=Boolean(ready&&typeof navigator!=='undefined'&&navigator.canShare?.({files:ready.files}));
- const disabled=Boolean(busy)||sharing;
+ const disabled=Boolean(busy)||sharing||kakaoBusy;
  const done=(mode:Mode)=>Boolean(!error&&!busy&&ready?.mode===mode);
  const icon=(mode:Mode,fallback:React.ReactNode)=><ExportActionIcon working={busy===mode} done={done(mode)} stage={busy===mode?progress?.stage||'':''}>{fallback}</ExportActionIcon>;
  const buttonState=(mode:Mode)=>busy===mode?'working':done(mode)?'ready':'idle';
  return <div className="lab-image-actions lab-export-actions" data-export-stage={busy?progress?.stage:ready&&!error?'done':error?'error':'idle'}>
+  <div className="lab-kakao-share"><button type="button" disabled={disabled||!ready} onClick={()=>void kakao()}><MessageCircle size={18} fill="currentColor"/>{kakaoBusy?'카카오톡 준비 중':kakaoReady?'카카오톡 다시 열기':'카카오톡 공유'}</button><small>{ready?ready.files.length>1?'앞뒤 2장은 합본 이미지로 공유해요.':'준비한 카드 이미지를 카카오톡으로 보내요.':'아래에서 공유할 이미지 형태를 먼저 골라주세요.'}</small>{kakaoMessage&&<p role="status">{kakaoMessage}</p>}</div>
   {hasPhoto?<div className="lab-export-modes" aria-label="이미지 내보내기 방식">
    <button aria-label="앞면 이미지 저장" aria-busy={busy==='front'} data-export-state={buttonState('front')} disabled={disabled} onClick={()=>void save('front')}>{icon('front',<Download size={17}/>)}<b>앞면 1장</b><small>{busy==='front'?progress?.message:done('front')?'준비 완료':'포토 카드'}</small></button>
    <button aria-label="앞면·뒷면 2장 저장" aria-busy={busy==='carousel'} data-export-state={buttonState('carousel')} disabled={disabled} onClick={()=>void save('carousel')}>{icon('carousel',<Copy size={17}/>)}<b>앞뒤 2장</b><small>{busy==='carousel'?progress?.message:done('carousel')?'준비 완료':'캐러셀용'}</small></button>

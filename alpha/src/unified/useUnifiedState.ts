@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient,Session} from '@supabase/supabase-js';
 import {authMessage,RECOVERY_REDIRECT} from './authMessages';
+import {shouldLoadAuthSession} from './authSessionTransition';
 import {disconnectNotificationDevice} from './notificationClient';
 import {UI_STORAGE,UI_SESSION,initialUnified,parseUnified,type UnifiedState} from './store';
 import {configureCloud,emptyCloudState,fetchCloudState,cloudOperations,prepareCloudOperations,cloudError,type CloudOperation} from './cloudRepository';
@@ -44,7 +45,7 @@ export default function useUnifiedState(){
   void(async()=>{try{const c=await configureCloud();if(!active)return;client.current=c;setCloudEnabled(!!c);const demo=JSON.parse(localStorage.getItem(UI_SESSION)||'null');
    if(demo?.mode==='demo'){const saved=localStorage.getItem(UI_STORAGE),next=saved?parseUnified(saved):initialUnified();if(!next)throw Error('이 기기의 미리보기 기록을 읽지 못했어요.');modeRef.current='demo';setMode('demo');show(next);setIdentity({name:demo.name||'나'});setReady(true);}
    else if(c){const result=await c.auth.getSession();if(result.error)throw result.error;await loadSession(result.data.session);}else{show(emptyCloudState());setReady(true);}
-   if(c)subscription=c.auth.onAuthStateChange((event,session)=>{if(modeRef.current==='demo'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;setTimeout(()=>{if(alive.current)void loadSession(session);},0);}).data.subscription;
+   if(c)subscription=c.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(alive.current&&shouldLoadAuthSession(event,modeRef.current,userId.current,session?.user.id))void loadSession(session);},0);}).data.subscription;
   }catch(e){if(alive.current){show(emptyCloudState());setReady(true);setError(e instanceof Error?e.message:'연결을 확인하지 못했어요.');}}})();
   const storage=(event:StorageEvent)=>{if(modeRef.current==='demo'&&event.key===UI_STORAGE&&event.newValue){const next=parseUnified(event.newValue);if(next)show(next);}else if(event.key===pendingKey(userId.current))void refresh();};
   const focus=()=>void refresh(),poll=setInterval(()=>{if(document.visibilityState==='visible')void refresh();},30000);

@@ -1,7 +1,7 @@
 export type AlphaView='logs'|'map'|'mosaic'|'studio'|'compose'|'login'|'other';
 export const ALPHA_VIEWS:Record<AlphaView,string>={logs:'피드',map:'티끌맵',mosaic:'끌렉션',studio:'스튜디오',compose:'티끌 작성·수정',login:'가입·로그인',other:'기타'};
 export const ALPHA_INVITATION=`티끌 알파테스트에 초대해요.
-https://project-l3-nine.vercel.app/
+https://www.ticgle.kr/
 
 이메일과 비밀번호로 가입하면 바로 사용할 수 있어요. 실제 저장·모임 테스트는 ‘먼저 둘러보기’ 대신 가입한 계정으로 진행해주세요.
 

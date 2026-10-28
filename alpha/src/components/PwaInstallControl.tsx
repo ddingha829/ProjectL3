@@ -359,13 +359,13 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
             <li>
               <span className="pwa-step-num">1</span>
               <div>
-                <strong>Safari 하단의 [공유] 버튼 탭</strong>
+                <strong>Safari 주소창 옆 메뉴 → 공유</strong>
                 <p>
-                  하단 주소창 가운데(또는 우측)에 있는{' '}
+                  화면 아래 주소창 옆의 점 세 개(···) 또는 페이지 메뉴를 누른 뒤 [공유]를 선택하세요. 메뉴가 안 보이면 화면을 조금 위로 스크롤해 주소창을 펼쳐주세요.{' '}
                   <span className="pwa-inline-badge">
                     <Share size={12} /> 공유
                   </span>{' '}
-                  아이콘을 눌러주세요.
+                  아이콘(네모 위로 화살표)이 바로 보이는 Safari 레이아웃에서는 그 버튼을 누르면 돼요.
                 </p>
               </div>
             </li>
@@ -385,9 +385,9 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
             <li>
               <span className="pwa-step-num">3</span>
               <div>
-                <strong>우측 상단 [추가] 완료</strong>
+                <strong>[웹 앱으로 열기] 켜기 → 추가</strong>
                 <p>
-                  홈 화면에 생성된 <b>티끌</b> 아이콘으로 실행하면 상하단 주소창 없는 순수 앱 화면으로 작동합니다.
+                  [웹 앱으로 열기] 옵션이 보이면 켠 뒤 우측 상단 [추가]를 눌러주세요. 홈 화면의 <b>티끌</b> 아이콘으로 실행하면 상하단 주소창 없는 순수 앱 화면으로 작동합니다.
                 </p>
               </div>
             </li>

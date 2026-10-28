@@ -1,0 +1,6 @@
+import type {Metadata} from 'next';
+import {allowedSharedImage,sharedCardUrl} from '@/lib/sharedCardImage';
+import SharedCardImage from '@/components/SharedCardImage';
+type Props={searchParams:Promise<{image?:string|string[]}>};
+export async function generateMetadata({searchParams}:Props):Promise<Metadata>{const image=allowedSharedImage((await searchParams).image);return {title:'공유된 티끌 카드',description:'티끌로 남긴 한 장을 감상해보세요.',alternates:{canonical:image?sharedCardUrl(image):'/share/image/'},openGraph:{type:'website',siteName:'티끌 ticgle',url:image?sharedCardUrl(image):'/share/image/',title:'티끌로 남긴 한 장',description:'가볍게 남기고, 취향을 모아요.',images:image?[image]:['/brand/ticgle-social.png']},twitter:{card:'summary_large_image',title:'티끌로 남긴 한 장',images:image?[image]:['/brand/ticgle-social.png']}};}
+export default async function Page({searchParams}:Props){const image=allowedSharedImage((await searchParams).image);return <main style={{minHeight:'100svh',padding:'24px 20px',textAlign:'center',display:'grid',alignContent:'center',gap:20}}>{image?<SharedCardImage src={image}/>:<p>공유된 카드를 찾지 못했어요.</p>}<a href="/" style={{justifySelf:'center',display:'inline-flex',alignItems:'center',gap:12,minHeight:44,color:'var(--accent)',fontSize:13,fontWeight:700}}><img src="/brand/ticgle-wordmark.png" width="75" height="30" alt="티끌"/>내 취향도 남겨보기 →</a></main>;}

@@ -1,5 +1,5 @@
 import {seedState,readState,type LabState,type LabLog} from '@/social/model';
-import {DEFAULT_EDITORIAL,EDITORIAL_THEMES,validEditorial,type EditorialStyle} from '@/social/editorialStyle';
+import {DEFAULT_EDITORIAL,EDITORIAL_THEMES,normalizeEditorial,validEditorial,type EditorialStyle} from '@/social/editorialStyle';
 import {emptyMosaic,validMosaic,type MosaicBoardState} from './mosaic';
 export type PhotoSettings={x:number;y:number;zoom:number;saturation:number;brightness:number;contrast:number;fit:'cover'|'contain'};
 export const DEFAULT_PHOTO:PhotoSettings={x:50,y:50,zoom:1,saturation:100,brightness:100,contrast:100,fit:'cover'};
@@ -27,7 +27,7 @@ export function parseUnified(raw:string):UnifiedState|null{
  if(s.presets.some(p=>!p||typeof p.id!=='string'||typeof p.name!=='string'||p.name.length>40||!validEditorial(p.style)||!Array.isArray(p.defaults)))return null;
  if(s.collections.some(c=>!c||typeof c.id!=='string'||typeof c.name!=='string'||!Array.isArray(c.logIds)||c.logIds.some(id=>typeof id!=='string')))return null;
  if(s.mosaic!==undefined&&!validMosaic(s.mosaic))return null;
- if(new Set(s.logs.map(l=>l.id)).size!==s.logs.length||new Set(s.presets.map(p=>p.id)).size!==s.presets.length)return null;return {...s,mosaic:s.mosaic||emptyMosaic()};
+ if(new Set(s.logs.map(l=>l.id)).size!==s.logs.length||new Set(s.presets.map(p=>p.id)).size!==s.presets.length)return null;return {...s,logs:s.logs.map(log=>log.card?{...log,card:normalizeEditorial(log.card)}:log),presets:s.presets.map(p=>({...p,style:normalizeEditorial(p.style)})),mosaic:s.mosaic||emptyMosaic()};
  }catch{return null;}
 }
 export const defaultStyle=(state:UnifiedState,category:string)=>({...((state.presets.find(p=>p.defaults.includes(category))||state.presets[0])?.style||DEFAULT_EDITORIAL)});

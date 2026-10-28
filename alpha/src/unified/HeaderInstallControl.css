@@ -11,3 +11,4 @@
 @media(max-width:360px){.un-install-trigger{padding-inline:8px;gap:4px;font-size:10px}.un-header-v2 .un-scope-picker{max-width:115px}.lab-dialog.un-install-dialog{padding:18px!important}}
 @media(display-mode:standalone),(display-mode:minimal-ui),(display-mode:window-controls-overlay){.un-install-trigger{display:none}}
 @media(prefers-reduced-motion:reduce){.un-install-trigger{transition:none}}
+.un-install-coming{margin:-6px 0 18px;font-size:11px;line-height:1.6;color:var(--muted)}

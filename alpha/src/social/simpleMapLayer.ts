@@ -34,7 +34,7 @@ function paint(canvas:HTMLCanvasElement,tile:VectorTile,zoom:number,ratio:number
   const name=String(f.properties.name||f.properties.name_en||'');if(!name||name.length>18)return;
   const point=f.loadGeometry()[0]?.[0];if(!point)return;
   const x=point.x/f.extent*256,y=point.y/f.extent*256;
-  ctx.font=`${water?'500':'600'} 11px "Sebang Gothic",sans-serif`;const w=ctx.measureText(name).width;
+  ctx.font=`${water?'500':'600'} 11px "NanumBarunGothic",sans-serif`;const w=ctx.measureText(name).width;
   const b=[x-w/2-5,y-9,x+w/2+5,y+9];if(b[0]<2||b[2]>254||b[1]<2||b[3]>254||boxes.some(a=>b[0]<a[2]&&b[2]>a[0]&&b[1]<a[3]&&b[3]>a[1]))return;
   boxes.push(b);labels++;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#eeebe3';ctx.strokeText(name,x,y);ctx.fillStyle=water?'#4d7a87':'#6d7067';ctx.fillText(name,x,y);
  };

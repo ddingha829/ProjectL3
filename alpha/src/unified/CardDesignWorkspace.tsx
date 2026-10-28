@@ -23,7 +23,7 @@ export default function CardDesignWorkspace({log,author,value,onChange,footer,on
    <div className="studio-card-stage" data-ratio={value.ratio}><EditorialCard key={`${log.id}:${photo}`} log={log} author={author} appearance={value} interactive={false} initialSide={side}/></div>
    <div className="studio-preview-bar">
     <button onClick={()=>setSide(side==='front'?'back':'front')} disabled={!photo} aria-label="미리보기 앞뒤 전환"><RotateCw size={14}/>{!photo||side==='back'?'뒷면':'앞면'}</button>
-    <div className="studio-ratios" aria-label="카드 비율">{(['9:16','1:1'] as const).map(ratio=><button key={ratio} aria-pressed={value.ratio===ratio} onClick={()=>onChange({...value,ratio})}>{ratio}</button>)}</div>
+    <div className="studio-ratios" aria-label="카드 비율">{(['10:16','1:1'] as const).map(ratio=><button key={ratio} aria-pressed={(value.ratio==='9:16'?'10:16':value.ratio)===ratio} onClick={()=>onChange({...value,ratio})}>{ratio}</button>)}</div>
     {onPhotoToggle?<button aria-label="사진 없는 카드 미리보기" aria-pressed={!photo} onClick={()=>{onPhotoToggle();if(photo&&section==='front')choose('back');}}>{photo?<Image size={16}/>:<Type size={16}/>}<span>{photo?'사진':'글'}</span></button>:<span className="studio-preview-kind">{photo?<Image size={14}/>:<Type size={14}/>}</span>}
    </div>
   </div>

@@ -17,7 +17,7 @@ export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,ena
  const submitLabel=complete?'완료 · 티끌 여는 중':busy?recovery?'메일 보내는 중':signup?'계정 만드는 중':'로그인 중':recovery?'재설정 메일 받기':signup?'계정 만들기':'로그인';
  return <><main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="un-auth-title">
   <TicgleWordmark/>
-  <h1 id="un-auth-title" className="un-auth-heading">{title}</h1>
+  <h1 id="un-auth-title" className="un-auth-heading">{title}</h1><aside className="un-auth-alpha-notice" aria-label="알파 테스트 안내"><strong>지금은 알파 테스트 중이에요</strong><p>이메일 인증 없이 바로 가입할 수 있어요. 테스트 종료 후 모든 데이터는 정식 서비스용으로 백업한 뒤 삭제합니다.</p></aside>
   {resetSent?<p className="un-auth-message" role="status">가입된 주소라면 비밀번호 재설정 메일을 보내드렸어요. 받은 편지함과 스팸함을 확인해주세요.</p>:<form className="un-auth-form" aria-label={title} noValidate onSubmit={async event=>{
    event.preventDefault();if(requestInFlight.current||locked||!enabled)return;
    // Read the submitted controls too: iOS password-manager autofill can update
@@ -40,7 +40,7 @@ export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,ena
    {locked&&<p className="un-auth-progress" role="status">{complete?'완료했어요. 내 티끌을 불러오고 있어요.':slow?'응답이 늦어지고 있어요. 다시 누르지 않아도 처리 중이에요.':recovery?'재설정 메일을 요청하고 있어요.':signup?'계정을 만들고 있어요. 잠시만 기다려주세요.':'로그인하고 있어요. 잠시만 기다려주세요.'}</p>}
   </form>}
   <p className="un-auth-switch">{!recovery&&<span>{signup?'이미 계정이 있나요?':'처음이신가요?'}</span>}<button type="button" disabled={locked} onClick={switchMode}>{recovery?'로그인으로 돌아가기':signup?'로그인':'회원가입'}</button></p>
-  {!recovery&&<button className="un-auth-demo" type="button" aria-label="예시 계정으로 먼저 둘러보기" disabled={locked} onClick={()=>onEnter('나')}>먼저 둘러보기<ArrowRight size={15} strokeWidth={1.5}/></button>}
-  <footer className="un-auth-footer"><details className="un-auth-notice"><summary><Info size={13} strokeWidth={1.5}/><span>알파 테스트 안내</span><ChevronDown size={12}/></summary><p>현재 알파 버전이며, 별도의 이메일 인증 없이 가입할 수 있습니다. 테스트 종료 후 모든 데이터는 정식 서비스에서 사용할 수 있는 형식으로 백업한 뒤, 테스트 환경에서 삭제할 예정입니다.</p></details><button className="un-auth-feedback" onClick={()=>setSupport(true)}>문제 알리기</button>{!enabled&&<p className="un-auth-connection" role="status">계정 연결을 준비 중입니다. 먼저 둘러보기로 화면을 확인할 수 있어요.</p>}</footer>
+
+  <footer className="un-auth-footer">{!recovery&&<button className="un-auth-demo" type="button" aria-label="예시 계정으로 먼저 둘러보기" disabled={locked} onClick={()=>onEnter('나')}>먼저 둘러보기<ArrowRight size={15} strokeWidth={1.5}/></button>}<button className="un-auth-feedback" onClick={()=>setSupport(true)}>문제 알리기</button>{!enabled&&<p className="un-auth-connection" role="status">계정 연결을 준비 중입니다. 먼저 둘러보기로 화면을 확인할 수 있어요.</p>}</footer>
  </section></main><AlphaSupport open={support} onClose={()=>setSupport(false)} initialTab="report"/></>;
 }

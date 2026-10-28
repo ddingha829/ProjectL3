@@ -13,7 +13,7 @@ function fitSinglePage(scroll:HTMLElement,inner:HTMLElement,square:boolean){
   for(const {node,row,column,top,bottom} of spaces){node.style.rowGap=`${row*factor}px`;node.style.columnGap=`${column*factor}px`;node.style.paddingTop=`${top*factor}px`;node.style.paddingBottom=`${bottom*factor}px`;}
   if(fits())return;
  }
- throw Error('리뷰가 한 면에 담기에는 길어요. 9:16 비율로 바꾸거나 뒷면 전체 저장으로 나눠 저장해주세요.');
+ throw Error('리뷰가 한 면에 담기에는 길어요. 본문을 줄이거나 뒷면 전체 저장을 이용해주세요.');
 }
 
 export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',title:string,onProgress?:(page:number,total:number)=>void,options:{singlePage?:boolean}={}):Promise<File[]>{
@@ -22,7 +22,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
  const clone=source.cloneNode(true) as HTMLElement,host=document.createElement('div');host.inert=true;host.setAttribute('aria-hidden','true');Object.assign(host.style,{position:'fixed',left:'-15000px',top:'0',width:'420px',pointerEvents:'none'});host.append(clone);document.body.append(host);
  try{
   clone.querySelectorAll<HTMLElement>('.ec-satin-sheen').forEach(node=>{node.style.backgroundPosition='45% 45%';node.style.transition='none';});
-  clone.style.transform='none';clone.style.position='relative';clone.dataset.cardWidth='420';clone.dataset.cardHeight=clone.classList.contains('ec-square')?'420':String(420*16/9);
+  clone.style.transform='none';clone.style.position='relative';clone.dataset.cardWidth='420';clone.dataset.cardHeight=clone.classList.contains('ec-square')?'420':String(672);
   if(clone.classList.contains('ec-ticket')){clone.style.setProperty('--card-notch-radius','10');clone.style.setProperty('--card-notch-y',clone.classList.contains('ec-square')?'60':'73');}
   const scroll=clone.querySelector<HTMLElement>('[data-ec-scroll]'),inner=clone.querySelector<HTMLElement>('.ec-scroll-inner');
   // Paginate actual text nodes, preserving each page's header/footer. Negative
@@ -40,7 +40,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
    const fits=()=>inner.scrollHeight<=scroll.clientHeight+1;
    const finish=()=>{plans.push(Array.from(inner.childNodes,node=>node.cloneNode(true)));inner.replaceChildren();clone.scrollTop=0;scroll.scrollTop=0;};
    while(pending.length){
-    if(plans.length>=60)throw Error('이 비율로 저장할 내용이 너무 길어요. 9:16 비율로 바꾸거나 줄바꿈을 조금 줄여주세요.');
+    if(plans.length>=60)throw Error('이 비율로 저장할 내용이 너무 길어요. 본문이나 줄바꿈을 조금 줄여주세요.');
     const item=pending[0],node=item.node.cloneNode(true) as HTMLElement;let container:HTMLElement=inner;
     if(item.spec){container=inner.querySelector<HTMLElement>('.ec-specs')!;if(!container){container=specs!.cloneNode(false) as HTMLElement;inner.append(container);}}
     const textNode=item.spec?node.querySelector('p')!:node;
@@ -51,7 +51,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
     if(item.spec){container=specs!.cloneNode(false) as HTMLElement;inner.append(container);}else container=inner;
     container.append(node);let low=0,high=item.text.length;
     while(low<high){const middle=Math.ceil((low+high)/2);textNode.textContent=item.text.slice(0,middle);if(fits())low=middle;else high=middle-1;}
-    if(!low)throw Error('이 카드에는 본문을 담을 공간이 부족해요. 9:16 비율로 바꿔주세요.');
+    if(!low)throw Error('본문을 담을 공간이 부족해요. 내용을 줄이거나 다른 뒷면 디자인을 선택해주세요.');
     const prefix=item.text.slice(0,low),space=Math.max(prefix.lastIndexOf(' '),prefix.lastIndexOf('\n'));if(space>low*.7)low=space+1;
     textNode.textContent=item.text.slice(0,low);item.text=item.text.slice(low);finish();
    }
@@ -67,7 +67,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
  }finally{host.remove();}
 }
 const safeName=(title:string)=>title.replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').slice(0,100)||'card';
-async function pairEditorialFiles(front:File,back:File,background:string,title:string){
+export async function pairEditorialFiles(front:File,back:File,background:string,title:string){
  const urls=[URL.createObjectURL(front),URL.createObjectURL(back)];
  try{
   const images=await Promise.all(urls.map(async url=>{const image=new Image();image.src=url;await image.decode();return image;}));

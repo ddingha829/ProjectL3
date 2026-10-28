@@ -124,7 +124,7 @@ async function prepareFonts(node: HTMLElement): Promise<string> {
     const families=style.fontFamily.split(',').map(part=>part.trim().replace(/["']/g,''));
     // Keep the local Korean fallback for handwriting families and unusual glyphs.
     // Avoid unused Pretendard/Inter files. Mono labels stay separate.
-    const bundled = ['Gaegu','Single Day'].includes(families[0]) ? families.slice(0,2) : families[0]==='Sebang Gothic' ? families.slice(0,1) : families;
+    const bundled = ['Gaegu','Single Day'].includes(families[0]) ? families.slice(0,2) : families[0]==='NanumBarunGothic' ? families.slice(0,1) : families;
     for (const family of bundled) {
       const usageKey=`${family}|${style.fontStyle==='normal'?'normal':'italic'}`;
       if (!usage.has(usageKey)) usage.set(usageKey, new Set());
