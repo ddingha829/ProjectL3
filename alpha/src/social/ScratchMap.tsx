@@ -13,7 +13,7 @@ import {useMotionPreference} from '@/lib/useMotionPreference';
 import {cardView} from './cardView';
 import {countDongLogs,dongRings,loadDongBoundaries,type DongCollection,type DongCount} from './adminDong';
 import {simpleMapLayer} from './simpleMapLayer';
-import {loadMapRegions,mapTierForZoom,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
+import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
@@ -44,7 +44,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const markerContent=JSON.stringify(located.map(l=>[l.id,l.title,l.body,l.authorId,l.place!.name]));
  const coverage=useMemo(()=>boundaries?countDongLogs(logs,boundaries):{dongs:[],unmatched:0},[geometry,boundaries]);
  const activeCoverage=useMemo(()=>tier==='dong'||onPick?coverage:regional[tier]?regionalCoverage(logs,regional[tier]!,tier,coverage.dongs):{dongs:[],unmatched:0},[tier,onPick,coverage,regional,geometry]);
- const current=useRef({logs,people,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs});current.current={logs,people,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs};
+ const current=useRef({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs});current.current={logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs};
  useEffect(()=>{if(tier==='dong'||onPick||regional[tier])return;let gone=false;setRegionError('');void loadMapRegions(tier).then(data=>{if(!gone)setRegional(previous=>({...previous,[tier]:data}));}).catch(()=>{if(!gone)setRegionError('지역 경계를 불러오지 못했어요.');});return()=>{gone=true;};},[tier,onPick,regional,retry]);
  useEffect(()=>{
   let gone=false;setBoundaries(null);setBoundaryError(false);
@@ -58,13 +58,14 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    const level=Number(pane.dataset.level),dongs=current.current.dongs.filter(d=>d.level===level);
    const path=dongs.flatMap(d=>dongRings(d.feature).map(ring=>ring.map(([lng,lat],index)=>{const p=m.latLngToLayerPoint([lat,lng]);return `${index?'L':'M'} ${p.x} ${p.y}`;}).join(' ')+' Z')).join(' ');
    pane.style.clipPath=`path("${path||'M 0 0'}")`;
-   const strength=level;
-   pane.style.opacity=String(progress.current*Math.min(1,strength));
-   pane.style.filter=strength>1?`saturate(${strength})`:'none';
+   const treatment=mapRevealStyle(level,current.current.dark);
+   pane.style.opacity=String(progress.current*treatment.opacity);
+   pane.style.filter=treatment.filter;
    pane.dataset.colourStrength=String(level*100);
    pane.dataset.dongs=dongs.map(d=>d.feature.properties.code).join(',');
   }
  };
+ useEffect(()=>{if(ready)redraw();},[dark,ready]);
  useEffect(()=>{if(reduceMotion){cancelAnimationFrame(revealRaf.current);progress.current=1;redraw();setReplaying(false);replayIcon.current?.stopAnimation();}},[reduceMotion]);
  const replay=(manual=false)=>{
   cancelAnimationFrame(revealRaf.current);setReplaying(manual);if(manual)replayIcon.current?.startAnimation();else replayIcon.current?.stopAnimation();

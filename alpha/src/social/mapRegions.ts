@@ -1,22 +1,27 @@
 import type {LabLog} from './model';
 import {countDongLogs,type DongCollection,type DongCount} from './adminDong';
 
-export type MapTier='dong'|'district'|'province'|'country';
+export type MapTier='dong'|'district';
 export type WideMapTier=Exclude<MapTier,'dong'>;
 export type MapViewport={zoom:number;bounds:[number,number,number,number];center:[number,number]};
-export const MAP_TIER_LABEL:Record<MapTier,string>={dong:'동네',district:'시·군·구',province:'시·도',country:'국가'};
-const thresholds:Record<MapTier,readonly number[]>={dong:[1,2,3,4],district:[1,4,10,20],province:[1,6,18,40],country:[1,10,30,80]};
+export const MAP_TIER_LABEL:Record<MapTier,string>={dong:'동네',district:'시·군·구'};
+const thresholds:Record<MapTier,readonly number[]>={dong:[1,2,3,4],district:[1,4,10,20]};
 const cache=new Map<WideMapTier,Promise<DongCollection>>();
-export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.25?'dong':zoom>=10.75?'district':zoom>=7.75?'province':'country';
+export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.25?'dong':'district';
+// Blend revealed map tiles into the dark canvas rather than exposing their full
+// daytime brightness. Density still increases saturation at each count level.
+export function mapRevealStyle(level:number,dark:boolean){
+ return dark?{opacity:.72,filter:`brightness(.85) saturate(${1+(level-1)*.5})`}:{opacity:1,filter:level>1?`saturate(${level})`:'none'};
+}
 export function regionStrength(count:number,tier:MapTier):DongCount['level']{
  return Math.max(1,thresholds[tier].filter(n=>count>=n).length) as DongCount['level'];
 }
 export function regionalCoverage(logs:LabLog[],collection:DongCollection,tier:MapTier,originalDongs: DongCount[]=[]){
- // Count Korea from its precise dong membership, not the simplified coastline.
+ // Aggregate from precise dong membership, not simplified district geometry.
  // Generalization is visual only: a coastal log must not disappear on zoom-out.
  const features=new Map(collection.features.map(feature=>[feature.properties.code,feature])),groups=new Map<string,DongCount>(),assigned=new Set<string>();
  if(tier!=='dong')for(const dong of originalDongs){
-  const code=tier==='district'?dong.feature.properties.code.slice(0,5):tier==='province'?dong.feature.properties.code.slice(0,2):'KOR',feature=features.get(code);
+  const code=dong.feature.properties.code.slice(0,5),feature=features.get(code);
   if(!feature)continue;const group=groups.get(code)||{feature,count:0,level:1 as const,logIds:[]};
   for(const id of dong.logIds)if(!assigned.has(id)){group.logIds.push(id);assigned.add(id);}
   group.count=group.logIds.length;groups.set(code,group);
