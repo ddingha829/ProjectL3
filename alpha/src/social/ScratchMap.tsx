@@ -12,8 +12,9 @@ import './InteractionPolish.css';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import {cardView} from './cardView';
 import {countDongLogs,dongRings,loadDongBoundaries,type DongCollection,type DongCount} from './adminDong';
+import {createMapRevealMask} from './mapRevealMask';
 import {simpleMapLayer} from './simpleMapLayer';
-import {loadMapRegions,mapTierForZoom,mapRevealStyle,mapRegionMask,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
+import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
@@ -26,6 +27,7 @@ const LOG_DETAIL_ZOOM=13;
 const CITY_VIEW_ZOOM=11;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
+ const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
  const {revealed,markPainted}=useMapEntrance(ready,failed,scopeKey);
  const [currentPoint,setCurrentPoint]=useState<{lat:number;lng:number}|null>(null),[locating,setLocating]=useState(false),[locationError,setLocationError]=useState('');
@@ -56,17 +58,11 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   const m=map.current;if(!m)return;
   for(const pane of panes.current){
    const level=Number(pane.dataset.level),dongs=current.current.dongs.filter(d=>d.level===level);
-   const path=dongs.flatMap(d=>dongRings(d.feature).map(ring=>ring.map(([lng,lat],index)=>{const p=m.latLngToLayerPoint([lat,lng]);return `${index?'L':'M'} ${p.x} ${p.y}`;}).join(' ')+' Z')).join(' ');
-   // Give the mask a real viewport-sized box. Leaflet panes themselves have
-   // zero dimensions; masking them directly loses tiles on Safari/panning.
-   const origin=m.containerPointToLayerPoint([-6,-6]),size=m.getSize().add([12,12]);
-   let window=pane.querySelector<HTMLDivElement>(':scope > .scratch-reveal-window');
-   if(!window){window=document.createElement('div');window.className='scratch-reveal-window';window.style.position='absolute';pane.append(window);}
-   for(const child of Array.from(pane.children))if(child!==window)window.append(child);
-   Object.assign(window.style,{left:`${origin.x}px`,top:`${origin.y}px`,width:`${size.x}px`,height:`${size.y}px`,maskSize:'100% 100%',maskRepeat:'no-repeat'});
-   const mask=mapRegionMask(path,origin.x,origin.y,size.x,size.y);window.style.maskImage=mask;window.style.setProperty('-webkit-mask-image',mask);
-   for(const child of Array.from(window.children) as HTMLElement[])Object.assign(child.style,{left:`${-origin.x}px`,top:`${-origin.y}px`});
-   pane.style.clipPath='none';
+   if(!dongs.length){pane.style.opacity='0';pane.dataset.dongs='';continue;}
+   const origin=m.containerPointToLayerPoint([0,0]),size=m.getSize(),projection=m.getPixelOrigin();
+   const key=[m.getZoom(),projection.x,projection.y,...dongs.map(d=>d.feature.properties.code)].join(':');
+   let mask=revealMasks.current.get(pane);if(!mask){mask=createMapRevealMask(pane);revealMasks.current.set(pane,mask);}
+   mask.update(key,{x:origin.x,y:origin.y,width:size.x,height:size.y},()=>dongs.flatMap(d=>dongRings(d.feature).map(ring=>ring.map(([lng,lat],index)=>{const p=m.latLngToLayerPoint([lat,lng]);return `${index?'L':'M'} ${p.x} ${p.y}`;}).join(' ')+' Z')).join(' '));
    const treatment=mapRevealStyle(level,current.current.dark);
    pane.style.opacity=String(progress.current*treatment.opacity);
    pane.style.filter=treatment.filter;
@@ -103,7 +99,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    m.on('click',event=>{const callback=current.current.onPick;if(callback)callback({id:`point-${event.latlng.lat.toFixed(5)}-${event.latlng.lng.toFixed(5)}`,name:'지도에서 고른 장소',area:'선택한 위치',lat:event.latlng.lat,lng:event.latlng.lng});});
    resize=new ResizeObserver(()=>{m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
   }).catch(()=>{if(!gone)setFailed(true);});
-  return()=>{gone=true;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
+  return()=>{gone=true;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
  },[compact,scopeKey]);
  useEffect(()=>{
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
