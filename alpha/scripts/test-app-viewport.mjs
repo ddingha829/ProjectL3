@@ -13,7 +13,8 @@ const values=new Map(),dataset={},viewport=new EventTarget(),win=new EventTarget
 Object.assign(viewport,{height:844,offsetTop:0});
 Object.assign(win,{visualViewport:viewport,scrollY:0,scrollX:0,scrollTo:options=>calls.push({owner:'window',...options})});
 let owner={scrollTop:196,scrollLeft:0,scrollTo:options=>calls.push({owner:'pane',...options})},cleanup;
-const doc={documentElement:{dataset,clientHeight:844,style:{setProperty:(key,value)=>values.set(key,value)}},activeElement:null,querySelector:()=>owner};
+const chrome={getBoundingClientRect:()=>({height:globalThis.innerHeight,top:0})};
+const doc={documentElement:{dataset,clientHeight:844,style:{setProperty:(key,value)=>values.set(key,value)}},activeElement:null,querySelector:selector=>selector==='[data-app-chrome]'?chrome:owner};
 const globals={window:win,document:doc,innerHeight:844,innerWidth:390,__viewportEffect:effect=>{cleanup=effect();}};
 for(const [key,value]of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
 const checks=[];
@@ -25,13 +26,13 @@ try{
  check(values.get('--un-edge-clearance')==='12px','installed iPhone reserves space below the native top effect');
  check(calls.length===0,'viewport synchronization never scrolls or nudges the document');
  Object.assign(viewport,{height:810,offsetTop:0});viewport.dispatchEvent(new Event('resize'));
- check(values.get('--lab-vvh')==='810px'&&dataset.labKeyboard==='closed','a short reported visual viewport alone does not activate keyboard sizing');
+ check(values.get('--lab-vvh')==='844px'&&dataset.labKeyboard==='closed','a short reported visual viewport does not shrink chrome or dialog dimensions');
  Object.assign(viewport,{height:540,offsetTop:24});viewport.dispatchEvent(new Event('resize'));
  check(dataset.labKeyboard==='closed','a stale short viewport without text focus cannot lift the app chrome');
  doc.activeElement={tagName:'INPUT',type:'text'};win.dispatchEvent(new Event('focusin'));
  check(values.get('--lab-vvh')==='540px'&&values.get('--lab-vvtop')==='24px'&&dataset.labKeyboard==='open','keyboard resize and visual offset update together');
  doc.activeElement=null;win.dispatchEvent(new Event('focusout'));
- check(dataset.labKeyboard==='closed','leaving text input restores native viewport edges even before metrics recover');
+ check(dataset.labKeyboard==='closed'&&values.get('--lab-vvh')==='844px','leaving text input restores native viewport edges and dialogs before metrics recover');
  globalThis.innerHeight=390;globalThis.innerWidth=844;doc.documentElement.clientHeight=390;Object.assign(viewport,{height:390,offsetTop:0});win.dispatchEvent(new Event('resize'));
  check(values.get('--un-edge-clearance')==='0px'&&dataset.labKeyboard==='closed','landscape does not keep portrait-only status-bar spacing');
  assert.deepEqual(pageScrollPosition(),{top:196,left:0});checks.push('card return position comes from the content pane');

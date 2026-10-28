@@ -8,8 +8,9 @@ export default function useAppViewport(active:boolean,installedIos:boolean){
    const visibleHeight=viewport?.height||innerHeight,layoutHeight=Math.max(innerHeight,root.clientHeight||0),focused=document.activeElement as HTMLElement|null;
    const typing=focused?.tagName==='TEXTAREA'||focused?.isContentEditable||focused?.tagName==='INPUT'&&!['checkbox','radio','range','file','button','submit'].includes((focused as HTMLInputElement).type);
    const keyboard=Boolean(typing)&&(viewport?.scale||1)===1&&layoutHeight-visibleHeight>120;
-   root.style.setProperty('--lab-vvh',`${viewport?.height||innerHeight}px`);
-   root.style.setProperty('--lab-vvtop',`${viewport?.offsetTop||0}px`);
+   const frame=active&&!keyboard?document.querySelector<HTMLElement>('[data-app-chrome]')?.getBoundingClientRect():null;
+   root.style.setProperty('--lab-vvh',`${frame?.height||visibleHeight}px`);
+   root.style.setProperty('--lab-vvtop',`${frame?frame.top:viewport?.offsetTop||0}px`);
    // Normal app geometry is CSS inset:0, not a potentially stale/short visual
    // viewport height. These measurements are only used while a keyboard is up.
    // Keep glyphs below the installed iOS status-bar compositor as well as the
