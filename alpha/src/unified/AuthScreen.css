@@ -38,3 +38,4 @@ html:not(.light) .un-login .un-auth-error{color:#f18e85}
 .un-login.un-auth-screen button:disabled{opacity:.48;cursor:default}.un-login.un-auth-screen button[aria-busy=true]{cursor:wait}
 @media(max-height:620px){.un-login.un-auth-screen{padding-top:28px;padding-bottom:24px}.un-login .un-auth-heading{margin-bottom:25px}.un-auth-footer{margin-top:22px}}
 @media(prefers-reduced-motion:reduce){.un-login.un-auth-screen *{transition:none!important}.un-auth-submit:active{transform:none}}
+.un-login .un-auth-progress{margin:12px 0 0;color:var(--auth-muted);font-size:12px;line-height:1.7;min-height:21px}

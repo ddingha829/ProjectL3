@@ -1,7 +1,7 @@
 // Adapted from Tween UI: https://tween-ui.vercel.app/component/slide-arrow-button
 'use client';
 
-import {useState,type ComponentPropsWithRef} from 'react';
+import {type ComponentPropsWithRef} from 'react';
 import { cn } from './cn';
 import {LoaderCircle} from 'lucide-react';
 import './touch-motion.css';
@@ -38,9 +38,23 @@ const SlideArrowButton = ({
   pending = false,
   ...props
 }: SlideArrowButtonProps) => {
-  const [pulse,setPulse]=useState(0);
+  // Keep the native activation target mounted through focus, click and form
+  // submission. Re-keying its descendants during activation can swallow a tap
+  // on mobile WebKit. Animate the existing nodes after the click instead.
+  const playFeedback=(button:HTMLButtonElement)=>{
+    if(pending||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const animate=(selector:string,frames:Keyframe[])=>{
+      for(const node of button.querySelectorAll<HTMLElement>(selector)){
+        node.getAnimations().forEach(animation=>animation.cancel());
+        node.animate(frames,{duration:560,easing:'cubic-bezier(.32,.72,0,1)'});
+      }
+    };
+    animate('.tween-slide-label>span',[{transform:'translateY(0)'},{transform:'translateY(-100%)'}]);
+    animate('.tween-slide-badge>svg:first-child',[{translate:'0 0'},{translate:'24px 0'}]);
+    animate('.tween-slide-badge>svg:last-child',[{translate:'-24px 0'},{translate:'0 0'}]);
+  };
   const label =
-    'block text-sm leading-5 font-medium whitespace-nowrap transition-transform duration-500 ease-in-out group-hover:-translate-y-full motion-reduce:transition-none motion-reduce:group-hover:translate-y-0';
+    'block text-sm leading-5 font-medium whitespace-nowrap';
 
   return (
     <button
@@ -53,11 +67,11 @@ const SlideArrowButton = ({
       disabled={props.disabled||pending}
       aria-busy={pending||props['aria-busy']}
       data-pending={pending?true:undefined}
-      onClick={event=>{setPulse(value=>value+1);onClick?.(event);}}
-      onFocus={event=>{if(event.currentTarget.matches(':focus-visible'))setPulse(value=>value+1);onFocus?.(event);}}
+      onClick={event=>{onClick?.(event);if(type!=='submit'&&!event.defaultPrevented)playFeedback(event.currentTarget);}}
+      onFocus={onFocus}
     >
-      {/* Label rolls up to an identical copy on hover. */}
-      <span key={`label-${pulse}`} data-tween-run={!pending&&pulse>0?true:undefined} className="tween-slide-label block h-5 overflow-hidden">
+      {/* Stable, decorative children animate only after activation. */}
+      <span className="tween-slide-label block h-5 overflow-hidden">
         <span className={label}>{children}</span>
         <span className={label} aria-hidden="true">
           {children}
@@ -65,9 +79,9 @@ const SlideArrowButton = ({
       </span>
 
       {/* Chevron slides out of the badge while a fresh one slides in. */}
-      <span key={`badge-${pulse}`} data-tween-run={!pending&&pulse>0?true:undefined} className="tween-slide-badge relative grid size-6 place-items-center overflow-hidden rounded-full bg-[#c6f56f]">
-        {pending?<LoaderCircle size={14} className="lab-spin" aria-hidden="true"/>:<><Chevron className="col-start-1 row-start-1 size-3.5 stroke-[#045f64] transition-transform duration-400 ease-in-out group-hover:translate-x-6 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
-        <Chevron className="col-start-1 row-start-1 size-3.5 -translate-x-6 stroke-[#045f64] transition-transform duration-400 ease-in-out group-hover:translate-x-0 motion-reduce:hidden" />
+      <span className="tween-slide-badge relative grid size-6 place-items-center overflow-hidden rounded-full bg-[#c6f56f]">
+        {pending?<LoaderCircle size={14} className="lab-spin" aria-hidden="true"/>:<><Chevron className="col-start-1 row-start-1 size-3.5 stroke-[#045f64]" />
+        <Chevron className="col-start-1 row-start-1 size-3.5 -translate-x-6 stroke-[#045f64] motion-reduce:hidden" />
         </>}
       </span>
     </button>

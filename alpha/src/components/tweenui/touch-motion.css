@@ -1,4 +1,7 @@
 /* A click completes one cycle, including on touchscreens without hover. */
+.tween-slide-button{touch-action:manipulation}
+/* Decorative moving children must never become a separate touch target. */
+.tween-slide-button>.tween-slide-label,.tween-slide-button>.tween-slide-badge{pointer-events:none}
 .tween-shiny-sweep[data-tween-run=true]{animation:l2-tween-shine 650ms ease-in-out}
 .tween-slide-label[data-tween-run=true]>span{animation:l2-tween-label 560ms cubic-bezier(.32,.72,0,1)}
 .tween-slide-badge[data-tween-run=true]>svg:first-child{animation:l2-tween-arrow-out 560ms ease-in-out}
