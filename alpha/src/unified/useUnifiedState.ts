@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient,Session} from '@supabase/supabase-js';
+import {fetchFeedPage,fetchFeedState,type FeedQuery,type FeedCursor} from './feedRepository';
 import {authMessage,RECOVERY_REDIRECT} from './authMessages';
 import {shouldLoadAuthSession} from './authSessionTransition';
 import {normalizeNickname,nicknameInitial} from './nickname';
@@ -12,15 +13,16 @@ type Mode='login'|'demo'|'cloud';
 const cacheKey=(id:string)=>`l2_unified_account_cache:${id}`,pendingKey=(id:string)=>`l2_unified_account_pending:${id}`;
 export default function useUnifiedState(){
  const [state,setState]=useState<UnifiedState|null>(null),[error,setError]=useState(''),[ready,setReady]=useState(false),[identity,setIdentity]=useState<{id?:string;name:string;email?:string}|null>(null),[mode,setMode]=useState<Mode>('login'),[cloudEnabled,setCloudEnabled]=useState(false),[syncStatus,setSyncStatus]=useState<'idle'|'saving'|'failed'>('idle');
+ const fullRecords=useRef(false),[recordsBusy,setRecordsBusy]=useState(false);
  const profileSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
  const current=useRef<UnifiedState|null>(null),client=useRef<SupabaseClient|null>(null),userId=useRef(''),modeRef=useRef<Mode>('login'),pending=useRef<Pending|null>(null),sending=useRef(false),alive=useRef(true),generation=useRef(0),requestSequence=useRef(0);
  const show=useCallback((next:UnifiedState)=>{current.current=next;setState(next);},[]);
- const refresh=useCallback(async()=>{if(profileSaving.current||!client.current||!userId.current||pending.current||modeRef.current!=='cloud')return;const id=userId.current,epoch=generation.current,request=++requestSequence.current;try{const next=await fetchCloudState(client.current);if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},[show]);
+ const refresh=useCallback(async()=>{if(profileSaving.current||!client.current||!userId.current||pending.current||modeRef.current!=='cloud')return;const id=userId.current,epoch=generation.current,request=++requestSequence.current;try{const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(client.current):await fetchFeedState(client.current,id,current.current?.logs.map(l=>l.id));if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},[show]);
  const retry=useCallback(async()=>{
   const item=pending.current,c=client.current;if(!item||!c||sending.current||item.userId!==userId.current)return false;
   sending.current=true;setSyncStatus('saving');const epoch=generation.current,request=++requestSequence.current;
   try{if(!item.prepared){item.operations=await prepareCloudOperations(c,item.userId,item.operations);item.prepared=true;localStorage.setItem(pendingKey(item.userId),JSON.stringify(item));}
-   const result=await c.rpc('l2u_apply',{p_operations:item.operations,p_operation_id:item.id});if(result.error)throw result.error;const next=await fetchCloudState(c);if(!alive.current||epoch!==generation.current||request!==requestSequence.current)return false;
+   const result=await c.rpc('l2u_apply',{p_operations:item.operations,p_operation_id:item.id});if(result.error)throw result.error;const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(c):await fetchFeedState(c,item.userId,current.current?.logs.map(l=>l.id));if(!alive.current||epoch!==generation.current||request!==requestSequence.current)return false;
    localStorage.setItem(cacheKey(item.userId),JSON.stringify(next));localStorage.removeItem(pendingKey(item.userId));pending.current=null;show(next);setSyncStatus('idle');setError('');
    if(item.operations.some(op=>op.kind==='log'&&Array.isArray(op.groups)&&op.groups.length))void c.auth.getSession().then(session=>{const token=session.data.session?.access_token;if(token)return fetch('/api/notifications/dispatch/',{method:'POST',headers:{Authorization:`Bearer ${token}`,'X-L2-Request':'1'},signal:AbortSignal.timeout(8000)});}).catch(()=>{});
    return true;
@@ -34,13 +36,13 @@ export default function useUnifiedState(){
  useEffect(()=>{
   alive.current=true;let active=true;let subscription:{unsubscribe:()=>void}|undefined;let channel:ReturnType<SupabaseClient['channel']>|undefined;let eventTimer:ReturnType<typeof setTimeout>|undefined;
   const loadSession=async(session:Session|null)=>{
-   const epoch=++generation.current;pending.current=null;userId.current=session?.user.id||'';
+   const epoch=++generation.current;fullRecords.current=false;pending.current=null;userId.current=session?.user.id||'';
    if(channel){void client.current?.removeChannel(channel);channel=undefined;}
    if(!session){modeRef.current='login';setMode('login');setIdentity(null);show(emptyCloudState());setReady(true);return;}
    modeRef.current='cloud';setMode('cloud');setReady(false);setIdentity({id:session.user.id,name:session.user.user_metadata.display_name||session.user.email?.split('@')[0]||'나',email:session.user.email});
    try{const saved=localStorage.getItem(pendingKey(session.user.id));
     if(saved){const item=JSON.parse(saved) as Pending;if(item.userId!==session.user.id||!Array.isArray(item.operations)||!parseUnified(JSON.stringify(item.optimistic)))throw Error('INVALID_PENDING');pending.current=item;show(item.optimistic);setSyncStatus('failed');setError('아직 서버에 반영되지 않은 변경이 있어요. 다시 반영해주세요.');}
-    else{const next=await fetchCloudState(client.current!);if(epoch!==generation.current||!alive.current)return;show(next);localStorage.setItem(cacheKey(session.user.id),JSON.stringify(next));setSyncStatus('idle');setError('');}
+    else{const next=await fetchFeedState(client.current!,session.user.id);if(epoch!==generation.current||!alive.current)return;show(next);localStorage.setItem(cacheKey(session.user.id),JSON.stringify(next));setSyncStatus('idle');setError('');}
    }catch(e){if(epoch!==generation.current)return;const raw=localStorage.getItem(cacheKey(session.user.id)),cached=raw&&parseUnified(raw);show(cached||emptyCloudState());setError(cloudError(e));}
    if(epoch===generation.current&&alive.current){setReady(true);channel=client.current!.channel('l2u-state:'+session.user.id+':'+crypto.randomUUID());for(const table of ['l2u_logs','l2u_shares','l2u_mosaic','l2u_members','l2u_groups','l2u_comments','l2u_reactions','l2u_preferences','l2u_profiles'])channel.on('postgres_changes',{event:'*',schema:'public',table},()=>{clearTimeout(eventTimer);eventTimer=setTimeout(()=>void refresh(),150);});channel.subscribe();}
   };
@@ -50,7 +52,7 @@ export default function useUnifiedState(){
    if(c)subscription=c.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(alive.current&&shouldLoadAuthSession(event,modeRef.current,userId.current,session?.user.id))void loadSession(session);},0);}).data.subscription;
   }catch(e){if(alive.current){show(emptyCloudState());setReady(true);setError(e instanceof Error?e.message:'연결을 확인하지 못했어요.');}}})();
   const storage=(event:StorageEvent)=>{if(modeRef.current==='demo'&&event.key===UI_STORAGE&&event.newValue){const next=parseUnified(event.newValue);if(next)show(next);}else if(event.key===pendingKey(userId.current))void refresh();};
-  const focus=()=>void refresh(),poll=setInterval(()=>{if(document.visibilityState==='visible')void refresh();},30000);
+  const focus=()=>void refresh(),poll=setInterval(()=>{if(document.visibilityState==='visible'&&(fullRecords.current||!current.current?.recordsComplete))void refresh();},30000);
   window.addEventListener('storage',storage);window.addEventListener('focus',focus);window.addEventListener('online',focus);
   return()=>{active=false;alive.current=false;generation.current++;subscription?.unsubscribe();if(channel)void client.current?.removeChannel(channel);clearTimeout(eventTimer);clearInterval(poll);window.removeEventListener('storage',storage);window.removeEventListener('focus',focus);window.removeEventListener('online',focus);};
  },[refresh,show]);
@@ -59,6 +61,22 @@ export default function useUnifiedState(){
  const enterDemo=useCallback((name='나')=>{try{const raw=localStorage.getItem(UI_STORAGE),next=raw?parseUnified(raw):initialUnified();if(!next)throw Error('미리보기 기록을 읽지 못했어요.');localStorage.setItem(UI_SESSION,JSON.stringify({mode:'demo',name}));modeRef.current='demo';setMode('demo');setIdentity({name});show(next);setError('');}catch(e){setError(e instanceof Error?e.message:'예시 화면을 열지 못했어요.');}},[show]);
  const logout=useCallback(async()=>{if(pending.current){setError('반영되지 않은 변경이 있어요. 다시 반영하거나 임시 변경을 백업한 뒤 로그아웃해주세요.');return;}if(modeRef.current==='cloud'){try{await disconnectNotificationDevice();}catch{setError('기기 알림 연결을 해제하지 못했어요. 잠시 후 다시 로그아웃해주세요.');return;}const result=await client.current?.auth.signOut();if(result?.error){setError('로그아웃하지 못했어요.');return;}}localStorage.removeItem(UI_SESSION);generation.current++;userId.current='';modeRef.current='login';setMode('login');setIdentity(null);show(emptyCloudState());setError('');},[show]);
  const commit=useCallback((change:(state:UnifiedState)=>UnifiedState)=>{if(profileSaving.current||!current.current)return false;try{const before=modeRef.current==='demo'?parseUnified(localStorage.getItem(UI_STORAGE)||JSON.stringify(current.current)):current.current;if(!before)throw Error('기존 기록을 읽지 못했어요.');const next=change(before),serialized=JSON.stringify(next);if(!parseUnified(serialized))throw Error('저장할 내용을 확인해주세요.');if(modeRef.current==='cloud'){const ops=cloudOperations(before,next);return ops.length?queue(ops,next):true;}if(modeRef.current!=='demo')return false;localStorage.setItem(UI_STORAGE,serialized);show(next);setError('');return true;}catch(e){setError(e instanceof Error?e.message:'저장하지 못했어요.');return false;}},[queue,show]);
+ const ensureFullRecords=useCallback(async(force=false)=>{
+  fullRecords.current=true;if(modeRef.current!=='cloud'||current.current?.recordsComplete&&!force)return current.current;if(pending.current||profileSaving.current)return null;
+  setRecordsBusy(true);try{await refresh();return current.current;}finally{if(alive.current)setRecordsBusy(false);}
+ },[refresh]);
+ const enablePagedRecords=useCallback(()=>{fullRecords.current=false;},[]);
+ const loadFeedPage=useCallback(async(query:FeedQuery,cursor?:FeedCursor)=>{
+  const c=client.current,id=userId.current,epoch=generation.current;
+  if(!c||!id||modeRef.current!=='cloud')throw Error('로그인이 필요해요.');
+  if(pending.current||sending.current||profileSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
+  const result=await fetchFeedPage(c,id,query,cursor);
+  if(!alive.current||id!==userId.current||epoch!==generation.current)throw Error('계정이 변경됐어요. 다시 불러와주세요.');
+  if(pending.current||sending.current||profileSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
+  const before=current.current;if(!before)throw Error('기록을 불러오지 못했어요.');
+  const merged=new Map(before.logs.map(log=>[log.id,log]));for(const log of result.logs)merged.set(log.id,log);
+  if(!fullRecords.current)requestSequence.current++;show({...before,logs:[...merged.values()]});return result;
+ },[show]);
  const saveNickname=useCallback(async(value:string)=>{
   const name=normalizeNickname(value),before=current.current;if(!before)throw Error('계정을 불러온 뒤 다시 시도해주세요.');
   if(modeRef.current==='demo'){if(!commit(s=>({...s,nicknameConfigured:true,people:s.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)})))throw Error('닉네임을 저장하지 못했어요.');return;}
@@ -76,5 +94,5 @@ export default function useUnifiedState(){
  const joinCode=useCallback(async(code:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 참여할 수 있어요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join_code',{p_code:code.trim().toUpperCase()});if(result.error)throw Error(cloudError(result.error));if(result.data?.error)throw Error(cloudError({message:result.data.error}));const id=result.data?.groupId;if(typeof id!=='string')throw Error('참여 결과를 확인하지 못했어요. 다시 시도해주세요.');await refresh();if(!current.current?.circles.some(c=>c.id===id&&c.members.includes('me')))throw Error('참여는 완료됐어요. 새로고침해 모임 목록을 불러와주세요.');return id;},[refresh]);
  const join=useCallback(async(token:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 초대 링크를 다시 열어주세요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join',{p_token:token});if(result.error)throw Error(cloudError(result.error));await refresh();return String(result.data);},[refresh]);
  const removeMember=useCallback((groupId:string,id:string,keepShares:boolean)=>{if(!current.current||modeRef.current!=='cloud')return false;return queue([{kind:'remove_member',groupId,userId:id==='me'?userId.current:id,keepShares}],current.current);},[queue]);
- return {state,commit,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
+ return {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
 }

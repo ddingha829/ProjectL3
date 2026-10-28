@@ -6,7 +6,7 @@ export const DEFAULT_PHOTO:PhotoSettings={x:50,y:50,zoom:1,saturation:100,bright
 export type UnifiedLog=LabLog&{circleIds?:string[];photo?:PhotoSettings;serverRevision?:number;imagePath?:string};
 export type Preset={id:string;name:string;style:EditorialStyle;defaults:string[]};
 export type Collection={id:string;name:string;logIds:string[];createdAt:number};
-export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number;nicknameConfigured?:boolean};
+export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number;nicknameConfigured?:boolean;recordsComplete?:boolean};
 export const UI_STORAGE='l2_unified_ui_v1',UI_SESSION='l2_unified_preview_session_v1';
 export const destinations=[['logs','피드'],['map','티끌맵'],['mosaic','끌렉션'],['studio','스튜디오']] as const;
 export type Destination=typeof destinations[number][0];

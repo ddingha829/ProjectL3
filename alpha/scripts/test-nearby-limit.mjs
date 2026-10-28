@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import {build} from 'esbuild';
+const output=await build({entryPoints:['src/server/placeProviders.ts'],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent',plugins:[{name:'providers',setup(b){b.onResolve({filter:/server-only|integrationRuntime/},()=>({path:'settings',namespace:'qa'}));b.onLoad({filter:/.*/,namespace:'qa'},()=>({contents:'export const settings=()=>({GOOGLE_MAPS_API_KEY:"test-only"});'}));}}]});
+const {nearbyPlaces}=await import('data:text/javascript;base64,'+Buffer.from(output.outputFiles[0].text).toString('base64'));
+const original=globalThis.fetch,requests=[];
+globalThis.fetch=async(url,init)=>{requests.push({url,body:JSON.parse(init.body)});return {ok:true,json:async()=>({places:[8,2,6,1,4,3,7,5].map(i=>({id:String(i),displayName:{text:'장소 '+i},location:{latitude:37+i*.0001,longitude:127}}))})};};
+try{const nearby=await nearbyPlaces(37,127);assert.equal(nearby.length,3);assert.deepEqual(nearby.map(p=>p.id),['google:1','google:2','google:3']);assert.equal(requests[0].body.maxResultCount,3);assert.equal(requests[0].body.rankPreference,'DISTANCE');const search=await nearbyPlaces(37,127,'다른 곳');assert.equal(search.length,8);assert.equal(requests[1].body.textQuery,'다른 곳');console.log(JSON.stringify({status:'passed',checks:6}));}finally{globalThis.fetch=original;}

@@ -6,7 +6,7 @@ import {backendSessionKey} from './backendSession';
 import type {Person,Circle} from '@/social/model';
 import {normalizeNickname,nicknameInitial} from './nickname';
 export type CloudOperation=Record<string,unknown>&{kind:string};
-type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
+export type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
 let configuredClient:{signature:string;client:SupabaseClient}|undefined;
 export async function configureCloud(detectSessionInUrl=false):Promise<SupabaseClient|null>{
  const response=await fetch('/api/backend/config',{cache:'no-store'});if(!response.ok)throw Error('서버 연결 설정을 확인하지 못했어요.');
@@ -31,6 +31,9 @@ export function cloudError(error:unknown){
 }
 export async function fetchCloudState(client:SupabaseClient):Promise<UnifiedState>{
  const {data,error}=await client.rpc('l2u_snapshot');if(error)throw error;const snapshot=data as Snapshot;
+ return {...await hydrateSnapshot(client,snapshot),recordsComplete:true};
+}
+export async function hydrateSnapshot(client:SupabaseClient,snapshot:Snapshot):Promise<UnifiedState>{
  const me=(id:string)=>id===snapshot.actorId?'me':id,base=emptyCloudState();
  const people=snapshot.people.map(p=>({...p,id:me(p.id),initial:nicknameInitial(p.name),note:''}));
  const logs=await Promise.all(snapshot.logs.map(async log=>{
