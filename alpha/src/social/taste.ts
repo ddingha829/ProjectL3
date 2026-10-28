@@ -12,7 +12,7 @@ export const isWork=(value:unknown):value is Work=>{const w=value as Work;return
 export function workOf(log:LabLog):Work|undefined{return log.work;}
 export function groupWorks(logs:LabLog[]){const groups=new Map<string,{work:Work;logs:LabLog[]}>();for(const log of logs){const work=workOf(log);if(!work)continue;const group=groups.get(work.id)||{work,logs:[]};group.logs.push(log);groups.set(work.id,group);}return [...groups.values()].sort((a,b)=>b.logs[0].createdAt-a.logs[0].createdAt);}
 export function toggleIntent(state:LabState,actorId:string,logId:string,now=Date.now()):LabState{
- const log=state.logs.find(l=>l.id===logId);if(!log||!canRead(log,actorId,state)||!log.work)throw Error('지금 볼 수 있는 작품 로그에서 담아주세요.');
+ const log=state.logs.find(l=>l.id===logId);if(!log||!canRead(log,actorId,state)||!log.work)throw Error('지금 볼 수 있는 작품 티끌에서 담아주세요.');
  const intents=state.intents||[],exists=intents.some(i=>i.actorId===actorId&&i.work.id===log.work!.id);
  return {...state,intents:exists?intents.filter(i=>!(i.actorId===actorId&&i.work.id===log.work!.id)):[...intents,{actorId,work:{...log.work},sourceLogId:log.id,createdAt:now}]};
 }

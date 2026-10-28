@@ -83,7 +83,7 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
       label.type = 'button'; label.className = `logbook-map-pin ${bucket.some(item => item.id === focusRef.current) ? 'active' : ''}`;
       label.dataset.logId = picked.id;
       if(route){const number=document.createElement('small');number.className='route-pin-number';number.textContent=String(located.findIndex(item=>item.id===picked.id)+1).padStart(2,'0');label.append(number);}
-      label.setAttribute('aria-label', `${picked.title} 지도 핀${bucket.length > 1 ? `, 같은 장소 로그 ${bucket.length}개` : ''}`);
+      label.setAttribute('aria-label', `${picked.title} 지도 핀${bucket.length > 1 ? `, 같은 장소 티끌 ${bucket.length}개` : ''}`);
       const title = document.createElement('span'); title.textContent = picked.title; label.append(title);
       if (bucket.length > 1) { const count = document.createElement('small'); count.textContent = `+${bucket.length - 1}`; label.append(count); }
       label.onclick = () => {
@@ -164,14 +164,14 @@ export default function LogbookMap({ items, onOpen, onCoordinates, route=false }
     finally { setResolving(false); }
   };
 
-  return <div className={`logbook-map ${route?'is-route-map':''}`} aria-label="로그 지도" data-map-revealed={revealed} aria-busy={!revealed} data-no-page-swipe data-route-playing={playing}>
+  return <div className={`logbook-map ${route?'is-route-map':''}`} aria-label="티끌 지도" data-map-revealed={revealed} aria-busy={!revealed} data-no-page-swipe data-route-playing={playing}>
     <div ref={containerRef} className="logbook-map-canvas" aria-label="OpenStreetMap 지도"/>
     <MapEntrance revealed={revealed}/>
     <div className="logbook-map-caption"><MapPin size={12}/><span>MAP</span><small>{located.length} / {items.length}</small></div>
     {route&&<button type="button" className="logbook-route-play" aria-label="경로 다시 보기" disabled={located.length<2||!ready} onClick={()=>{fitAll();setReplay(value=>value+1);}}><Play size={12} fill="currentColor"/>{playing?'따라가는 중':'경로 재생'}</button>}
     <div className="logbook-map-controls"><button type="button" aria-label="모든 장소 보기" disabled={!located.length || !ready} onClick={fitAll}><LocateFixed size={16}/></button><button type="button" aria-label="지도 확대" disabled={!ready} onClick={() => mapRef.current?.zoomIn()}><Plus size={18}/></button><button type="button" aria-label="지도 축소" disabled={!ready} onClick={() => mapRef.current?.zoomOut()}><Minus size={18}/></button></div>
     {failed && <button type="button" className="logbook-map-retry" onClick={() => setRevision(v => v + 1)}>지도를 다시 연결</button>}
-    {active ? <div className="logbook-map-focus"><button type="button" onClick={() => onOpen(active)} aria-label={`${active.title} 로그 열기`}><span><strong>{active.title}</strong><small>{active.addressShort || active.loc}</small><time>{active.occurredAt!=null?'일어난 날':'로그 추가'} · {experienceDate(active)}{route?` · ${logTime(active)}`:''}</time></span><ArrowUpRight size={20}/></button>{onCoordinates&&!isGeoPoint(active.coordinates) && <button type="button" className="logbook-map-resolve" disabled={resolving} onClick={() => void resolve()}>{resolving ? '연결 중…' : '위치 연결'}</button>}</div> : <p className="logbook-map-empty">장소가 연결된 로그가 없어요.</p>}
+    {active ? <div className="logbook-map-focus"><button type="button" onClick={() => onOpen(active)} aria-label={`${active.title} 티끌 열기`}><span><strong>{active.title}</strong><small>{active.addressShort || active.loc}</small><time>{active.occurredAt!=null?'일어난 날':'티끌 추가'} · {experienceDate(active)}{route?` · ${logTime(active)}`:''}</time></span><ArrowUpRight size={20}/></button>{onCoordinates&&!isGeoPoint(active.coordinates) && <button type="button" className="logbook-map-resolve" disabled={resolving} onClick={() => void resolve()}>{resolving ? '연결 중…' : '위치 연결'}</button>}</div> : <p className="logbook-map-empty">장소가 연결된 티끌이 없어요.</p>}
     {resolveError && <p className="logbook-map-error" role="alert">{resolveError}</p>}
   </div>;
 }

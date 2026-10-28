@@ -18,7 +18,7 @@ function fitSinglePage(scroll:HTMLElement,inner:HTMLElement,square:boolean){
 
 export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',title:string,onProgress?:(page:number,total:number)=>void,options:{singlePage?:boolean}={}):Promise<File[]>{
  const deadline=Date.now()+14000;while(root.querySelector('[data-ec-material=\"pending\"]')){if(Date.now()>deadline)throw Error('사진 질감을 준비 중이에요. 잠시 후 다시 저장해주세요.');await new Promise(resolve=>setTimeout(resolve,80));}
- const source=root.querySelector<HTMLElement>(`[data-ec-face="${side}"]`);if(!source)throw Error('사진이 없는 로그는 뒷면으로 저장해주세요.');
+ const source=root.querySelector<HTMLElement>(`[data-ec-face="${side}"]`);if(!source)throw Error('사진이 없는 티끌은 뒷면으로 저장해주세요.');
  const clone=source.cloneNode(true) as HTMLElement,host=document.createElement('div');host.inert=true;host.setAttribute('aria-hidden','true');Object.assign(host.style,{position:'fixed',left:'-15000px',top:'0',width:'420px',pointerEvents:'none'});host.append(clone);document.body.append(host);
  try{
   clone.querySelectorAll<HTMLElement>('.ec-satin-sheen').forEach(node=>{node.style.backgroundPosition='45% 45%';node.style.transition='none';});

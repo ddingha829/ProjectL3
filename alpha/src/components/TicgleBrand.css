@@ -1,0 +1,9 @@
+.ticgle-wordmark{display:block;width:86px;height:auto;flex:none;object-fit:contain;user-select:none;-webkit-user-select:none}
+.ticgle-app-icon{display:block;width:100%;height:100%;object-fit:contain;border-radius:22%}
+.un-header.un-header-v2 .un-brand{display:grid;place-items:center;flex:none;min-width:0;min-height:44px;margin-right:4px;padding:0;letter-spacing:normal;line-height:1}
+.un-header.un-header-v2 .un-brand .ticgle-wordmark{width:82px}
+.un-header.un-header-v2 .un-scope-picker{flex:1 1 auto;min-width:0;margin-right:auto}
+.un-header.un-header-v2 .un-scope-picker>.flc-tool-trigger{max-width:100%;justify-content:flex-start}
+.un-auth-panel>.ticgle-wordmark{width:108px;margin:0 0 28px}
+.lab-boot>.ticgle-wordmark{width:108px}
+@media(max-width:360px){.un-header.un-header-v2 .un-brand .ticgle-wordmark{width:74px}.un-header.un-header-v2 .un-brand{margin-right:2px}}

@@ -45,7 +45,7 @@ export default function useNotifications(options:Options){
    const previous=prefsRef.current,turningOff=(!next.newLogs&&previous.newLogs||!next.nearby&&previous.nearby)&&(!next.newLogs||previous.newLogs)&&(!next.nearby||previous.nearby);
    let permissionGranted=false;
    if(!id||!health.available)throw Error('알림 기능을 준비 중이에요.');
-   if(!turningOff&&next.newLogs&&!health.pushReady)throw Error('새 로그 알림 연결을 준비 중이에요.');
+   if(!turningOff&&next.newLogs&&!health.pushReady)throw Error('새 티끌 알림 연결을 준비 중이에요.');
    if(!turningOff&&(next.newLogs||next.nearby)&&needsInstall)throw Error('홈 화면에 설치한 웹앱에서 알림을 켜주세요.');
    let reg=registrationRef.current,subscription:PushSubscription|undefined;
    if(!turningOff&&(next.newLogs||next.nearby)){

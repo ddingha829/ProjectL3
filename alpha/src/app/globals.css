@@ -8,7 +8,7 @@
   --fg: #F5F4F0;
   --muted: #7C7B76;
   --line: rgba(245, 244, 240, 0.12);
-  --accent: #FF3B1D;
+  --accent: #FF4804;
   --accent-fg: #FFFFFF;
 
   /* UI_GUIDE.md Spacing Tokens */
@@ -30,7 +30,7 @@ html.light {
   --fg: #0B0B0C;
   --muted: #74726D;
   --line: rgba(11, 11, 12, 0.11);
-  --accent: #FF3314;
+  --accent: #FF4804;
   --accent-fg: #FFFFFF;
 }
 

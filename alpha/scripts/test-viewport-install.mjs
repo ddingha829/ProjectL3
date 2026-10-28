@@ -15,5 +15,6 @@ const mr=await request('/viewport-install/manifest.webmanifest');assert.match(mr
 const manifest=await mr.json();assert.equal(manifest.id,'/viewport-install/v1');assert.equal(manifest.start_url,'/viewport-install/app/');assert.equal(manifest.scope,'/viewport-install/');assert.equal(manifest.display,'standalone');checks++;
 const root=await(await request('/')).text();assert.ok(!('apple-mobile-web-app-status-bar-style' in meta(root)));assert.equal(meta(root)['apple-mobile-web-app-capable'],'yes');checks++;
 const original=await(await request('/manifest.webmanifest')).json();assert.equal(original.id,'/');assert.notEqual(original.id,manifest.id);assert.equal(original.start_url,'/');checks++;
-try{const baseline=JSON.parse(await fs.readFile('.test-data/original-manifest-before-installtest.json','utf8'));assert.deepEqual(original,baseline);checks++;}catch(error){if(error.code!=='ENOENT')throw error;}
-console.log(JSON.stringify({status:'passed',checks,base,installMetadataIsolated:true,originalManifestUnchanged:true,physicalIphoneResult:'pending'}));
+assert.equal(original.name,'티끌 ticgle');assert.equal(original.short_name,'티끌');checks++;
+try{const baseline=JSON.parse(await fs.readFile('.test-data/original-manifest-before-installtest.json','utf8'));for(const key of ['id','start_url','scope','display'])assert.deepEqual(original[key],baseline[key]);checks++;}catch(error){if(error.code!=='ENOENT')throw error;}
+console.log(JSON.stringify({status:'passed',checks,base,installMetadataIsolated:true,originalInstallIdentityUnchanged:true,physicalIphoneResult:'pending'}));

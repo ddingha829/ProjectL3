@@ -16,11 +16,11 @@ export default function MapExplorer({logs,people,dark,scopeKey,focusedLog,onSele
  return <section data-page-swipe-surface className="un-map-explorer" data-nearby={nearby} style={{'--map-list-rows':Math.min(4,Math.max(1,logs.length))} as CSSProperties}>
   <header className="un-map-invitation">
    <span className="un-map-invitation-art" aria-hidden="true"><i/><i/><i/><MapPin size={15} strokeWidth={1.8}/></span>
-   <div><h1>로그로 지도를 채워보세요!</h1><p>{logs.length?'장소를 기록할수록 동네에 색이 쌓여요.':'아래 + 버튼으로 첫 장소를 남겨보세요.'}</p></div>
+   <div><h1>티끌로 지도를 채워보세요!</h1><p>{logs.length?'장소를 기록할수록 동네에 색이 쌓여요.':'아래 + 버튼으로 첫 장소를 남겨보세요.'}</p></div>
   </header>
   <div className="un-map-panel lab-map-panel"><ScratchMap pageSwipeEdges logs={logs} people={people} dark={dark} scopeKey={scopeKey} focusedLog={focusedLog} onSelect={onSelect} onDistrictSelect={onDistrictSelect} onViewportChange={setViewport}/></div>
-  {nearby&&<section className="un-map-nearby" aria-label="현재 지도에 보이는 로그"><header><span>화면 안의 로그</span><span>{visible.length}</span></header><div className="un-map-nearby-list">
-   {visible.map(log=>{const person=people.find(p=>p.id===log.authorId);return <button key={log.id} className="un-map-nearby-log" onClick={()=>onSelect(log)} aria-label={`${log.title||log.place?.name} 로그 열기`}>
+  {nearby&&<section className="un-map-nearby" aria-label="현재 지도에 보이는 티끌"><header><span>화면 안의 티끌</span><span>{visible.length}</span></header><div className="un-map-nearby-list">
+   {visible.map(log=>{const person=people.find(p=>p.id===log.authorId);return <button key={log.id} className="un-map-nearby-log" onClick={()=>onSelect(log)} aria-label={`${log.title||log.place?.name} 티끌 열기`}>
     {log.image?<img src={log.image} alt="" loading="lazy" decoding="async"/>:<span className="un-map-nearby-placeholder"><MapPin size={15}/></span>}
     <span className="un-map-nearby-copy"><strong>{log.title||log.place?.name}</strong><small>{log.body.trim().replace(/\s+/g,' ')||log.locationLabel||log.place?.name}</small></span><span className="un-map-nearby-meta"><span>{person?.name||'나'}</span><small>{timeAgo(log.createdAt)}</small></span><ArrowUpRight size={13}/>
    </button>;})}

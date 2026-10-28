@@ -36,7 +36,7 @@ self.addEventListener('push',event=>{
   if(!payload||typeof payload.ownerId!=='string'||await notificationOwner()!==payload.ownerId)return;
   const url=notificationAddress(payload.url);if(url==='/')return;
   await self.registration.showNotification(String(payload.title||'새로운 기록').slice(0,100),{
-   body:String(payload.body||'모임의 새 기록을 확인해보세요.').slice(0,160),icon:'/icons/icon-192.png',badge:'/icons/icon-192.png',
+   body:String(payload.body||'모임의 새 티끌을 확인해보세요.').slice(0,160),icon:'/brand/ticgle-icon-192.png',badge:'/brand/ticgle-icon-192.png',
    tag:'l2-log-'+String(payload.id||''),data:{url,ownerId:payload.ownerId,kind:'new-log'},
   });
  })());

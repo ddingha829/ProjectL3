@@ -8,7 +8,7 @@ export type Preset={id:string;name:string;style:EditorialStyle;defaults:string[]
 export type Collection={id:string;name:string;logIds:string[];createdAt:number};
 export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number};
 export const UI_STORAGE='l2_unified_ui_v1',UI_SESSION='l2_unified_preview_session_v1';
-export const destinations=[['logs','피드'],['map','지도'],['mosaic','타일'],['studio','스튜디오']] as const;
+export const destinations=[['logs','피드'],['map','티끌맵'],['mosaic','끌렉션'],['studio','스튜디오']] as const;
 export type Destination=typeof destinations[number][0];
 export const audienceIds=(log:UnifiedLog)=>log.circleIds??(log.circleId?[log.circleId]:[]);
 export const inScope=(log:UnifiedLog,scope:string,actor:string)=>scope==='mine'?log.authorId===actor:audienceIds(log).includes(scope);

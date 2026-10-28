@@ -5,9 +5,9 @@ import {validWeather} from './weatherValidation';
 export type LogChanges=Pick<LabLog,'title'|'body'|'image'|'category'|'place'|'work'|'rating'|'good'|'bad'|'note'|'weather'>;
 function ownLog(state:LabState,id:string,actorId:string,revision:number){
  const log=state.logs.find(log=>log.id===id);
- if(!log)throw new Error('이 로그가 삭제됐어요. 편집을 닫고 목록을 확인해주세요.');
- if(log.authorId!==actorId||!canRead(log,actorId,state))throw new Error('내 로그만 수정할 수 있어요.');
- if((log.revision||0)!==revision)throw new Error('다른 창에서 이 로그가 바뀌었어요. 입력은 남겨두었으니 최신 내용을 확인해주세요.');
+ if(!log)throw new Error('이 티끌이 삭제됐어요. 편집을 닫고 목록을 확인해주세요.');
+ if(log.authorId!==actorId||!canRead(log,actorId,state))throw new Error('내 티끌만 수정할 수 있어요.');
+ if((log.revision||0)!==revision)throw new Error('다른 창에서 이 티끌이 바뀌었어요. 입력은 남겨두었으니 최신 내용을 확인해주세요.');
  return log;
 }
 export function editOwnLog(state:LabState,id:string,actorId:string,revision:number,changes:LogChanges,now=Date.now()):LabState{

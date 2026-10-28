@@ -12,6 +12,6 @@ export function isArchiveCategory(value: unknown): value is ArchiveCategory {
 }
 
 export function getArchiveCategory(id: ArchiveCategory) {
-  if (id === 'GROUP') return { id: 'GROUP', label: '그룹', icon: 'other', hint: '모아 둔 로그' } as const;
+  if (id === 'GROUP') return { id: 'GROUP', label: '그룹', icon: 'other', hint: '모아 둔 티끌' } as const;
   return ARCHIVE_CATEGORIES.find(category => category.id === id) || ARCHIVE_CATEGORIES[3];
 }

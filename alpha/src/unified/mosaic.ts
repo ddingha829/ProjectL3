@@ -19,7 +19,7 @@ const eligible=(state:UnifiedState,scope:string,actorId:string,log:UnifiedLog)=>
 /** Placement is independent of log content; every mutation rechecks scope and ownership. */
 export function placeMosaic(state:UnifiedState,scope:string,actorId:string,logId:string,target:number):UnifiedState{
  if(!Number.isInteger(target)||target<0||target>=MAX_MOSAIC_SLOTS)throw Error('이 칸에는 놓을 수 없어요.');
- const log=state.logs.find(l=>l.id===logId);if(!log||!eligible(state,scope,actorId,log)||log.authorId!==actorId)throw Error('내가 남긴 로그만 옮길 수 있어요.');
+ const log=state.logs.find(l=>l.id===logId);if(!log||!eligible(state,scope,actorId,log)||log.authorId!==actorId)throw Error('내가 남긴 티끌만 옮길 수 있어요.');
  const rows=Object.fromEntries(Object.entries(boardRows(state,scope)).filter(([,p])=>{const l=state.logs.find(l=>l.id===p.logId);return l&&eligible(state,scope,actorId,l);}));
  const old=Object.entries(rows).find(([,p])=>p.logId===logId),occupied=rows[target];
  if(occupied?.logId===logId)return state;

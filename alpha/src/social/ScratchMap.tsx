@@ -20,7 +20,7 @@ import '@/components/LogbookMap.css';
 type Props={pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string};
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
-const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 로그';
+const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 티끌';
 const LOG_DETAIL_ZOOM=13;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
@@ -129,12 +129,12 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   for(const level of activeLevels)if(!colorLayers.current.has(level))colorLayers.current.set(level,(onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:`scratch-color-${level}`}):simpleMapLayer(L,{pane:`scratch-color-${level}`})).addTo(m));
   outline.clearLayers();
   for(const dong of activeCoverage.dongs){
-   const label=document.createElement('span');label.textContent=`${dong.feature.properties.label} · 로그 ${dong.count}개`;
+   const label=document.createElement('span');label.textContent=`${dong.feature.properties.label} · 티끌 ${dong.count}개`;
    const polygon=L.geoJSON({type:'FeatureCollection',features:[dong.feature]} as FeatureCollection,{pane:'scratch-boundaries',interactive:!onPick,style:{className:`scratch-dong-outline ${dong.feature.properties.code===highlightedDong?'is-recent':''}`,weight:1,opacity:.45,fillOpacity:0,bubblingMouseEvents:false}}).addTo(outline);
    if(!onPick)polygon.eachLayer(shape=>{
     if(!(shape instanceof L.Path))return;
     const element=shape.getElement();if(!element)return;
-    element.setAttribute('data-dong-code',dong.feature.properties.code);element.setAttribute('role','button');element.setAttribute('tabindex','0');element.setAttribute('aria-label',`${dong.feature.properties.label} 로그 ${dong.count}개 보기`);
+    element.setAttribute('data-dong-code',dong.feature.properties.code);element.setAttribute('role','button');element.setAttribute('tabindex','0');element.setAttribute('aria-label',`${dong.feature.properties.label} 티끌 ${dong.count}개 보기`);
     element.addEventListener('keydown',event=>{const key=(event as KeyboardEvent).key;if(key==='Enter'||key===' '){event.preventDefault();current.current.onDistrictSelect?.(dong);}});
    });
    polygon.bindTooltip(label,{sticky:true,className:'scratch-dong-tooltip'});
@@ -169,20 +169,20 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  },[focused,geometry,ready]);
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
  return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe={pageSwipeEdges?undefined:true} data-page-swipe-map={pageSwipeEdges||undefined} data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
-  <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 로그 지도'}/>
+  <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 티끌 지도'}/>
   <MapEntrance revealed={revealed}/>
   {pageSwipeEdges&&<><span className="un-map-page-edge is-left" aria-hidden="true"/><span className="un-map-page-edge is-right" aria-hidden="true"/></>}
   {revealed&&!boundaries&&!boundaryError&&<div className="scratch-loading" role="status"><LoaderCircle size={22}/>{ready?'행정동 경계를 불러오는 중':'지도를 펼치고 있어요'}</div>}
   {ready&&<div className="scratch-map-tools" data-no-swipe><button onClick={fit} aria-label="공유한 장소 전체 보기" title="전체 보기"><Expand size={13}/></button><button onClick={()=>replay(true)} aria-label="지도 색 채움 다시 보기" aria-busy={replaying} data-replaying={replaying||undefined} title="색 채움 다시 보기"><RotateCcwIcon ref={replayIcon} size={14} isAnimated={false} duration={1.15}/></button>{!onPick&&<button onClick={()=>locate()} disabled={locating} aria-label="내 현재 위치 보기" aria-busy={locating} data-location-state={locating?'locating':locationError?'error':currentPoint?'found':'idle'} title="내 현재 위치"><LocateFixedIcon ref={locateIcon} size={14} isAnimated={false} duration={.75}/></button>}</div>}
   {locationError&&<div className="scratch-location-status" role="status">{locationError}<button onClick={()=>setLocationError('')} aria-label="위치 안내 닫기"><X size={13}/></button></div>}
-  {!onPick&&boundaries&&<div className="scratch-caption"><span className="scratch-dot"/><span>{activeCoverage.dongs.length?`${MAP_TIER_LABEL[tier]} ${activeCoverage.dongs.length}곳 · 로그 ${matched}개`:located.length?MAP_TIER_LABEL[tier]:'장소가 있는 로그부터 남겨보세요'}</span></div>}
+  {!onPick&&boundaries&&<div className="scratch-caption"><span className="scratch-dot"/><span>{activeCoverage.dongs.length?`${MAP_TIER_LABEL[tier]} ${activeCoverage.dongs.length}곳 · 티끌 ${matched}개`:located.length?MAP_TIER_LABEL[tier]:'장소가 있는 티끌부터 남겨보세요'}</span></div>}
   {showLogDetails&&selected&&appearance&&<div key={selected.id} ref={floatingCard} className="scratch-floating-card-anchor" style={{left:-1000,top:-1000}}>
    <button className="scratch-floating-card" aria-label={`${mapTitle(selected)} 카드 크게 보기`} onClick={()=>current.current.onSelect?.(selected)}>
     <span aria-hidden="true"><EditorialCard log={selected} author={selectedPerson?.name||'나'} interactive={false}/></span>
    </button>
   </div>}
-  {showLogDetails&&selected&&<div className="scratch-point-card" role="region" aria-label="선택한 로그 정보">
-   <button className="scratch-point-open" aria-label={`${mapTitle(selected)} 로그 열기`} onClick={()=>current.current.onSelect?.(selected)}>
+  {showLogDetails&&selected&&<div className="scratch-point-card" role="region" aria-label="선택한 티끌 정보">
+   <button className="scratch-point-open" aria-label={`${mapTitle(selected)} 티끌 열기`} onClick={()=>current.current.onSelect?.(selected)}>
     <span className="scratch-point-copy"><strong>{mapTitle(selected)}</strong><span>{selectedPerson?.name||'나'} · {timeAgo(selected.createdAt)}</span></span><ArrowUpRight size={13} aria-hidden="true"/>
    </button><button className="scratch-point-close" onClick={()=>setFocused('')} aria-label="장소 정보 닫기"><X size={15}/></button>
   </div>}

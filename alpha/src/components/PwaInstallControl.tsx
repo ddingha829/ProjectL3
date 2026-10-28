@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Download, ExternalLink, Share, PlusSquare, Smartphone, CheckCircle2, Sparkles, Settings2 } from 'lucide-react';
 import AccessibleDialog from './AccessibleDialog';
+import {TicgleAppIcon} from './TicgleBrand';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -171,13 +172,13 @@ export function PwaInstallBanner({ pwa }: { pwa: PwaState }) {
       aria-label="홈 화면에 앱 설치 안내"
     >
       <div className="pwa-floating-icon" aria-hidden="true">
-        L2<span>.</span>
+        <TicgleAppIcon/>
       </div>
       <div className="pwa-floating-copy">
         <strong>
           {pwa.inAppName
             ? `${pwa.inAppName} 인앱 브라우저 접속 중`
-            : '홈 화면에 L2. 앱으로 추가해보세요'}
+            : '홈 화면에 티끌 앱으로 추가해보세요'}
         </strong>
         <span>
           {pwa.inAppName === '카카오톡'
@@ -257,7 +258,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
     <AccessibleDialog
       open={pwa.guideOpen}
       onClose={pwa.closeGuide}
-      title="홈 화면에 L2. 앱 설치하기"
+      title="홈 화면에 티끌 앱 설치하기"
     >
       <div className="pwa-guide">
         {pwa.isStandalone ? (
@@ -320,7 +321,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
           <div className="pwa-guide-native-box">
             <div>
               <strong>원탭 설치 지원 브라우저</strong>
-              <p>아래 버튼을 누르면 즉시 홈 화면에 L2. 앱이 설치됩니다.</p>
+              <p>아래 버튼을 누르면 즉시 홈 화면에 티끌 앱이 설치됩니다.</p>
             </div>
             <button
               type="button"
@@ -386,7 +387,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
               <div>
                 <strong>우측 상단 [추가] 완료</strong>
                 <p>
-                  홈 화면에 생성된 <b>L2.</b> 아이콘으로 실행하면 상하단 주소창 없는 순수 앱 화면으로 작동합니다.
+                  홈 화면에 생성된 <b>티끌</b> 아이콘으로 실행하면 상하단 주소창 없는 순수 앱 화면으로 작동합니다.
                 </p>
               </div>
             </li>
@@ -409,7 +410,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
                   <span className="pwa-inline-badge">
                     <Smartphone size={12} /> 설치
                   </span>
-                  를 누르면 홈 화면과 앱 서랍에 <b>L2.</b> 앱이 설치됩니다.
+                  를 누르면 홈 화면과 앱 서랍에 <b>티끌</b> 앱이 설치됩니다.
                 </p>
               </div>
             </li>
@@ -487,7 +488,7 @@ export function PwaFirstLaunchLoginPopup({
         <div className="pwa-guide-status is-installed">
           <CheckCircle2 size={18} />
           <div>
-            <strong>L2. 웹앱이 준비되었어요!</strong>
+            <strong>티끌 웹앱이 준비되었어요!</strong>
             <p>
               우측 상단의 <b>설정 버튼</b>을 눌러 아이디·비밀번호로 로그인하면 기존 기록을 불러오거나 기기 간 실시간 동기화를 시작할 수 있어요.
             </p>

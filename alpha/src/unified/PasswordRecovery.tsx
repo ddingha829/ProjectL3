@@ -5,6 +5,7 @@ import {configureCloud} from './cloudRepository';
 import {authMessage} from './authMessages';
 import {UI_SESSION} from './store';
 import SlideArrowButton from '@/components/tweenui/slide-arrow-button';
+import TicgleWordmark from '@/components/TicgleBrand';
 import './AuthScreen.css';
 
 export default function PasswordRecovery(){
@@ -15,7 +16,7 @@ export default function PasswordRecovery(){
   const verified=await c.auth.getUser();if(verified.error||!verified.data.user)throw Error();
   if(active){client.current=c;setStatus('ready');history.replaceState(history.state,'',location.pathname);}
  }catch{if(active)setStatus('invalid');}})();return()=>{active=false;};},[]);
- return <main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="reset-heading"><h1 id="reset-heading" className="un-auth-heading">{status==='done'?'비밀번호를 바꿨어요':'새 비밀번호'}</h1>
+ return <main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="reset-heading"><TicgleWordmark/><h1 id="reset-heading" className="un-auth-heading">{status==='done'?'비밀번호를 바꿨어요':'새 비밀번호'}</h1>
   {status==='loading'?<p className="un-auth-message" role="status">재설정 링크를 확인하고 있어요.</p>:status==='invalid'?<><p className="un-auth-message" role="alert">재설정 링크가 만료됐거나 유효하지 않아요. 로그인 화면에서 비밀번호 찾기를 다시 이용해주세요.</p><a className="un-auth-return" href="/">로그인으로 돌아가기</a></>:status==='done'?<><p className="un-auth-message" role="status">새 비밀번호로 다시 로그인해주세요.</p><a className="un-auth-return" href="/">로그인으로 돌아가기</a></>:<form className="un-auth-form" noValidate aria-label="비밀번호 재설정" onSubmit={async event=>{
    event.preventDefault();if(busy||!client.current)return;setError('');
    if(password.length<6){setError('비밀번호는 6자 이상으로 입력해주세요.');return;}

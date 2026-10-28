@@ -14,9 +14,9 @@ type Rect={left:number;top:number;width:number;height:number};
 const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
  mosaic:[{targets:['.mosaic-frame','.mosaic-tray'],title:'취향을 한 칸씩',body:'아래 작품 타일을 골라 빈 칸에 놓아보세요. 위로 끌어 놓아도 좋아요.'}],
  studio:[{targets:['.un-studio-tools'],title:'내 카드의 분위기',body:'카드를 보며 디자인과 색을 골라요. 마음에 들면 프리셋으로 저장하세요.'}],
- today:[{targets:['.un-navigation .lab-nav-rail'],title:'가볍게 남겨보세요',body:'＋로 순간을 기록하고, 카드를 눌러 다시 꺼내봐요. 로고 옆에서 마이로그와 모임을 바꿀 수 있어요.'}],
+ today:[{targets:['.un-navigation .lab-nav-rail'],title:'가볍게 남겨보세요',body:'＋로 순간을 기록하고, 카드를 눌러 다시 꺼내봐요. 로고 옆에서 내 티끌과 모임을 바꿀 수 있어요.'}],
  library:[{targets:['.flc-shell'],title:'다시 찾고 싶은 기록',body:'검색과 필터로 기록을 찾아요. 보기 버튼으로 카드·목록·캘린더를 바꿔보세요.'}],
- map:[{targets:['.lab-map-panel'],title:'기록이 동네의 색으로',body:'장소를 남기면 지도가 컬러로 채워져요. 흰 점을 눌러 그곳의 로그를 만나보세요.'}],
+ map:[{targets:['.lab-map-panel'],title:'기록이 동네의 색으로',body:'장소를 남기면 지도가 컬러로 채워져요. 흰 점을 눌러 그곳의 티끌을 만나보세요.'}],
  compose:[{targets:['.un-entry-options','.lab-story-stage','.lab-write-surface'],title:'오늘은 어떻게 남길까요?',body:'사진·작품·글 중 편한 방식으로 남겨요. 등록할 때 함께 나눌 모임을 고를 수 있어요.'}],
 };
 function readSeen():Seen{try{const value=JSON.parse(localStorage.getItem(GUIDE_KEY)||'{}'),seen:Seen={};for(const key of ['today','library','map','studio','compose','detail','own-detail','mosaic','all'] as const)if(value?.[key]===true)seen[key]=true;return seen;}catch{return {};}}

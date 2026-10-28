@@ -11,5 +11,5 @@ export async function backupOwn(state:UnifiedState,actorId:string,onProgress:(pe
  for(let i=0;i<logs.length;i++){const log=logs[i];if(log.image&&!unique.has(log.image)){try{const response=await fetch(log.image,{signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error();const b=await response.blob();if(!b.type.startsWith('image/')||b.size>20*1024*1024||total+b.size>200*1024*1024)throw Error();total+=b.size;const name=`images/${log.id.replace(/[^a-zA-Z0-9-]/g,'_')}.${b.type.includes('webp')?'webp':b.type.includes('png')?'png':'jpg'}`;zip.file(name,b,{compression:'STORE'});unique.set(log.image,name);}catch{errors.push(log.id);}}onProgress(Math.round((i+1)/Math.max(1,logs.length)*60));}
  zip.file('image-references.json',JSON.stringify(Object.fromEntries(unique),null,2));if(errors.length)zip.file('missing-images.txt',errors.join('\n'));
  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'},meta=>onProgress(60+Math.round(meta.percent*.4)));
- downloadCardFile(new File([blob],`L2-my-logs-${new Date().toISOString().slice(0,10)}.zip`,{type:'application/zip'}));return errors.length;
+ downloadCardFile(new File([blob],`ticgle-my-records-${new Date().toISOString().slice(0,10)}.zip`,{type:'application/zip'}));return errors.length;
 }

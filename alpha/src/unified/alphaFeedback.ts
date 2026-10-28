@@ -1,11 +1,11 @@
 export type AlphaView='logs'|'map'|'mosaic'|'studio'|'compose'|'login'|'other';
-export const ALPHA_VIEWS:Record<AlphaView,string>={logs:'피드',map:'지도',mosaic:'타일',studio:'스튜디오',compose:'로그 작성·수정',login:'가입·로그인',other:'기타'};
-export const ALPHA_INVITATION=`기록 앱 알파테스트에 초대해요.
+export const ALPHA_VIEWS:Record<AlphaView,string>={logs:'피드',map:'티끌맵',mosaic:'끌렉션',studio:'스튜디오',compose:'티끌 작성·수정',login:'가입·로그인',other:'기타'};
+export const ALPHA_INVITATION=`티끌 알파테스트에 초대해요.
 https://project-l3-nine.vercel.app/
 
 이메일과 비밀번호로 가입하면 바로 사용할 수 있어요. 실제 저장·모임 테스트는 ‘먼저 둘러보기’ 대신 가입한 계정으로 진행해주세요.
 
-10분 정도 사진·글·작품 로그를 남기고, 카드 수정/공유, 지도, 타일을 사용해봐 주세요. 모임 초대 코드는 별도로 전달할게요.
+10분 정도 사진·글·작품 티끌을 남기고, 카드 수정/공유, 티끌맵, 끌렉션을 사용해봐 주세요. 모임 초대 코드는 별도로 전달할게요.
 
 불편한 부분은 설정 → 알파테스트 → 문제 알리기에서 보고서를 복사해 저에게 보내주세요. 화면 캡처나 녹화가 있으면 좋아요. 비밀번호는 보내지 마세요.
 

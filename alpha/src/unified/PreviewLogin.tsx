@@ -4,6 +4,7 @@ import {ArrowRight,ChevronDown,Eye,EyeOff,Info} from 'lucide-react';
 import SlideArrowButton from '@/components/tweenui/slide-arrow-button';
 import './AuthScreen.css';
 import AlphaSupport from './AlphaSupport';
+import TicgleWordmark from '@/components/TicgleBrand';
 
 export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,enabled=false}:{onEnter:(name:string)=>void;onAuthenticate:(email:string,password:string,signup:boolean)=>Promise<void>;onResetPassword:(email:string)=>Promise<void>;enabled?:boolean}){
  const [support,setSupport]=useState(false),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[show,setShow]=useState(false),[error,setError]=useState(''),[signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
@@ -11,6 +12,7 @@ export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,ena
  const switchMode=()=>{if(busy)return;if(recovery){setRecovery(false);setResetSent(false);setSignup(false);}else setSignup(value=>!value);setShow(false);setError('');setPassword('');};
  const title=recovery?'비밀번호 찾기':signup?'회원가입':'로그인';
  return <><main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="un-auth-title">
+  <TicgleWordmark/>
   <h1 id="un-auth-title" className="un-auth-heading">{title}</h1>
   {resetSent?<p className="un-auth-message" role="status">가입된 주소라면 비밀번호 재설정 메일을 보내드렸어요. 받은 편지함과 스팸함을 확인해주세요.</p>:<form className="un-auth-form" aria-label={title} noValidate onSubmit={async event=>{
    event.preventDefault();if(busy||!enabled)return;
