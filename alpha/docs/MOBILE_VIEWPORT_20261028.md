@@ -53,3 +53,24 @@ visualViewport 높이를 앱 크기로 사용하는 경우는 텍스트 입력�
 - 위치·키보드/포커스 회귀 15개, 문제 보고서 7개 검사 통과. 문제 보고서에는 사용자가 직접 복사할 때만 화면·뷰포트·프레임·리모콘 좌표를 포함한다. 계정·로그·GPS를 자동 첨부하거나 서버로 전송하지 않는다.
 
 설치 iPhone의 실제 WebKit 합성 결과를 데스크톱 브라우저 검증으로 단정하지 않는다. 계속될 경우 보고서의 버전과 위치 수치로 정상 CSS 영역 자체가 제한되는지 구분한다. 관련 보고: https://www2.webkit.org/show_bug.cgi?id=313800
+
+## 실기기 보고: 59px 영역 차이와 설치 설정 비교
+
+사용자가 `alpha-f2b2f8d`, iPhone 홈 화면 설치 앱에서 보내준 값:
+
+```
+screen=852; layout=793; visual=793; visualTop=0
+frameBottom=793; dockBottom=759; dockInset=34
+Safari Version/27.0.1; width=393
+```
+
+앱의 CSS 프레임도 793px에서 끝나며 화면과 59px 차이가 난다. 최신 버전이 실행 중이므로 이전 번들만의 문제는 아니다. 화면 밖 시스템 영역을 `screen.height`로 억지로 늘려 UI를 잘라내는 보정은 하지 않는다. 설치 시점에 저장된 시스템 UI 설정과 현재 WebKit 영역을 구분할 필요가 있다.
+
+`/viewport-install/`에 병렬 설치 안내, `/viewport-install/app/`에 동일한 `UnifiedApp`을 준비했다. 이 경로는 deprecated 상태표시줄 스타일 태그를 생성하지 않으며, 별도 manifest ID `/viewport-install/v1`과 이름 `화면 테스트`를 쓴다. 기존 아이콘은 그대로 둔 채 Safari에서 새 아이콘을 추가해 비교한다. 실기기 결과가 오기 전에는 해결됐다고 판단하지 않는다.
+
+Next의 루트 file-based manifest는 자식 레이아웃의 manifest 선택보다 우선하므로, 기존 `/manifest.webmanifest`를 동일 내용의 명시적 Route Handler로 제공하도록 옮겼다. 기존 manifest의 URL/ID/이름/시작 URL/범위/아이콘을 포함한 JSON 전체가 수정 전과 같음을 검사했다. 원래 앱의 상태표시줄 설정·UI·인증·DB는 이 비교 실험에서 바꾸지 않았다.
+
+검증: `node scripts/test-viewport-install.mjs` 로컬 프로덕션 HTTP 검사 11개 통과. 두 페이지의 legacy 스타일 태그 부재, capable 태그, 독립 manifest 선택, MIME/ID/start URL/scope/display, 기존 manifest 동일성을 확인했다. 390px 안내 화면 가로 넘침 없음, 테스트 실행 경로에서도 동일한 설치 설정 유지 확인.
+
+현재 WebKit 개발자의 deprecated 키 제거 안내와 설치 시점 보고: https://www2.webkit.org/show_bug.cgi?id=317153
+복수 설치 및 Manifest ID: https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/
