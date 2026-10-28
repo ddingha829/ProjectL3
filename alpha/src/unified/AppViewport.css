@@ -1,6 +1,6 @@
 /* One non-scrolling document canvas. Absolute chrome avoids WebKit's separate
    fixed-position viewport; the main pane is the only scrolling app surface. */
-html[data-unified-shell=true]{height:100dvh;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-content-gap:clamp(10px,1.5dvh,16px);--un-dock-bottom:max(clamp(6px,1dvh,10px),calc(env(safe-area-inset-bottom,0px) - var(--un-native-bottom-space,0px)));--un-dock-space:calc(64px + var(--un-dock-bottom) + var(--un-dock-content-gap))}
+html[data-unified-shell=true]{height:100dvh;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-content-gap:clamp(10px,1.5dvh,16px);--un-dock-bottom:calc(max(clamp(6px,1dvh,10px),env(safe-area-inset-bottom,0px) - var(--un-native-bottom-space,0px)) + 6px);--un-dock-space:calc(64px + var(--un-dock-bottom) + var(--un-dock-content-gap))}
 html[data-unified-shell=true]>body{position:relative;margin:0;height:100dvh;overflow:hidden;overscroll-behavior:none}
 html[data-unified-shell=true] .un-app{position:absolute;inset:0;height:auto;min-height:0;padding:0!important;overflow:hidden;background:var(--bg)}
 /* Keep cards visible behind the floating glass. Bottom padding lets the last
