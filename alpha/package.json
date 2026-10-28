@@ -10,7 +10,8 @@
     "test:db": "node scripts/test-unified-schema.mjs",
     "test:notifications": "node scripts/test-notification-rules.mjs && node scripts/test-notification-worker.mjs && node scripts/test-notification-lifecycle.mjs && node scripts/test-notification-onboarding.mjs && node scripts/test-notifications-schema.mjs",
     "test:weather": "node scripts/test-weather.mjs",
-    "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs"
+    "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs",
+    "test:viewport": "node scripts/test-app-viewport.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

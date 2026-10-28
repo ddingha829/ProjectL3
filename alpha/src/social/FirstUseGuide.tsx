@@ -2,6 +2,7 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {isolateDialog} from '@/lib/dialogIsolation';
+import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
 import {ArrowLeft,ArrowRight,Check} from 'lucide-react';
 import './FirstUseGuide.css';
 
@@ -38,7 +39,7 @@ function GuideOverlay({steps,onDone,onSkip}:{steps:Step[];onDone:()=>void;onSkip
  const overlay=useRef<HTMLDivElement>(null),panel=useRef<HTMLDivElement>(null),next=useRef<HTMLButtonElement>(null),titleId=useId(),bodyId=useId(),actions=useRef({onSkip,onDone,index});actions.current={onSkip,onDone,index};
  const advance=()=>index===steps.length-1?onDone():setIndex(index+1);
  useEffect(()=>{
-  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null,top=scrollY,left=scrollX;
+  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null,{top,left}=pageScrollPosition();
   const positions=Array.from(document.querySelectorAll<HTMLElement>('.lab-detail-dialog,.lab-compose-dialog')).map(el=>({el,top:el.scrollTop}));
   const releaseIsolation=overlay.current?isolateDialog(overlay.current):()=>{};next.current?.focus({preventScroll:true});
   const keyboard=(e:KeyboardEvent)=>{
@@ -50,7 +51,7 @@ function GuideOverlay({steps,onDone,onSkip}:{steps:Step[];onDone:()=>void;onSkip
    }
   };
   document.addEventListener('keydown',keyboard,true);
-  return()=>{document.removeEventListener('keydown',keyboard,true);releaseIsolation();positions.forEach(({el,top})=>{if(el.isConnected)el.scrollTop=top;});window.scrollTo({top,left,behavior:'instant'});queueMicrotask(()=>{if(previous?.isConnected&&!previous.closest('[inert]'))previous.focus({preventScroll:true});});};
+  return()=>{document.removeEventListener('keydown',keyboard,true);releaseIsolation();positions.forEach(({el,top})=>{if(el.isConnected)el.scrollTop=top;});scrollPageTo({top,left,behavior:'instant'});queueMicrotask(()=>{if(previous?.isConnected&&!previous.closest('[inert]'))previous.focus({preventScroll:true});});};
  },[]);
  useLayoutEffect(()=>{
   let frame=0,tries=0,scrolled=false,observer:ResizeObserver|undefined;

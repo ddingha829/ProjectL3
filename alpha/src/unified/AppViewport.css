@@ -1,0 +1,18 @@
+/* Do not let WebKit's document scrolling and bottom-fixed positioning choose
+   different viewport edges for short and long pages. Only the main pane scrolls. */
+html[data-unified-shell=true]{height:100%;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-bottom:max(16px,env(safe-area-inset-bottom,0px));--un-dock-space:calc(64px + var(--un-dock-bottom) + 12px);--un-page-height:calc(var(--lab-vvh,100dvh) - var(--un-header-height))}
+html[data-unified-shell=true]>body{position:fixed;inset:0;margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+html[data-unified-shell=true] .un-app{position:fixed;top:var(--lab-vvtop,0px);left:0;right:0;bottom:auto;height:var(--lab-vvh,100dvh);min-height:0;padding:0!important;overflow:hidden;background:var(--bg)}
+html[data-unified-shell=true] .un-app .un-main[data-app-scroll]{position:absolute;top:var(--un-header-height);bottom:0;left:0;right:0;width:100%;height:auto;min-height:0;margin:0 auto;padding-bottom:var(--un-dock-space);overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none;scroll-padding-top:8px;-webkit-overflow-scrolling:touch}
+.un-viewport-chrome{position:fixed;top:var(--lab-vvtop,0px);left:0;width:100%;height:var(--lab-vvh,100dvh);z-index:60;pointer-events:none;transform:none;filter:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.un-viewport-chrome button{touch-action:manipulation;cursor:pointer}
+.un-viewport-chrome button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.un-viewport-chrome .un-header.un-header-v2{position:absolute;top:0;bottom:auto;height:var(--un-header-height);padding-top:calc(5px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));z-index:2;pointer-events:auto;background:var(--bg);filter:none;backdrop-filter:none;-webkit-backdrop-filter:none;mask-image:none;-webkit-mask-image:none}
+.un-viewport-chrome .un-navigation{position:absolute!important;top:auto!important;bottom:var(--un-dock-bottom)!important;z-index:3!important}
+/* Sticky tools belong to the content pane, whose top already clears the header. */
+html[data-unified-shell=true] .flc-shell.un-feed-toolbar{top:0}
+/* Size the fitted pages from the same available space as the fixed dock. */
+html[data-unified-shell=true] .un-mosaic,
+html[data-unified-shell=true] .un-map-explorer{height:calc(var(--un-page-height) - var(--un-dock-space));min-height:300px}
+@media(max-width:779px){html[data-unified-shell=true] .un-studio.un-studio-workspace{height:calc(var(--un-page-height) - var(--un-dock-space));min-height:400px}}
+html[data-unified-shell=true] .un-app .log-calendar{height:calc(var(--un-page-height) - var(--un-dock-space) - 49px)}

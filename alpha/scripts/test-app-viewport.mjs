@@ -1,0 +1,38 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {build} from 'esbuild';
+import assert from 'node:assert/strict';
+await fs.mkdir('.test-data',{recursive:true});
+const outfile=path.resolve('.test-data/app-viewport.mjs');
+await build({stdin:{contents:"export {default as useAppViewport} from './src/unified/useAppViewport';export * from './src/lib/pageScroll';",resolveDir:process.cwd()},outfile,bundle:true,platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'viewport-hooks',setup(b){b.onResolve({filter:/^react$/},()=>({path:'effect',namespace:'harness'}));b.onLoad({filter:/effect/,namespace:'harness'},()=>({contents:'export const useEffect=(effect)=>globalThis.__viewportEffect(effect);'}));}}]});
+const {useAppViewport,pageScrollPosition,scrollPageTo}=await import(pathToFileURL(outfile));
+const keys=['window','document','innerHeight','innerWidth','__viewportEffect'];
+const original=Object.fromEntries(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+const values=new Map(),dataset={},viewport=new EventTarget(),win=new EventTarget(),calls=[];
+Object.assign(viewport,{height:844,offsetTop:0});
+Object.assign(win,{visualViewport:viewport,scrollY:0,scrollX:0,scrollTo:options=>calls.push({owner:'window',...options})});
+let owner={scrollTop:196,scrollLeft:0,scrollTo:options=>calls.push({owner:'pane',...options})},cleanup;
+const doc={documentElement:{dataset,style:{setProperty:(key,value)=>values.set(key,value)}},querySelector:()=>owner};
+const globals={window:win,document:doc,innerHeight:844,innerWidth:390,__viewportEffect:effect=>{cleanup=effect();}};
+for(const [key,value]of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
+const checks=[];
+const check=(value,name)=>{assert.ok(value,name);checks.push(name);};
+try{
+ useAppViewport(true,true);
+ check(dataset.unifiedShell==='true','signed-in app owns the root viewport');
+ check(values.get('--lab-vvh')==='844px'&&values.get('--lab-vvtop')==='0px','header and dock share visual viewport dimensions');
+ check(values.get('--un-edge-clearance')==='12px','installed iPhone reserves space below the native top effect');
+ check(calls.length===0,'viewport synchronization never scrolls or nudges the document');
+ Object.assign(viewport,{height:540,offsetTop:24});viewport.dispatchEvent(new Event('resize'));
+ check(values.get('--lab-vvh')==='540px'&&values.get('--lab-vvtop')==='24px'&&dataset.labKeyboard==='open','keyboard resize and visual offset update together');
+ globalThis.innerHeight=390;globalThis.innerWidth=844;Object.assign(viewport,{height:390,offsetTop:0});win.dispatchEvent(new Event('resize'));
+ check(values.get('--un-edge-clearance')==='0px'&&dataset.labKeyboard==='closed','landscape does not keep portrait-only status-bar spacing');
+ assert.deepEqual(pageScrollPosition(),{top:196,left:0});checks.push('card return position comes from the content pane');
+ scrollPageTo({top:196,behavior:'instant'});check(calls.at(-1).owner==='pane','navigation restores the content pane without moving chrome');
+ owner=null;win.scrollY=45;assert.deepEqual(pageScrollPosition(),{top:45,left:0});scrollPageTo({top:10});check(calls.at(-1).owner==='window','non-unified pages retain window scroll behavior');
+ cleanup();check(!dataset.unifiedShell,'logout or unmount releases root ownership');
+ Object.assign(viewport,{height:100});viewport.dispatchEvent(new Event('resize'));check(values.get('--lab-vvh')==='390px','unmount removes viewport listeners');
+ useAppViewport(false,false);check(!dataset.unifiedShell&&values.get('--un-edge-clearance')==='0px','login and ordinary browser views are not locked or padded');cleanup();
+}finally{for(const [key,descriptor]of Object.entries(original))if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}
+console.log(JSON.stringify({status:'passed',checks:checks.length,names:checks}));

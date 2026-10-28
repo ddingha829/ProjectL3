@@ -16,7 +16,7 @@ export default function FeedToolbar({query,onQueryChange,category,onCategoryChan
   let frame=0;
   // Measure the flow marker instead of relying on WebKit's sticky/intersection
   // notifications. Re-read the inset when Safari's viewport or safe area changes.
-  const update=()=>{frame=0;const marker=sentinel.current,bar=shell.current;if(!marker||!bar)return;const top=parseFloat(getComputedStyle(bar).top)||0;setPinned(marker.getBoundingClientRect().top<top-.5);};
+  const update=()=>{frame=0;const marker=sentinel.current,bar=shell.current;if(!marker||!bar)return;const scrollOwner=bar.closest('[data-app-scroll]'),top=(parseFloat(getComputedStyle(bar).top)||0)+(scrollOwner?.getBoundingClientRect().top||0);setPinned(marker.getBoundingClientRect().top<top-.5);};
   const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
   update();window.addEventListener('scroll',schedule,{capture:true,passive:true});window.addEventListener('resize',schedule);
   const viewport=window.visualViewport;viewport?.addEventListener('resize',schedule);viewport?.addEventListener('scroll',schedule);
