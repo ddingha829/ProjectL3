@@ -13,13 +13,13 @@ export default function useAppViewport(active:boolean,installedIos:boolean){
    // native space already separates the CSS bottom from the physical bottom.
    // Consume that space only against the extra safe-area inset; never extend
    // the CSS frame outside its actual viewport or treat the keyboard as space.
-   const screen=window.screen,gap=screen?screen.height-layoutHeight:0;
+   const screen=window.screen,gap=screen?screen.height-Math.max(layoutHeight,frame?.height||0):0;
    const nativeBottomSpace=active&&installedIos&&!keyboard&&innerHeight>innerWidth&&(viewport?.scale||1)===1&&screen&&Math.abs(screen.width-innerWidth)<4&&gap>0&&gap<=100?gap:0;
    root.style.setProperty('--un-native-bottom-space',`${nativeBottomSpace}px`);
    root.style.setProperty('--lab-vvh',`${frame?.height||visibleHeight}px`);
    root.style.setProperty('--lab-vvtop',`${frame?frame.top:viewport?.offsetTop||0}px`);
-   // Normal app geometry is CSS inset:0, not a potentially stale/short visual
-   // viewport height. These measurements are only used while a keyboard is up.
+   // Normal app geometry follows the document's 100dvh canvas. A shortened
+   // visual viewport is used only while an actual text keyboard is open.
    // Keep glyphs below the installed iOS status-bar compositor as well as the
    // hardware safe area. This is separate from CSS backdrop blur on our dock.
    root.style.setProperty('--un-edge-clearance',installedIos&&innerHeight>innerWidth?'12px':'0px');
@@ -28,7 +28,7 @@ export default function useAppViewport(active:boolean,installedIos:boolean){
   if(active)root.dataset.unifiedShell='true';else delete root.dataset.unifiedShell;
   update();
   viewport?.addEventListener('resize',update);viewport?.addEventListener('scroll',update);
-  window.addEventListener('resize',update);window.addEventListener('pageshow',update);window.addEventListener('focusin',update);window.addEventListener('focusout',update);
-  return()=>{viewport?.removeEventListener('resize',update);viewport?.removeEventListener('scroll',update);window.removeEventListener('resize',update);window.removeEventListener('pageshow',update);window.removeEventListener('focusin',update);window.removeEventListener('focusout',update);delete root.dataset.unifiedShell;};
+  window.addEventListener('resize',update);window.addEventListener('pageshow',update);window.addEventListener('focusin',update);window.addEventListener('focusout',update);window.addEventListener('l2:app-frame-change',update);
+  return()=>{viewport?.removeEventListener('resize',update);viewport?.removeEventListener('scroll',update);window.removeEventListener('resize',update);window.removeEventListener('pageshow',update);window.removeEventListener('focusin',update);window.removeEventListener('focusout',update);window.removeEventListener('l2:app-frame-change',update);delete root.dataset.unifiedShell;};
  },[active,installedIos]);
 }

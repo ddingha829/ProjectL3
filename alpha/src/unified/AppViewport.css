@@ -1,12 +1,12 @@
-/* Do not let WebKit's document scrolling and bottom-fixed positioning choose
-   different viewport edges for short and long pages. Only the main pane scrolls. */
-html[data-unified-shell=true]{height:100%;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-content-gap:clamp(10px,1.5dvh,16px);--un-dock-bottom:max(clamp(6px,1dvh,10px),calc(env(safe-area-inset-bottom,0px) - var(--un-native-bottom-space,0px)));--un-dock-space:calc(64px + var(--un-dock-bottom) + var(--un-dock-content-gap))}
-html[data-unified-shell=true]>body{position:fixed;inset:0;margin:0;height:auto;overflow:hidden;overscroll-behavior:none}
-html[data-unified-shell=true] .un-app{position:fixed;inset:0;height:auto;min-height:0;padding:0!important;overflow:hidden;background:var(--bg)}
-/* End the scrollport above the dock, not just its scrollable padding. This
-   keeps every card (including a partly scrolled last row) out of the glass. */
-html[data-unified-shell=true] .un-app .un-main[data-app-scroll]{position:absolute;top:var(--un-header-height);bottom:var(--un-dock-space);left:0;right:0;width:100%;height:auto;min-height:0;margin:0 auto;padding-bottom:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none;scroll-padding:8px 0 12px;-webkit-overflow-scrolling:touch;container-type:size}
-.un-viewport-chrome{position:fixed;inset:0;width:100%;height:auto;z-index:60;pointer-events:none;transform:none;filter:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+/* One non-scrolling document canvas. Absolute chrome avoids WebKit's separate
+   fixed-position viewport; the main pane is the only scrolling app surface. */
+html[data-unified-shell=true]{height:100dvh;overflow:hidden;overscroll-behavior:none;--un-header-height:calc(56px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));--un-dock-content-gap:clamp(10px,1.5dvh,16px);--un-dock-bottom:max(clamp(6px,1dvh,10px),calc(env(safe-area-inset-bottom,0px) - var(--un-native-bottom-space,0px)));--un-dock-space:calc(64px + var(--un-dock-bottom) + var(--un-dock-content-gap))}
+html[data-unified-shell=true]>body{position:relative;margin:0;height:100dvh;overflow:hidden;overscroll-behavior:none}
+html[data-unified-shell=true] .un-app{position:absolute;inset:0;height:auto;min-height:0;padding:0!important;overflow:hidden;background:var(--bg)}
+/* Keep cards visible behind the floating glass. Bottom padding lets the last
+   row scroll fully above it without painting a full-width opaque footer. */
+html[data-unified-shell=true] .un-app .un-main[data-app-scroll]{position:absolute;top:var(--un-header-height);bottom:0;left:0;right:0;width:100%;height:auto;min-height:0;margin:0 auto;padding-bottom:var(--un-dock-space);overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none;scroll-padding:8px 0 var(--un-dock-space);-webkit-overflow-scrolling:touch;container-type:size}
+.un-viewport-chrome{position:absolute;inset:0;width:100%;height:auto;z-index:60;pointer-events:none;background:transparent;transform:none;filter:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 html[data-unified-shell=true][data-lab-keyboard=open] .un-app,
 html[data-unified-shell=true][data-lab-keyboard=open] .un-viewport-chrome{top:var(--lab-vvtop,0px);bottom:auto;height:var(--lab-vvh,100dvh)}
 .un-viewport-chrome button{touch-action:manipulation;cursor:pointer}

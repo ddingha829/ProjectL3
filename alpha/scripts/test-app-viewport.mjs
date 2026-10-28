@@ -12,8 +12,8 @@ const original=Object.fromEntries(keys.map(key=>[key,Object.getOwnPropertyDescri
 const values=new Map(),dataset={},viewport=new EventTarget(),win=new EventTarget(),calls=[];
 Object.assign(viewport,{height:844,offsetTop:0});
 Object.assign(win,{visualViewport:viewport,screen:{width:390,height:844},scrollY:0,scrollX:0,scrollTo:options=>calls.push({owner:'window',...options})});
-let owner={scrollTop:196,scrollLeft:0,scrollTo:options=>calls.push({owner:'pane',...options})},cleanup;
-const chrome={getBoundingClientRect:()=>({height:globalThis.innerHeight,top:0})};
+let owner={scrollTop:196,scrollLeft:0,scrollTo:options=>calls.push({owner:'pane',...options})},cleanup,chromeHeight=null;
+const chrome={getBoundingClientRect:()=>({height:chromeHeight??globalThis.innerHeight,top:0})};
 const doc={documentElement:{dataset,clientHeight:844,style:{setProperty:(key,value)=>values.set(key,value)}},activeElement:null,querySelector:selector=>selector==='[data-app-chrome]'?chrome:owner};
 const globals={window:win,document:doc,innerHeight:844,innerWidth:390,__viewportEffect:effect=>{cleanup=effect();}};
 for(const [key,value]of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
@@ -27,6 +27,10 @@ try{
  check(values.get('--un-native-bottom-space')==='0px','full-height installed apps retain their hardware safe-area inset');
  win.screen={width:393,height:852};globalThis.innerWidth=393;globalThis.innerHeight=793;doc.documentElement.clientHeight=793;Object.assign(viewport,{height:793,offsetTop:0});win.dispatchEvent(new Event('resize'));
  check(values.get('--un-native-bottom-space')==='59px'&&values.get('--lab-vvh')==='793px','reported iPhone native clearance lowers the dock without extending the frame');
+ chromeHeight=852;win.dispatchEvent(new Event('l2:app-frame-change'));
+ check(values.get('--lab-vvh')==='852px'&&values.get('--un-native-bottom-space')==='0px','a full dynamic canvas keeps its home-indicator safe area despite a shorter fixed-position viewport');
+ chromeHeight=null;win.dispatchEvent(new Event('l2:app-frame-change'));
+ check(values.get('--lab-vvh')==='793px'&&values.get('--un-native-bottom-space')==='59px','frame resize re-evaluates both overlay height and bottom clearance together');
  doc.activeElement={tagName:'INPUT',type:'text'};Object.assign(viewport,{height:500});win.dispatchEvent(new Event('focusin'));
  check(values.get('--un-native-bottom-space')==='0px','keyboard space never reduces the bottom safe-area inset');
  doc.activeElement=null;win.screen={width:390,height:844};globalThis.innerWidth=390;globalThis.innerHeight=844;doc.documentElement.clientHeight=844;Object.assign(viewport,{height:844});win.dispatchEvent(new Event('focusout'));
