@@ -13,6 +13,11 @@ export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.25?'dong':'district'
 export function mapRevealStyle(level:number,dark:boolean){
  return dark?{opacity:.72,filter:`brightness(.85) saturate(${1+(level-1)*.5})`}:{opacity:1,filter:level>1?`saturate(${level})`:'none'};
 }
+/** Blur the alpha edge only; the map imagery and labels stay sharp. */
+export function mapRegionMask(path:string,x:number,y:number,width:number,height:number){
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}"><defs><filter id="edge" filterUnits="userSpaceOnUse" x="${x}" y="${y}" width="${width}" height="${height}"><feGaussianBlur stdDeviation="1.4"/></filter></defs><path d="${path||'M 0 0'}" fill="white" filter="url(#edge)"/></svg>`;
+ return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
 export function regionStrength(count:number,tier:MapTier):DongCount['level']{
  return Math.max(1,thresholds[tier].filter(n=>count>=n).length) as DongCount['level'];
 }

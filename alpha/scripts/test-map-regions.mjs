@@ -6,7 +6,7 @@ import path from 'node:path';
 await fs.mkdir('.test-data',{recursive:true});
 const outfile=path.resolve('.test-data/map-regions.mjs');
 await build({entryPoints:['src/social/mapRegions.ts'],outfile,bundle:true,platform:'node',format:'esm',logLevel:'silent'});
-const {mapTierForZoom,mapRevealStyle,regionStrength,regionalCoverage,logsInViewport}=await import(pathToFileURL(outfile));
+const {mapTierForZoom,mapRevealStyle,mapRegionMask,regionStrength,regionalCoverage,logsInViewport}=await import(pathToFileURL(outfile));
 const read=async tier=>JSON.parse(await fs.readFile(`public/maps/admin-regions/20261001/${tier}.json`,'utf8'));
 const [district,dong]=await Promise.all([read('district'),fs.readFile('public/maps/admin-dong/20261001/11710.json','utf8').then(JSON.parse)]);
 const log=(id,lat,lng)=>({id,place:{lat,lng},createdAt:1});
@@ -21,6 +21,7 @@ test('aggregation preserves original log ids without duplication',()=>{const r=r
 test('precise dong membership survives simplified district geometry',()=>{const precise=regionalCoverage([jamsil],dong,'dong').dongs;const displaced={...jamsil,place:{lat:0,lng:0}};const r=regionalCoverage([displaced],district,'district',precise);assert.equal(r.unmatched,0);assert.equal(r.dongs[0].count,1);assert.equal(r.dongs[0].feature.properties.code,'11710');});
 test('district strength still scales with record count',()=>{assert.equal(regionStrength(4,'dong'),4);assert.equal(regionStrength(4,'district'),2);assert.equal(regionStrength(20,'district'),4);});
 test('dark mode softens every level while light mode keeps its previous treatment',()=>{for(let level=1;level<=4;level++){const dark=mapRevealStyle(level,true),light=mapRevealStyle(level,false);assert.equal(light.opacity,1);assert.equal(dark.opacity,.72);assert.match(dark.filter,/brightness\(\.85\)/);assert.equal(light.filter,level===1?'none':'saturate('+level+')');if(level>1)assert.ok(1+(level-1)*.5<level);}});
+test('feather mask preserves the pan offset and blurs alpha rather than map labels',()=>{const svg=decodeURIComponent(mapRegionMask('M 5 5 L 30 5 L 30 30 Z',-20,12,400,800).split('data:image/svg+xml,')[1].slice(0,-2));assert.match(svg,/viewBox="-20 12 400 800"/);assert.match(svg,/<feGaussianBlur stdDeviation="1.4"/);assert.match(svg,/fill="white"/);assert.match(svg,/filterUnits="userSpaceOnUse"/);});
 test('viewport excludes offscreen and unlocated logs',()=>assert.deepEqual(logsInViewport([jamsil,seongsu,busan,{id:'text'}],{zoom:15,bounds:[127.09,37.50,127.12,37.53],center:[37.513,127.10]}).map(l=>l.id),['jamsil']));
 test('viewport handles wrapping near date line',()=>assert.equal(logsInViewport([log('wrapped',0,-179)],{zoom:10,bounds:[179,-2,183,2],center:[0,181]}).length,1));
 test('all bundled regions have finite polygon geometry and bbox',()=>{for(const f of district.features){assert.ok(['Polygon','MultiPolygon'].includes(f.geometry.type));assert.equal(f.bbox.length,4);assert.ok(f.bbox.every(Number.isFinite));}});

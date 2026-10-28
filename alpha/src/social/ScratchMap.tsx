@@ -13,7 +13,7 @@ import {useMotionPreference} from '@/lib/useMotionPreference';
 import {cardView} from './cardView';
 import {countDongLogs,dongRings,loadDongBoundaries,type DongCollection,type DongCount} from './adminDong';
 import {simpleMapLayer} from './simpleMapLayer';
-import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
+import {loadMapRegions,mapTierForZoom,mapRevealStyle,mapRegionMask,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
@@ -57,7 +57,16 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   for(const pane of panes.current){
    const level=Number(pane.dataset.level),dongs=current.current.dongs.filter(d=>d.level===level);
    const path=dongs.flatMap(d=>dongRings(d.feature).map(ring=>ring.map(([lng,lat],index)=>{const p=m.latLngToLayerPoint([lat,lng]);return `${index?'L':'M'} ${p.x} ${p.y}`;}).join(' ')+' Z')).join(' ');
-   pane.style.clipPath=`path("${path||'M 0 0'}")`;
+   // Give the mask a real viewport-sized box. Leaflet panes themselves have
+   // zero dimensions; masking them directly loses tiles on Safari/panning.
+   const origin=m.containerPointToLayerPoint([-6,-6]),size=m.getSize().add([12,12]);
+   let window=pane.querySelector<HTMLDivElement>(':scope > .scratch-reveal-window');
+   if(!window){window=document.createElement('div');window.className='scratch-reveal-window';window.style.position='absolute';pane.append(window);}
+   for(const child of Array.from(pane.children))if(child!==window)window.append(child);
+   Object.assign(window.style,{left:`${origin.x}px`,top:`${origin.y}px`,width:`${size.x}px`,height:`${size.y}px`,maskSize:'100% 100%',maskRepeat:'no-repeat'});
+   const mask=mapRegionMask(path,origin.x,origin.y,size.x,size.y);window.style.maskImage=mask;window.style.setProperty('-webkit-mask-image',mask);
+   for(const child of Array.from(window.children) as HTMLElement[])Object.assign(child.style,{left:`${-origin.x}px`,top:`${-origin.y}px`});
+   pane.style.clipPath='none';
    const treatment=mapRevealStyle(level,current.current.dark);
    pane.style.opacity=String(progress.current*treatment.opacity);
    pane.style.filter=treatment.filter;
@@ -131,7 +140,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   outline.clearLayers();
   for(const dong of activeCoverage.dongs){
    const label=document.createElement('span');label.textContent=`${dong.feature.properties.label} · 티끌 ${dong.count}개`;
-   const polygon=L.geoJSON({type:'FeatureCollection',features:[dong.feature]} as FeatureCollection,{pane:'scratch-boundaries',interactive:!onPick,style:{className:`scratch-dong-outline ${dong.feature.properties.code===highlightedDong?'is-recent':''}`,weight:1,opacity:.45,fillOpacity:0,bubblingMouseEvents:false}}).addTo(outline);
+   const polygon=L.geoJSON({type:'FeatureCollection',features:[dong.feature]} as FeatureCollection,{pane:'scratch-boundaries',interactive:!onPick,style:{className:`scratch-dong-outline ${dong.feature.properties.code===highlightedDong?'is-recent':''}`,weight:.75,opacity:.15,fillOpacity:0,bubblingMouseEvents:false}}).addTo(outline);
    if(!onPick)polygon.eachLayer(shape=>{
     if(!(shape instanceof L.Path))return;
     const element=shape.getElement();if(!element)return;
