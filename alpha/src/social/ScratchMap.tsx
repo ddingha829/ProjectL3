@@ -14,7 +14,7 @@ import {cardView} from './cardView';
 import {countDongLogs,dongRings,loadDongBoundaries,type DongCollection,type DongCount} from './adminDong';
 import {createMapRevealMask} from './mapRevealMask';
 import {simpleMapLayer} from './simpleMapLayer';
-import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
+import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_DONG_ZOOM,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
@@ -22,7 +22,7 @@ type Props={pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;o
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 티끌';
-const LOG_DETAIL_ZOOM=13;
+const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog}:Props){

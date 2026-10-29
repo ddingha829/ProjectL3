@@ -7,7 +7,10 @@ export type MapViewport={zoom:number;bounds:[number,number,number,number];center
 export const MAP_TIER_LABEL:Record<MapTier,string>={dong:'동네',district:'시·군·구'};
 const thresholds:Record<MapTier,readonly number[]>={dong:[1,2,3,4],district:[1,4,10,20]};
 const cache=new Map<WideMapTier,Promise<DongCollection>>();
-export const mapTierForZoom=(zoom:number):MapTier=>zoom>=13.25?'dong':'district';
+// Switch half a zoom level earlier so a large county does not keep the whole
+// phone viewport revealed while its recorded location is still offscreen.
+export const MAP_DONG_ZOOM=12.75;
+export const mapTierForZoom=(zoom:number):MapTier=>zoom>=MAP_DONG_ZOOM?'dong':'district';
 // Blend revealed map tiles into the dark canvas rather than exposing their full
 // daytime brightness. Density still increases saturation at each count level.
 export function mapRevealStyle(level:number,dark:boolean){

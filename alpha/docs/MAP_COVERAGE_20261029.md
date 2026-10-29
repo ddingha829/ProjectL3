@@ -1,6 +1,8 @@
 # Map coverage simplification
 
-The live map now uses only dong and city/county/district coverage. Zoom 13.25 and above shows dong coverage; all lower zoom levels retain individual districts. Province/country geometry is no longer requested by the app. Record counts and precise dong-to-district aggregation remain intact.
+The live map now uses only dong and city/county/district coverage. Zoom 12.75 and above shows dong coverage; all lower zoom levels retain individual districts. Province/country geometry is no longer requested by the app. Record counts and precise dong-to-district aggregation remain intact.
+
+Alpha feedback from the large Hwaseong district: move the dong threshold from 13.25 to 12.75 (half a zoom level earlier), so a broad district gives way to local coverage sooner. Record pin details share this threshold instead of waiting until zoom 13. Initial entry remains at zoom 11; the close-up list remains at 13.5. Administrative boundaries are retained exactly rather than clipping a revealed district to the viewport. Zoom-boundary tests cover 12.5 (district) and 12.75 (dong).
 
 Dark mode blends revealed tiles at 72% opacity with 85% brightness and reduced saturation growth. Light mode keeps the existing appearance. Theme switches redraw existing panes immediately, including during replay, without rebuilding the map or moving it.
 

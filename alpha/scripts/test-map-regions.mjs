@@ -13,7 +13,7 @@ const log=(id,lat,lng)=>({id,place:{lat,lng},createdAt:1});
 const jamsil=log('jamsil',37.5133,127.1025),seongsu=log('seongsu',37.5445,127.0557),busan=log('busan',35.1588,129.1603),tokyo=log('tokyo',35.68,139.76);
 const checks=[];
 const test=(name,run)=>{run();checks.push(name);};
-test('zoom-out stops expanding at city/county/district',()=>assert.deepEqual([15,13.5,13.25,13,11,10.75,10.5,8,7.75,7.5,2].map(mapTierForZoom),['dong','dong','dong','district','district','district','district','district','district','district','district']));
+test('dong coverage begins half a zoom earlier and zoom-out stops at districts',()=>assert.deepEqual([15,13.5,13.25,13,12.75,12.5,11,10.75,10.5,8,7.75,7.5,2].map(mapTierForZoom),['dong','dong','dong','dong','dong','district','district','district','district','district','district','district','district']));
 test('Jamsil resolves to its dong and Songpa',()=>{assert.match(regionalCoverage([jamsil],dong,'dong').dongs[0].feature.properties.name,/잠실/);assert.match(regionalCoverage([jamsil],district,'district').dongs[0].feature.properties.name,/송파구/);});
 test('nearby and distant districts never merge into a province or country',()=>assert.equal(regionalCoverage([jamsil,seongsu,busan],district,'district').dongs.length,3));
 test('overseas logs do not paint an entire country',()=>assert.equal(regionalCoverage([tokyo],district,'district').dongs.length,0));
