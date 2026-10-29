@@ -1,6 +1,7 @@
 'use client';
 import {useId,useLayoutEffect,useRef,useState,type ReactNode} from 'react';
-import {Image,Layers,Palette,RotateCw,SlidersHorizontal,Type} from 'lucide-react';
+import {Maximize2,Image,Layers,Palette,RotateCw,SlidersHorizontal,Type} from 'lucide-react';
+import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard from '@/social/EditorialCard';
 import CardDesignEditor from '@/social/CardDesignEditor';
 import type {LabLog} from '@/social/model';
@@ -10,6 +11,7 @@ import './StudioWorkspace.css';
 type Section='front'|'back'|'color'|'details';
 /** The same live preview and controls for presets and individual cards. */
 export default function CardDesignWorkspace({log,author,value,onChange,footer,onPhotoToggle}:{log:LabLog;author:string;value:EditorialStyle;onChange:(style:EditorialStyle)=>void;footer:ReactNode;onPhotoToggle?:()=>void}){
+ const [expanded,setExpanded]=useState(false);
  const [section,setSection]=useState<Section>(log.image?'front':'back'),[side,setSide]=useState<'front'|'back'>(log.image?'front':'back');
  const options=useRef<HTMLDivElement>(null),id=useId(),photo=Boolean(log.image);
  const choose=(next:Section)=>{setSection(next);if(next==='front'||next==='back')setSide(next);};
@@ -19,7 +21,9 @@ export default function CardDesignWorkspace({log,author,value,onChange,footer,on
   if(strip&&active&&strip.scrollWidth>strip.clientWidth){const row=strip.getBoundingClientRect(),item=active.getBoundingClientRect();strip.scrollLeft+=item.left-row.left-(row.width-item.width)/2;}
  },[section,log.id,value.back]);
  return <>
+  <AccessibleDialog open={expanded} title="카드 미리보기" onClose={()=>setExpanded(false)} panelClassName="lab-dialog studio-expanded-preview"><EditorialCard log={log} author={author} appearance={value} interactive initialSide={side}/></AccessibleDialog>
   <div className="un-studio-preview studio-canvas">
+   <button className="studio-expand" aria-label="카드 미리보기 확대" onClick={()=>setExpanded(true)}><Maximize2 size={17}/></button>
    <div className="studio-card-stage" data-ratio={value.ratio}><EditorialCard key={`${log.id}:${photo}`} log={log} author={author} appearance={value} interactive={false} initialSide={side}/></div>
    <div className="studio-preview-bar">
     <button onClick={()=>setSide(side==='front'?'back':'front')} disabled={!photo} aria-label="미리보기 앞뒤 전환"><RotateCw size={14}/>{!photo||side==='back'?'뒷면':'앞면'}</button>

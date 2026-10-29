@@ -110,3 +110,19 @@
 .un-app[data-page-swipe=true] :is(.studio-canvas,.studio-preview-bar,.studio-tabs,.studio-save-bar){touch-action:pan-y pinch-zoom}
 
 .un-app[data-page-swipe=true] .studio-workbench[data-editor-section=front] :is(.studio-options,.lab-front-choices){touch-action:pan-y pinch-zoom}
+
+/* A stable preview budget: only the settings scroll, not the save action.
+   Do not let intrinsic option heights consume the preview on short phones. */
+@media(max-width:779px){
+ .un-studio.un-studio-workspace{grid-template-rows:44px minmax(208px,1fr) minmax(152px,min(208px,40%))}
+ .un-studio-workspace .studio-canvas{min-height:208px}
+ .un-studio-workspace .studio-workbench{overflow:hidden;min-height:152px}
+ .un-studio-workspace .studio-workbench .studio-options{height:auto;min-height:0;overflow:auto;touch-action:pan-y pinch-zoom}
+ .un-studio-workspace .studio-save-bar{position:relative;z-index:1}
+ .un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-rows:minmax(208px,1fr) minmax(152px,min(208px,40%))}
+}
+
+.studio-canvas{position:relative}
+.studio-expand{position:absolute;right:8px;top:8px;z-index:2;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.lab-dialog.studio-expanded-preview{width:min(480px,100vw - 24px)!important}
+.studio-expanded-preview>.ec-scene{width:min(100%,calc((var(--lab-vvh,100dvh) - 140px)*.625));margin-inline:auto}
