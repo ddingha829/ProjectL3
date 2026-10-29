@@ -25,6 +25,11 @@ try{
  check('cold launch ignores the temporary pre-shell sticky inset',()=>assert.equal(calls.at(-1),false));
  inset=0;ownerTop=127;markerTop=127;observer.fire();flush();
  check('initial safe-area layout settles without a user scroll',()=>assert.equal(calls.at(-1),false));
+ check('the header-to-toolbar gap is consumed before the toolbar floats',()=>{
+  owner.scrollTop=4;markerTop=ownerTop+8-4;owner.dispatchEvent(new Event('scroll'));flush();assert.equal(calls.at(-1),false);
+  owner.scrollTop=9;markerTop=ownerTop+8-9;owner.dispatchEvent(new Event('scroll'));flush();assert.equal(calls.at(-1),true);
+  owner.scrollTop=0;markerTop=ownerTop;owner.dispatchEvent(new Event('scroll'));flush();
+ });
  owner.scrollTop=80;markerTop=47;owner.dispatchEvent(new Event('scroll'));flush();
  check('scrolling the owned content pane pins the toolbar',()=>assert.equal(calls.at(-1),true));
  owner.scrollTop=0;markerTop=127;owner.dispatchEvent(new Event('scroll'));flush();
