@@ -6,6 +6,8 @@ import {authMessage,RECOVERY_REDIRECT} from './authMessages';
 import {shouldLoadAuthSession} from './authSessionTransition';
 import {normalizeNickname,nicknameInitial} from './nickname';
 import {disconnectNotificationDevice} from './notificationClient';
+import {createRefreshQueue,cloudPollDelay} from './cloudRefresh';
+import {photoUrls} from './photoUrls';
 import {UI_STORAGE,UI_SESSION,initialUnified,parseUnified,type UnifiedState} from './store';
 import {persistNickname,configureCloud,emptyCloudState,fetchCloudState,cloudOperations,prepareCloudOperations,cloudError,type CloudOperation} from './cloudRepository';
 type Pending={id:string;userId:string;operations:CloudOperation[];optimistic:UnifiedState;prepared:boolean};
@@ -17,7 +19,8 @@ export default function useUnifiedState(){
  const profileSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
  const current=useRef<UnifiedState|null>(null),client=useRef<SupabaseClient|null>(null),userId=useRef(''),modeRef=useRef<Mode>('login'),pending=useRef<Pending|null>(null),sending=useRef(false),alive=useRef(true),generation=useRef(0),requestSequence=useRef(0);
  const show=useCallback((next:UnifiedState)=>{current.current=next;setState(next);},[]);
- const refresh=useCallback(async()=>{if(profileSaving.current||!client.current||!userId.current||pending.current||modeRef.current!=='cloud')return;const id=userId.current,epoch=generation.current,request=++requestSequence.current;try{const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(client.current):await fetchFeedState(client.current,id,current.current?.logs.map(l=>l.id));if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},[show]);
+ const refreshQueue=useRef<ReturnType<typeof createRefreshQueue>|null>(null);if(!refreshQueue.current)refreshQueue.current=createRefreshQueue();
+ const refresh=useCallback(async(invalidated=true)=>{const id=userId.current,epoch=generation.current;return refreshQueue.current!.run(id+':'+epoch,async()=>{if(profileSaving.current||!client.current||userId.current!==id||generation.current!==epoch||!id||pending.current||modeRef.current!=='cloud')return;const request=++requestSequence.current;try{const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(client.current):await fetchFeedState(client.current,id,current.current?.logs.map(l=>l.id));if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},invalidated);},[show]);
  const retry=useCallback(async()=>{
   const item=pending.current,c=client.current;if(!item||!c||sending.current||item.userId!==userId.current)return false;
   sending.current=true;setSyncStatus('saving');const epoch=generation.current,request=++requestSequence.current;
@@ -34,9 +37,9 @@ export default function useUnifiedState(){
   try{localStorage.setItem(pendingKey(item.userId),JSON.stringify(item));pending.current=item;requestSequence.current++;show(next);setSyncStatus('saving');setError('');void retry();return true;}catch{setError('임시 변경을 안전하게 보관할 기기 공간이 부족해요. 입력은 그대로 남아 있어요.');return false;}
  },[retry,show]);
  useEffect(()=>{
-  alive.current=true;let active=true;let subscription:{unsubscribe:()=>void}|undefined;let channel:ReturnType<SupabaseClient['channel']>|undefined;let eventTimer:ReturnType<typeof setTimeout>|undefined;
+  alive.current=true;let active=true,realtimeReady=false;let lastPoll=Date.now();let subscription:{unsubscribe:()=>void}|undefined;let channel:ReturnType<SupabaseClient['channel']>|undefined;let eventTimer:ReturnType<typeof setTimeout>|undefined;
   const loadSession=async(session:Session|null)=>{
-   const epoch=++generation.current;fullRecords.current=false;pending.current=null;userId.current=session?.user.id||'';
+   const epoch=++generation.current;fullRecords.current=false;pending.current=null;userId.current=session?.user.id||'';realtimeReady=false;lastPoll=Date.now();
    if(channel){void client.current?.removeChannel(channel);channel=undefined;}
    if(!session){modeRef.current='login';setMode('login');setIdentity(null);show(emptyCloudState());setReady(true);return;}
    modeRef.current='cloud';setMode('cloud');setReady(false);setIdentity({id:session.user.id,name:session.user.user_metadata.display_name||session.user.email?.split('@')[0]||'나',email:session.user.email});
@@ -44,7 +47,7 @@ export default function useUnifiedState(){
     if(saved){const item=JSON.parse(saved) as Pending;if(item.userId!==session.user.id||!Array.isArray(item.operations)||!parseUnified(JSON.stringify(item.optimistic)))throw Error('INVALID_PENDING');pending.current=item;show(item.optimistic);setSyncStatus('failed');setError('아직 서버에 반영되지 않은 변경이 있어요. 다시 반영해주세요.');}
     else{const next=await fetchFeedState(client.current!,session.user.id);if(epoch!==generation.current||!alive.current)return;show(next);localStorage.setItem(cacheKey(session.user.id),JSON.stringify(next));setSyncStatus('idle');setError('');}
    }catch(e){if(epoch!==generation.current)return;const raw=localStorage.getItem(cacheKey(session.user.id)),cached=raw&&parseUnified(raw);show(cached||emptyCloudState());setError(cloudError(e));}
-   if(epoch===generation.current&&alive.current){setReady(true);channel=client.current!.channel('l2u-state:'+session.user.id+':'+crypto.randomUUID());for(const table of ['l2u_logs','l2u_shares','l2u_mosaic','l2u_members','l2u_groups','l2u_comments','l2u_reactions','l2u_preferences','l2u_profiles'])channel.on('postgres_changes',{event:'*',schema:'public',table},()=>{clearTimeout(eventTimer);eventTimer=setTimeout(()=>void refresh(),150);});channel.subscribe();}
+   if(epoch===generation.current&&alive.current){setReady(true);channel=client.current!.channel('l2u-state:'+session.user.id+':'+crypto.randomUUID());for(const table of ['l2u_logs','l2u_shares','l2u_mosaic','l2u_members','l2u_groups','l2u_comments','l2u_reactions','l2u_preferences','l2u_profiles'])channel.on('postgres_changes',{event:'*',schema:'public',table},()=>{clearTimeout(eventTimer);eventTimer=setTimeout(()=>{lastPoll=Date.now();void refresh();},150);});channel.subscribe(status=>{if(active&&epoch===generation.current)realtimeReady=status==='SUBSCRIBED';});}
   };
   void(async()=>{try{const c=await configureCloud();if(!active)return;client.current=c;setCloudEnabled(!!c);const demo=JSON.parse(localStorage.getItem(UI_SESSION)||'null');
    if(demo?.mode==='demo'){const saved=localStorage.getItem(UI_STORAGE),next=saved?parseUnified(saved):initialUnified();if(!next)throw Error('이 기기의 미리보기 기록을 읽지 못했어요.');modeRef.current='demo';setMode('demo');show(next);setIdentity({name:demo.name||'나'});setReady(true);}
@@ -52,9 +55,17 @@ export default function useUnifiedState(){
    if(c)subscription=c.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(alive.current&&shouldLoadAuthSession(event,modeRef.current,userId.current,session?.user.id))void loadSession(session);},0);}).data.subscription;
   }catch(e){if(alive.current){show(emptyCloudState());setReady(true);setError(e instanceof Error?e.message:'연결을 확인하지 못했어요.');}}})();
   const storage=(event:StorageEvent)=>{if(modeRef.current==='demo'&&event.key===UI_STORAGE&&event.newValue){const next=parseUnified(event.newValue);if(next)show(next);}else if(event.key===pendingKey(userId.current))void refresh();};
-  const focus=()=>void refresh(),poll=setInterval(()=>{if(document.visibilityState==='visible'&&(fullRecords.current||!current.current?.recordsComplete))void refresh();},30000);
-  window.addEventListener('storage',storage);window.addEventListener('focus',focus);window.addEventListener('online',focus);
-  return()=>{active=false;alive.current=false;generation.current++;subscription?.unsubscribe();if(channel)void client.current?.removeChannel(channel);clearTimeout(eventTimer);clearInterval(poll);window.removeEventListener('storage',storage);window.removeEventListener('focus',focus);window.removeEventListener('online',focus);};
+  const renewPhotos=async()=>{
+   const c=client.current,id=userId.current,epoch=generation.current,paths=current.current?.logs.flatMap(log=>log.imagePath?[log.imagePath]:[])||[];
+   if(document.visibilityState!=='visible'||modeRef.current!=='cloud'||!c||!id||!paths.length||pending.current||profileSaving.current)return;
+   const images=await photoUrls(c,id,paths),latest=current.current;
+   if(!alive.current||generation.current!==epoch||userId.current!==id||!latest||pending.current||profileSaving.current)return;
+   let changed=false;const logs=latest.logs.map(log=>{const image=log.imagePath?images.get(log.imagePath):undefined;if(!image||image===log.image)return log;changed=true;return {...log,image};});
+   if(changed)show({...latest,logs});
+  };
+  const focus=()=>{lastPoll=Date.now();void refresh(false);},visibility=()=>{if(document.visibilityState==='visible')focus();},poll=setInterval(()=>{if(document.visibilityState==='visible'&&(fullRecords.current||!current.current?.recordsComplete)&&Date.now()-lastPoll>=cloudPollDelay(realtimeReady)){lastPoll=Date.now();void refresh(false);}else void renewPhotos();},30000);
+  document.addEventListener('visibilitychange',visibility);window.addEventListener('storage',storage);window.addEventListener('focus',focus);window.addEventListener('online',focus);
+  return()=>{active=false;alive.current=false;generation.current++;subscription?.unsubscribe();if(channel)void client.current?.removeChannel(channel);clearTimeout(eventTimer);clearInterval(poll);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('storage',storage);window.removeEventListener('focus',focus);window.removeEventListener('online',focus);};
  },[refresh,show]);
  const authenticate=useCallback(async(email:string,password:string,signup:boolean)=>{const c=client.current;if(!c)throw Error('실제 계정 연결을 준비 중이에요.');const result=signup?await c.auth.signUp({email,password,options:{data:{display_name:email.split('@')[0].slice(0,30)}}}):await c.auth.signInWithPassword({email,password});if(result.error)throw Error(authMessage(result.error));if(!result.data.session)throw Error('가입은 접수됐지만 바로 로그인되지 않았어요. 이메일 인증 설정을 확인해주세요.');},[]);
  const resetPassword=useCallback(async(email:string)=>{const c=client.current;if(!c)throw Error('실제 계정 연결을 준비 중이에요.');const result=await c.auth.resetPasswordForEmail(email,{redirectTo:RECOVERY_REDIRECT});if(result.error)throw Error(authMessage(result.error));},[]);

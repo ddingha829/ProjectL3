@@ -5,6 +5,7 @@ import {initialUnified,parseUnified,audienceIds,type UnifiedLog,type UnifiedStat
 import {backendSessionKey} from './backendSession';
 import type {Person,Circle} from '@/social/model';
 import {normalizeNickname,nicknameInitial} from './nickname';
+import {photoUrls} from './photoUrls';
 export type CloudOperation=Record<string,unknown>&{kind:string};
 export type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
 let configuredClient:{signature:string;client:SupabaseClient}|undefined;
@@ -36,11 +37,12 @@ export async function fetchCloudState(client:SupabaseClient):Promise<UnifiedStat
 export async function hydrateSnapshot(client:SupabaseClient,snapshot:Snapshot):Promise<UnifiedState>{
  const me=(id:string)=>id===snapshot.actorId?'me':id,base=emptyCloudState();
  const people=snapshot.people.map(p=>({...p,id:me(p.id),initial:nicknameInitial(p.name),note:''}));
- const logs=await Promise.all(snapshot.logs.map(async log=>{
+ const images=await photoUrls(client,snapshot.actorId,snapshot.logs.flatMap(log=>log.imagePath?[log.imagePath]:[]));
+ const logs=snapshot.logs.map(log=>{
   let image=log.image;
-  if(log.imagePath){const result=await client.storage.from('l2u-photos').createSignedUrl(log.imagePath,60);image=result.data?.signedUrl||'';}
+  if(log.imagePath)image=images.get(log.imagePath)||'';
   return {...log,image,authorId:me(log.authorId),circleId:log.circleIds?.[0]||null,likes:log.likes.map(me),bookmarks:log.bookmarks.map(me),comments:log.comments.map(c=>({...c,authorId:me(c.authorId)}))};
- }));
+ });
  const mosaic:UnifiedState['mosaic']={personalBoard:{},groupBoards:{}};
  for(const p of snapshot.placements)if(p.scope){mosaic.groupBoards[p.scope]||={};mosaic.groupBoards[p.scope][p.slotIndex]={...p,placedBy:me(p.placedBy)};}else mosaic.personalBoard[p.slotIndex]=p.logId;
  const state:UnifiedState={...base,...snapshot.preferences?.payload,serverPreferencesRevision:snapshot.preferences?.revision||0,people,logs,circles:snapshot.circles.map(c=>({...c,description:'',ownerId:me(c.ownerId!),members:c.members.map(me),serverRevision:c.revision})),mosaic};

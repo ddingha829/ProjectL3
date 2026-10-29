@@ -1,4 +1,4 @@
-import {sharedCardUrl} from './sharedCardImage';
+import {sharedCardUrl,kakaoUploadedImage} from './sharedCardImage';
 type KakaoSDK={isInitialized:()=>boolean;init:(key:string)=>void;Share:{uploadImage:(options:{file:FileList})=>Promise<{infos:{original:{url:string}}}>;sendDefault:(options:Record<string,unknown>)=>void}};
 let sdkPromise:Promise<KakaoSDK>|undefined;
 export const TICGLE_URL='https://www.ticgle.kr/';
@@ -35,6 +35,7 @@ export async function prepareKakaoCard(file:File,title:string):Promise<()=>void>
  const image=await createImageBitmap(file);const width=image.width,height=image.height;image.close();
  let imageUrl:string;
  try{imageUrl=(await sdk.Share.uploadImage({file:transfer.files})).infos.original.url;}catch{throw Error('카카오톡 이미지 전송을 준비하지 못했어요. 다시 시도하거나 기기 공유를 이용해주세요.');}
+ imageUrl=kakaoUploadedImage(imageUrl);
  const cardUrl=sharedCardUrl(imageUrl);
  const payload={objectType:'feed',content:{title:title.slice(0,200),description:'티끌로 남긴 한 장',imageUrl,imageWidth:width,imageHeight:height,link:{webUrl:cardUrl,mobileWebUrl:cardUrl}},buttons:[{title:'카드 크게 보기',link:{webUrl:cardUrl,mobileWebUrl:cardUrl}}]};
  return ()=>sdk.Share.sendDefault(payload);

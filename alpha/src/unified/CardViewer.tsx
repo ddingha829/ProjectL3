@@ -1,12 +1,13 @@
 'use client';
 import {useId,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
 import {MessageCircle,MoreHorizontal,Share2} from 'lucide-react';
+import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard,{cardTitle} from '@/social/EditorialCard';
-import CardImageActions from '@/social/CardImageActions';
 import type {EditorialStyle} from '@/social/editorialStyle';
 import type {UnifiedLog} from './store';
 import {useCardBackSwipe} from './useCardBackSwipe';
+const CardImageActions=dynamic(()=>import('@/social/CardImageActions'),{loading:()=> <p role="status">공유 도구를 불러오고 있어요.</p>});
 import './CardViewer.css';
 
 type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;options?:(close:()=>void)=>ReactNode;children:ReactNode};
