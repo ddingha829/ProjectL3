@@ -22,7 +22,10 @@ export default function useAppViewport(active:boolean,installedIos:boolean){
    // visual viewport is used only while an actual text keyboard is open.
    // Keep glyphs below the installed iOS status-bar compositor as well as the
    // hardware safe area. This is separate from CSS backdrop blur on our dock.
-   root.style.setProperty('--un-edge-clearance',installedIos&&innerHeight>innerWidth?'12px':'0px');
+   // A residual fade still touches the top of the glyphs on the reported
+   // 393 × 793 installed viewport. Add 6px of clearance, without changing
+   // the document canvas or the independently tuned bottom dock position.
+   root.style.setProperty('--un-edge-clearance',installedIos&&innerHeight>innerWidth?'18px':'0px');
    root.dataset.labKeyboard=keyboard?'open':'closed';
   };
   if(active)root.dataset.unifiedShell='true';else delete root.dataset.unifiedShell;

@@ -125,6 +125,11 @@
 @media(prefers-reduced-motion:reduce){.un-scope-tabs button{transition:none}}
 
 .un-integration-status{padding:0 0 20px;font-size:11px;color:var(--muted);line-height:1.7}.un-integration-status>p{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 5px}.un-integration-status strong{color:var(--fg)}.un-integration-status small{font-size:10px}.un-integration-status details{font-size:10px;margin-top:8px}.un-integration-status summary{cursor:pointer;min-height:36px;display:flex;align-items:center}.un-integration-status details p{margin:5px 0;line-height:1.6}.un-integration-status a{text-decoration:underline;text-underline-offset:3px}.un-integration-status button{min-height:44px;color:var(--accent)}
+.un-settings>.quick-dialog-body>.un-notification-settings{margin-top:0}
+.un-settings-integrations .un-integration-status{padding-bottom:4px;font-size:13px}
+.un-settings-integrations .un-integration-status small,.un-settings-integrations .un-integration-status details{font-size:12px}
+.un-settings-integrations .un-integration-status summary{min-height:44px}
+.un-settings-integrations .un-integration-status>span{display:block;word-break:keep-all}
 
 .un-log .lab-poster-art{position:relative}
 .un-feed-card-open{position:absolute;inset:0;z-index:2;width:100%;height:100%;border:0;background:none;border-radius:16px;touch-action:pan-y;text-align:left}

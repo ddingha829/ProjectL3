@@ -23,7 +23,7 @@ try{
  useAppViewport(true,true);
  check(dataset.unifiedShell==='true','signed-in app owns the root viewport');
  check(values.get('--lab-vvh')==='844px'&&values.get('--lab-vvtop')==='0px','visual viewport measurements remain available for keyboard and dialogs');
- check(values.get('--un-edge-clearance')==='12px','installed iPhone reserves space below the native top effect');
+ check(values.get('--un-edge-clearance')==='18px','installed iPhone reserves the extra 6px below the native top effect');
  check(values.get('--un-native-bottom-space')==='0px','full-height installed apps retain their hardware safe-area inset');
  win.screen={width:393,height:852};globalThis.innerWidth=393;globalThis.innerHeight=793;doc.documentElement.clientHeight=793;Object.assign(viewport,{height:793,offsetTop:0});win.dispatchEvent(new Event('resize'));
  check(values.get('--un-native-bottom-space')==='59px'&&values.get('--lab-vvh')==='793px','reported iPhone native clearance lowers the dock without extending the frame');
