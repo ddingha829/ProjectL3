@@ -41,6 +41,12 @@ try{
  check(dataset.labKeyboard==='closed','a stale short viewport without text focus cannot lift the app chrome');
  doc.activeElement={tagName:'INPUT',type:'text'};win.dispatchEvent(new Event('focusin'));
  check(values.get('--lab-vvh')==='540px'&&values.get('--lab-vvtop')==='24px'&&dataset.labKeyboard==='open','keyboard resize and visual offset update together');
+ Object.assign(viewport,{height:844,offsetTop:0});viewport.dispatchEvent(new Event('resize'));
+ check(dataset.labKeyboard==='closed','dismissing the keyboard restores navigation even when the input stays focused');
+ doc.activeElement={tagName:'INPUT',type:'range'};Object.assign(viewport,{height:540,offsetTop:24});win.dispatchEvent(new Event('focusin'));
+ check(dataset.labKeyboard==='closed','sliders do not hide navigation when an old short viewport measurement remains');
+ doc.activeElement={tagName:'TEXTAREA'};win.dispatchEvent(new Event('focusin'));
+ check(dataset.labKeyboard==='open','writing and editing text use the same keyboard state as search');
  doc.activeElement=null;win.dispatchEvent(new Event('focusout'));
  check(dataset.labKeyboard==='closed'&&values.get('--lab-vvh')==='844px','leaving text input restores native viewport edges and dialogs before metrics recover');
  globalThis.innerHeight=390;globalThis.innerWidth=844;doc.documentElement.clientHeight=390;Object.assign(viewport,{height:390,offsetTop:0});win.dispatchEvent(new Event('resize'));

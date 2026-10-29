@@ -13,6 +13,9 @@ html[data-unified-shell=true][data-lab-keyboard=open] .un-viewport-chrome{top:va
 .un-viewport-chrome button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .un-viewport-chrome .un-header.un-header-v2{position:absolute;top:0;bottom:auto;height:var(--un-header-height);padding-top:calc(5px + env(safe-area-inset-top,0px) + var(--un-edge-clearance,0px));z-index:2;pointer-events:auto;background:var(--bg);filter:none;backdrop-filter:none;-webkit-backdrop-filter:none;mask-image:none;-webkit-mask-image:none}
 .un-viewport-chrome .un-navigation{position:absolute!important;top:auto!important;bottom:var(--un-dock-bottom)!important;z-index:3!important}
+/* Hide the entire dock, including + and its keyboard focus targets, while the
+   onscreen keyboard occupies the viewport. Closing it restores the same inset. */
+html[data-unified-shell=true][data-lab-keyboard=open] .un-viewport-chrome .un-navigation{display:none!important}
 /* Sticky tools belong to the content pane, whose top already clears the header. */
 html[data-unified-shell=true] .flc-shell.un-feed-toolbar{top:0}
 /* Size the fitted pages from the same available space as the fixed dock. */
