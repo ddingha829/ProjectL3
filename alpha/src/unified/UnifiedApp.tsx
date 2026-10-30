@@ -24,6 +24,7 @@ import type {DongCount} from '@/social/adminDong';
 import UnifiedStudio from './UnifiedStudio';
 import MosaicBoard from './MosaicBoard';
 import useFeedPagination from './useFeedPagination';
+import useNewFeedCards from './useNewFeedCards';
 import {FeedSkeleton,RecordLoading} from './FeedLoading';
 import FeedToolbar from './FeedToolbar';
 import UnifiedHeader from './UnifiedHeader';
@@ -101,6 +102,7 @@ export default function UnifiedApp(){
  const waitingForRecords=accountMode==='cloud'&&wantsFullRecords&&state?.recordsComplete!==true;
  const pagedFeed=view==='logs'&&mode!=='calendar'&&(section==='all'||section==='saved')&&!selecting&&!district;
  const pagination=useFeedPagination({owner:identity?.id||accountMode,enabled:ready&&!!session&&!needsNickname&&pagedFeed&&(!wantsFullRecords||state?.recordsComplete===true),remote:accountMode==='cloud'&&state?.recordsComplete!==true,query:{scope,category,query,sort,photosOnly,saved:section==='saved'},load:loadFeedPage});
+ useNewFeedCards(ready&&session&&!needsNickname?(identity?.id||accountMode):'',pagedFeed&&!pagination.loading&&!pagination.initial&&section==='all'&&sort==='recent'&&!query&&category==='all'&&!photosOnly,state?.logs||[],mainRoot,`${scope}:${mode}`);
  const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(needsNickname||guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});

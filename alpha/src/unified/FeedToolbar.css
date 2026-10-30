@@ -33,3 +33,12 @@
 .un-feed-toolbar.is-view-open .un-feed-active-dot{position:absolute;top:8px;right:8px}
 .un-feed-view-options button:hover{background:var(--surface)}
 @media(prefers-reduced-motion:reduce){.un-feed-toolbar *{transition:none!important}}
+
+/* The shared toolbar uses absolute positioning; this toolbar uses flex.
+   Reset both position and inset so the input cannot overlap the 44px icon. */
+.un-feed-toolbar .flc-search-toggle{inset:auto}
+.un-feed-toolbar .flc-search-field{position:static;inset:auto;align-self:stretch;gap:2px;padding:0}
+.un-feed-toolbar .flc-search-field input{padding:0;box-sizing:border-box}
+.un-feed-toolbar.is-search-open .flc-search-toggle:hover{background:transparent}
+
+.un-feed-toolbar.is-search-open .flc-search-field{padding-inline:6px 8px}

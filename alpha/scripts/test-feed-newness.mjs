@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const {outputFiles}=await build({entryPoints:['src/unified/feedNewness.ts'],bundle:true,platform:'node',format:'esm',write:false});
+const {newCardIds}=await import('data:text/javascript;base64,'+Buffer.from(outputFiles[0].text).toString('base64'));
+const items=Array.from({length:8},(_,i)=>({id:String(i),createdAt:100+i}));
+assert.deepEqual(newCardIds(items,0,200,new Set()),[]);
+assert.deepEqual(newCardIds(items,99,200,new Set()),['7','6','5','4']);
+assert.deepEqual(newCardIds(items,105,200,new Set()),['7','6']);
+assert.deepEqual(newCardIds(items,99,104,new Set()),['4','3','2','1']);
+assert.deepEqual(newCardIds(items,99,200,new Set(['7','6','5']),1),['4']);
+assert.deepEqual(newCardIds(items,99,200,new Set(),0),[]);
+assert.deepEqual(newCardIds(items,300,200,new Set()),[]);
+assert.deepEqual(newCardIds([{id:'old',createdAt:50,updatedAt:150}],99,200,new Set()),[]);
+assert.deepEqual(newCardIds([...items,items[7]],99,200,new Set()),['7','6','5','4']);
+assert.deepEqual(newCardIds(items,NaN,200,new Set()),[]);
+console.log(JSON.stringify({status:'passed',checks:10,verified:['first visit quiet','latest four only','time boundaries','session cap','edited old cards excluded','duplicate IDs','invalid clock']}));

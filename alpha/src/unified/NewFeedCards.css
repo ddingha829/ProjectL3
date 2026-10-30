@@ -1,0 +1,5 @@
+/* No transforms or reflow: card width, crop and feed spacing remain unchanged. */
+.un-grid [data-new-arrival=true],.un-log-list [data-new-arrival=true]{position:relative}
+[data-new-arrival=true]::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border:2px solid color-mix(in srgb,var(--accent) 62%,transparent);border-radius:10px;box-shadow:0 0 14px color-mix(in srgb,var(--accent) 16%,transparent);animation:un-new-arrival 5.5s ease-out both}
+@keyframes un-new-arrival{0%{opacity:0}12%,55%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){[data-new-arrival=true]::after{animation:none;box-shadow:none}}
