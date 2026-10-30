@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient,Session} from '@supabase/supabase-js';
 import {fetchFeedPage,fetchFeedState,type FeedQuery,type FeedCursor} from './feedRepository';
+import {changeAccountPassword} from './passwordChange';
 import {authMessage,RECOVERY_REDIRECT} from './authMessages';
 import {shouldLoadAuthSession} from './authSessionTransition';
 import {normalizeNickname,nicknameInitial} from './nickname';
@@ -16,7 +17,7 @@ const cacheKey=(id:string)=>`l2_unified_account_cache:${id}`,pendingKey=(id:stri
 export default function useUnifiedState(){
  const [state,setState]=useState<UnifiedState|null>(null),[error,setError]=useState(''),[ready,setReady]=useState(false),[identity,setIdentity]=useState<{id?:string;name:string;email?:string}|null>(null),[mode,setMode]=useState<Mode>('login'),[cloudEnabled,setCloudEnabled]=useState(false),[syncStatus,setSyncStatus]=useState<'idle'|'saving'|'failed'>('idle');
  const fullRecords=useRef(false),[recordsBusy,setRecordsBusy]=useState(false);
- const profileSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
+ const passwordSaving=useRef(false),profileSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
  const current=useRef<UnifiedState|null>(null),client=useRef<SupabaseClient|null>(null),userId=useRef(''),modeRef=useRef<Mode>('login'),pending=useRef<Pending|null>(null),sending=useRef(false),alive=useRef(true),generation=useRef(0),requestSequence=useRef(0);
  const show=useCallback((next:UnifiedState)=>{current.current=next;setState(next);},[]);
  const refreshQueue=useRef<ReturnType<typeof createRefreshQueue>|null>(null);if(!refreshQueue.current)refreshQueue.current=createRefreshQueue();
@@ -52,7 +53,7 @@ export default function useUnifiedState(){
   void(async()=>{try{const c=await configureCloud();if(!active)return;client.current=c;setCloudEnabled(!!c);const demo=JSON.parse(localStorage.getItem(UI_SESSION)||'null');
    if(demo?.mode==='demo'){const saved=localStorage.getItem(UI_STORAGE),next=saved?parseUnified(saved):initialUnified();if(!next)throw Error('이 기기의 미리보기 기록을 읽지 못했어요.');modeRef.current='demo';setMode('demo');show(next);setIdentity({name:demo.name||'나'});setReady(true);}
    else if(c){const result=await c.auth.getSession();if(result.error)throw result.error;await loadSession(result.data.session);}else{show(emptyCloudState());setReady(true);}
-   if(c)subscription=c.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(alive.current&&shouldLoadAuthSession(event,modeRef.current,userId.current,session?.user.id))void loadSession(session);},0);}).data.subscription;
+   if(c)subscription=c.auth.onAuthStateChange((event,session)=>{if(event==='USER_UPDATED'&&passwordSaving.current&&session?.user.id===userId.current)return;setTimeout(()=>{if(alive.current&&shouldLoadAuthSession(event,modeRef.current,userId.current,session?.user.id))void loadSession(session);},0);}).data.subscription;
   }catch(e){if(alive.current){show(emptyCloudState());setReady(true);setError(e instanceof Error?e.message:'연결을 확인하지 못했어요.');}}})();
   const storage=(event:StorageEvent)=>{if(modeRef.current==='demo'&&event.key===UI_STORAGE&&event.newValue){const next=parseUnified(event.newValue);if(next)show(next);}else if(event.key===pendingKey(userId.current))void refresh();};
   const renewPhotos=async()=>{
@@ -68,6 +69,15 @@ export default function useUnifiedState(){
   return()=>{active=false;alive.current=false;generation.current++;subscription?.unsubscribe();if(channel)void client.current?.removeChannel(channel);clearTimeout(eventTimer);clearInterval(poll);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('storage',storage);window.removeEventListener('focus',focus);window.removeEventListener('online',focus);};
  },[refresh,show]);
  const authenticate=useCallback(async(email:string,password:string,signup:boolean)=>{const c=client.current;if(!c)throw Error('실제 계정 연결을 준비 중이에요.');const result=signup?await c.auth.signUp({email,password,options:{data:{display_name:email.split('@')[0].slice(0,30)}}}):await c.auth.signInWithPassword({email,password});if(result.error)throw Error(authMessage(result.error));if(!result.data.session)throw Error('가입은 접수됐지만 바로 로그인되지 않았어요. 이메일 인증 설정을 확인해주세요.');},[]);
+ const changePassword=useCallback(async(currentPassword:string,password:string,confirmation:string)=>{
+  const c=client.current,id=userId.current,epoch=generation.current;
+  if(!c||!id||modeRef.current!=='cloud')throw Error('로그인한 계정에서 변경할 수 있어요.');
+  if(passwordSaving.current||profileSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
+  passwordSaving.current=true;
+  const isCurrent=()=>alive.current&&userId.current===id&&generation.current===epoch&&modeRef.current==='cloud';
+  try{const account=await c.auth.getUser();if(account.error||account.data.user?.id!==id||!account.data.user.email)throw Error('로그인을 확인한 뒤 다시 시도해주세요.');await changeAccountPassword(c,id,account.data.user.email,currentPassword,password,confirmation,isCurrent);}
+  finally{passwordSaving.current=false;}
+ },[]);
  const resetPassword=useCallback(async(email:string)=>{const c=client.current;if(!c)throw Error('실제 계정 연결을 준비 중이에요.');const result=await c.auth.resetPasswordForEmail(email,{redirectTo:RECOVERY_REDIRECT});if(result.error)throw Error(authMessage(result.error));},[]);
  const enterDemo=useCallback((name='나')=>{try{const raw=localStorage.getItem(UI_STORAGE),next=raw?parseUnified(raw):initialUnified();if(!next)throw Error('미리보기 기록을 읽지 못했어요.');localStorage.setItem(UI_SESSION,JSON.stringify({mode:'demo',name}));modeRef.current='demo';setMode('demo');setIdentity({name});show(next);setError('');}catch(e){setError(e instanceof Error?e.message:'예시 화면을 열지 못했어요.');}},[show]);
  const logout=useCallback(async()=>{if(pending.current){setError('반영되지 않은 변경이 있어요. 다시 반영하거나 임시 변경을 백업한 뒤 로그아웃해주세요.');return;}if(modeRef.current==='cloud'){try{await disconnectNotificationDevice();}catch{setError('기기 알림 연결을 해제하지 못했어요. 잠시 후 다시 로그아웃해주세요.');return;}const result=await client.current?.auth.signOut();if(result?.error){setError('로그아웃하지 못했어요.');return;}}localStorage.removeItem(UI_SESSION);generation.current++;userId.current='';modeRef.current='login';setMode('login');setIdentity(null);show(emptyCloudState());setError('');},[show]);
@@ -105,5 +115,5 @@ export default function useUnifiedState(){
  const joinCode=useCallback(async(code:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 참여할 수 있어요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join_code',{p_code:code.trim().toUpperCase()});if(result.error)throw Error(cloudError(result.error));if(result.data?.error)throw Error(cloudError({message:result.data.error}));const id=result.data?.groupId;if(typeof id!=='string')throw Error('참여 결과를 확인하지 못했어요. 다시 시도해주세요.');await refresh();if(!current.current?.circles.some(c=>c.id===id&&c.members.includes('me')))throw Error('참여는 완료됐어요. 새로고침해 모임 목록을 불러와주세요.');return id;},[refresh]);
  const join=useCallback(async(token:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 초대 링크를 다시 열어주세요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join',{p_token:token});if(result.error)throw Error(cloudError(result.error));await refresh();return String(result.data);},[refresh]);
  const removeMember=useCallback((groupId:string,id:string,keepShares:boolean)=>{if(!current.current||modeRef.current!=='cloud')return false;return queue([{kind:'remove_member',groupId,userId:id==='me'?userId.current:id,keepShares}],current.current);},[queue]);
- return {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
+ return {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
 }

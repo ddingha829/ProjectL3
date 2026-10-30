@@ -3,16 +3,17 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,ChevronDown,Eye,EyeOff,Info} from 'lucide-react';
 import SlideArrowButton from '@/components/tweenui/slide-arrow-button';
 import './AuthScreen.css';
+import {newPasswordProblem} from './passwordChange';
 import AlphaSupport from './AlphaSupport';
 import TicgleWordmark from '@/components/TicgleBrand';
 
 export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,enabled=false}:{onEnter:(name:string)=>void;onAuthenticate:(email:string,password:string,signup:boolean)=>Promise<void>;onResetPassword:(email:string)=>Promise<void>;enabled?:boolean}){
- const [support,setSupport]=useState(false),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[show,setShow]=useState(false),[error,setError]=useState(''),[signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
+ const [support,setSupport]=useState(false),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirmation,setConfirmation]=useState(''),[showConfirmation,setShowConfirmation]=useState(false),[show,setShow]=useState(false),[error,setError]=useState(''),[signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
  const [recovery,setRecovery]=useState(false),[resetSent,setResetSent]=useState(false);
  const requestInFlight=useRef(false),[complete,setComplete]=useState(false),[slow,setSlow]=useState(false);
  const locked=busy||complete;
  useEffect(()=>{if(!busy){setSlow(false);return;}const timer=setTimeout(()=>setSlow(true),8000);return()=>clearTimeout(timer);},[busy]);
- const switchMode=()=>{if(locked||requestInFlight.current)return;if(recovery){setRecovery(false);setResetSent(false);setSignup(false);}else setSignup(value=>!value);setShow(false);setError('');setPassword('');};
+ const switchMode=()=>{if(locked||requestInFlight.current)return;if(recovery){setRecovery(false);setResetSent(false);setSignup(false);}else setSignup(value=>!value);setShow(false);setShowConfirmation(false);setError('');setPassword('');setConfirmation('');};
  const title=recovery?'비밀번호 찾기':signup?'회원가입':'로그인';
  const submitLabel=complete?'완료 · 티끌 여는 중':busy?recovery?'메일 보내는 중':signup?'계정 만드는 중':'로그인 중':recovery?'재설정 메일 받기':signup?'계정 만들기':'로그인';
  return <><main className="un-login un-auth-screen"><section className="un-auth-panel" aria-labelledby="un-auth-title">
@@ -25,6 +26,7 @@ export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,ena
    const fields=new FormData(event.currentTarget),address=String(fields.get('email')||'').trim().toLowerCase(),submittedPassword=String(fields.get('password')||'');
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)){setError('올바른 이메일 주소를 입력해주세요.');document.getElementById('un-login-email')?.focus();return;}
    if(!recovery&&(!submittedPassword||signup&&submittedPassword.length<6)){setError(signup?'비밀번호는 6자 이상으로 입력해주세요.':'비밀번호를 입력해주세요.');document.getElementById('un-login-password')?.focus();return;}
+   if(signup&&!recovery){const issue=newPasswordProblem(submittedPassword,String(fields.get('passwordConfirmation')||''));if(issue){setError(issue.message);document.getElementById(issue.field==='confirmation'?'un-signup-confirmation':'un-login-password')?.focus();return;}}
    requestInFlight.current=true;setBusy(true);setError('');
    try{
     if(recovery){await onResetPassword(address);setResetSent(true);requestInFlight.current=false;}
@@ -35,6 +37,7 @@ export default function PreviewLogin({onEnter,onAuthenticate,onResetPassword,ena
    <label htmlFor="un-login-email">이메일<input id="un-login-email" name="email" type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" autoComplete="email" required disabled={locked} value={email} maxLength={254} placeholder="name@example.com" aria-invalid={!!error&&error.includes('이메일')} aria-describedby={error?'un-login-error':undefined} onChange={event=>{setEmail(event.target.value);setError('');}}/></label>
    {!recovery&&<label htmlFor="un-login-password">비밀번호<span className="un-auth-password"><input id="un-login-password" name="password" autoComplete={signup?'new-password':'current-password'} type={show?'text':'password'} required disabled={locked} value={password} maxLength={100} placeholder={signup?'6자 이상 입력':'비밀번호 입력'} aria-invalid={!!error&&error.includes('비밀번호')} aria-describedby={[signup?'un-signup-password-help':'',error?'un-login-error':''].filter(Boolean).join(' ')||undefined} onChange={event=>{setPassword(event.target.value);setError('');}}/><button type="button" aria-label={show?'비밀번호 숨기기':'비밀번호 보기'} aria-pressed={show} disabled={locked} onClick={()=>setShow(value=>!value)}>{show?<EyeOff size={18} strokeWidth={1.6}/>:<Eye size={18} strokeWidth={1.6}/>}</button></span></label>}
    {signup&&!recovery&&<p className="un-signup-password-help" id="un-signup-password-help">비밀번호는 6자 이상 입력해주세요.</p>}
+   {signup&&!recovery&&<label htmlFor="un-signup-confirmation">비밀번호 확인<span className="un-auth-password"><input id="un-signup-confirmation" name="passwordConfirmation" autoComplete="new-password" type={showConfirmation?'text':'password'} required disabled={locked} value={confirmation} maxLength={100} placeholder="비밀번호를 한 번 더 입력" aria-invalid={!!error&&/확인란|일치/.test(error)} aria-describedby={error?'un-login-error':undefined} onChange={event=>{setConfirmation(event.target.value);setError('');}}/><button type="button" aria-label={showConfirmation?'확인 비밀번호 숨기기':'확인 비밀번호 보기'} aria-pressed={showConfirmation} disabled={locked} onClick={()=>setShowConfirmation(value=>!value)}>{showConfirmation?<EyeOff size={18} strokeWidth={1.6}/>:<Eye size={18} strokeWidth={1.6}/>}</button></span></label>}
    {!signup&&!recovery&&<button className="un-auth-forgot" type="button" disabled={locked} onClick={()=>{setRecovery(true);setPassword('');setError('');}}>비밀번호 찾기</button>}
    {error&&<p className="un-auth-error" id="un-login-error" role="alert">{error}</p>}
    <SlideArrowButton className="un-auth-submit" type="submit" pending={locked} disabled={!enabled||locked} aria-label={submitLabel}>{submitLabel}</SlideArrowButton>
