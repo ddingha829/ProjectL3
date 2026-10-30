@@ -24,6 +24,7 @@ import type {DongCount} from '@/social/adminDong';
 import UnifiedStudio from './UnifiedStudio';
 import MosaicBoard from './MosaicBoard';
 import useFeedPagination from './useFeedPagination';
+import SyncNotice from './SyncNotice';
 import useNewFeedCards from './useNewFeedCards';
 import {FeedSkeleton,RecordLoading} from './FeedLoading';
 import FeedToolbar from './FeedToolbar';
@@ -184,7 +185,7 @@ export default function UnifiedApp(){
  <AlphaSupport open={panel==='alpha'} onClose={()=>setPanel(null)} view={view} mode={accountMode==='cloud'?'cloud':'demo'} sync={syncStatus}/>
  {backupProgress!==null&&<div className="un-backup-overlay" role="dialog" aria-modal="true" aria-label="백업 저장 중"><div><Download size={26}/><strong aria-live="polite">{backupProgress}%</strong><progress value={backupProgress} max={100}/><span>내 기록을 파일로 묶고 있어요</span></div></div>}
  {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}
- {error&&<div className="un-error" role="alert"><span>{error}</span>{syncStatus==='failed'&&<><button onClick={()=>void retry()}>다시 반영</button><button onClick={()=>void discardPending()}>임시 변경 백업 후 새로고침</button></>}{syncStatus!=='failed'&&<button aria-label="오류 안내 닫기" onClick={clearError}><X size={16}/></button>}</div>}
+ {(error||syncStatus==='failed')&&<SyncNotice message={error} failed={syncStatus==='failed'} busy={syncStatus==='saving'} onDismiss={clearError} onRetry={()=>void retry()} onRecover={()=>void discardPending()}/>}
  {toast&&<div className="lab-toast un-toast" role="status"><Check size={16}/>{toast}{mosaicFocus&&<button onClick={()=>{setView('mosaic');setToast('');}}>타일에 놓기<ArrowUpRight size={14}/></button>}</div>}
  </div>;
 }

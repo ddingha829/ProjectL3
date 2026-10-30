@@ -52,6 +52,15 @@ try{
  const commentOps=JSON.stringify([{kind:'comment',id:commentId,logId:ids[1],body:'hello'},{kind:'reaction',id:ids[1],type:'bookmark',active:true}]);
  await pg.query('select public.l2u_apply($1,$2)',[commentOps,operationId]);await pg.query('select public.l2u_apply($1,$2)',[commentOps,operationId]);
  assert((await snapshot()).logs[0].comments.length===1,'retry idempotency preserves one comment');
+ await op([{kind:'reaction',id:ids[1],type:'bookmark',active:false}]);
+ assert((await snapshot()).logs[0].bookmarks.length===0,'bookmark cancellation has no ambiguous SQL columns');
+ await op([{kind:'reaction',id:ids[1],type:'like',active:true}]);
+ await actor(0);await op([{kind:'reaction',id:ids[1],type:'like',active:true}]);await actor(1);
+ const extraComment=crypto.randomUUID();
+ await op([{kind:'reaction',id:ids[1],type:'like',active:false},{kind:'comment',id:extraComment,logId:ids[1],body:'after reaction cancellation'}]);
+ const reacted=(await snapshot()).logs.find(l=>l.id===ids[1]);
+ assert(reacted.likes.length===1&&reacted.likes[0]===uid[0],'cancelling a reaction preserves another member reaction');
+ assert(reacted.comments.some(c=>c.id===extraComment),'comment in reaction cancellation batch is saved');
  await op([{kind:'log',id:ids[2],payload:payload('member original'),groups:[group],expected:0}]);
  await actor(0); assert((await snapshot()).logs.find(l=>l.id===ids[1]).bookmarks.length===0,'other users bookmarks remain private');
  await op([{kind:'place',id:ids[1],slot:0,groupId:group}]);

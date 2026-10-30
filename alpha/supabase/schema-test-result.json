@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "checks": 49,
+  "checks": 52,
   "names": [
     "owner sees private and shared",
     "group creation generates a six-character code",
@@ -15,6 +15,9 @@
     "cannot overwrite other author",
     "cannot react to private log",
     "retry idempotency preserves one comment",
+    "bookmark cancellation has no ambiguous SQL columns",
+    "cancelling a reaction preserves another member reaction",
+    "comment in reaction cancellation batch is saved",
     "other users bookmarks remain private",
     "occupied group slot protected",
     "group capacity enforced",
@@ -52,5 +55,5 @@
     "expired provider cache is not returned",
     "server RPC does not grant direct private table reads"
   ],
-  "finishedAt": "2026-10-27T21:39:42.371Z"
+  "finishedAt": "2026-10-30T13:09:35.114Z"
 }
