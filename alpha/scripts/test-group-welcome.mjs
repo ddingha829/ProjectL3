@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const result=await build({stdin:{contents:"export {emptyCloudState,cloudOperations,persistNickname} from './src/unified/cloudRepository';export {parseUnified} from './src/unified/store';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
+const {emptyCloudState,cloudOperations,parseUnified,persistNickname}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const before={...emptyCloudState(),nicknameConfigured:true,serverPreferencesRevision:3};
+const after={...before,groupIntroSeen:true},ops=cloudOperations(before,after);
+assert.equal(ops.length,1);assert.equal(ops[0].kind,'preferences');assert.equal(ops[0].expected,3);
+assert.equal(ops[0].payload.groupIntroSeen,true);assert.equal(ops[0].payload.nicknameConfigured,true);
+assert.deepEqual(ops[0].payload.presets,before.presets);
+assert.equal(parseUnified(JSON.stringify(after)).groupIntroSeen,true);
+assert.equal(parseUnified(JSON.stringify({...after,groupIntroSeen:'true'})),null);
+assert.deepEqual(cloudOperations(after,{...after}),[]);
+let saved;await persistNickname({rpc:async(_,args)=>{saved=args.p_operations;return {error:null};}},after,'새 이름');
+assert.equal(saved.find(op=>op.kind==='profile').name,'새 이름');
+assert.equal(saved.some(op=>op.kind==='preferences'&&op.payload.groupIntroSeen!==true),false);
+console.log(JSON.stringify({status:'passed',checks:11,verified:['dismiss persisted as preferences','existing designs retained','revision conflict protection','parse validation','nickname change preserves dismissal']}));

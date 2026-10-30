@@ -7,7 +7,7 @@ import type {Person,Circle} from '@/social/model';
 import {normalizeNickname,nicknameInitial} from './nickname';
 import {photoUrls} from './photoUrls';
 export type CloudOperation=Record<string,unknown>&{kind:string};
-export type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
+export type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'|'groupIntroSeen'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
 let configuredClient:{signature:string;client:SupabaseClient}|undefined;
 export async function configureCloud(detectSessionInUrl=false):Promise<SupabaseClient|null>{
  const response=await fetch('/api/backend/config',{cache:'no-store'});if(!response.ok)throw Error('서버 연결 설정을 확인하지 못했어요.');
@@ -67,7 +67,7 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
   for(const comment of log.comments)if(comment.authorId==='me'&&!old?.comments.some(c=>c.id===comment.id))ops.push({kind:'comment',id:comment.id,logId:log.id,body:comment.body});
  }
  for(const old of before.logs)if(old.authorId==='me'&&!after.logs.some(l=>l.id===old.id))ops.push({kind:'delete_log',id:old.id,expected:old.serverRevision||0});
- const prefs=(s:UnifiedState)=>({presets:s.presets,collections:s.collections,intents:s.intents||[],nicknameConfigured:s.nicknameConfigured===true});
+ const prefs=(s:UnifiedState)=>({presets:s.presets,collections:s.collections,intents:s.intents||[],nicknameConfigured:s.nicknameConfigured===true,groupIntroSeen:s.groupIntroSeen===true});
  if(!same(prefs(before),prefs(after)))ops.push({kind:'preferences',payload:prefs(after),expected:before.serverPreferencesRevision||0});
  const scopes=new Set(['mine',...Object.keys(before.mosaic.groupBoards),...Object.keys(after.mosaic.groupBoards)]);
  for(const scope of scopes){

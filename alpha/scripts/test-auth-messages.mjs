@@ -9,6 +9,10 @@ test('invalid credentials offer recovery',()=>assert.match(authMessage({code:'in
 test('unconfirmed email is separate from bad credentials',()=>assert.match(authMessage({code:'email_not_confirmed'}),/이메일 확인/));
 test('mail throttling does not ask for a different password',()=>assert.match(authMessage({code:'over_email_send_rate_limit'}),/조금 뒤/));
 test('weak passwords have a specific instruction',()=>assert.match(authMessage({code:'weak_password'}),/6자/));
+test('leaked passwords are not misreported as too short',()=>{const message=authMessage({code:'weak_password',reasons:['pwned']});assert.match(message,/유출|흔한/);assert.doesNotMatch(message,/6자/);});
+test('actual short password reason is explained',()=>assert.match(authMessage({code:'weak_password',message:'Password should be at least 8 characters.',reasons:['length']}),/8자/));
+test('required character reasons are separate',()=>assert.match(authMessage({code:'weak_password',reasons:['characters']}),/조합/));
+test('older leaked-password errors are explained',()=>assert.match(authMessage({code:'weak_password',message:'Password is known to be weak and easy to guess'}),/흔한/));
 test('reusing the old password is explained',()=>assert.match(authMessage({code:'same_password'}),/다른 비밀번호/));
 test('network trouble does not claim a local record backup',()=>assert.match(authMessage({message:'Failed to fetch'}),/연결이 원활하지/));
 test('unknown provider details are not leaked',()=>assert.doesNotMatch(authMessage({message:'INTERNAL_TOKEN=secret'}),/secret|보관/));

@@ -6,7 +6,7 @@ export const DEFAULT_PHOTO:PhotoSettings={x:50,y:50,zoom:1,saturation:100,bright
 export type UnifiedLog=LabLog&{circleIds?:string[];photo?:PhotoSettings;serverRevision?:number;imagePath?:string};
 export type Preset={id:string;name:string;style:EditorialStyle;defaults:string[]};
 export type Collection={id:string;name:string;logIds:string[];createdAt:number};
-export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number;nicknameConfigured?:boolean;recordsComplete?:boolean};
+export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number;nicknameConfigured?:boolean;groupIntroSeen?:boolean;recordsComplete?:boolean};
 export const UI_STORAGE='l2_unified_ui_v1',UI_SESSION='l2_unified_preview_session_v1';
 export const destinations=[['logs','피드'],['map','티끌맵'],['mosaic','끌렉션'],['studio','스튜디오']] as const;
 export type Destination=typeof destinations[number][0];
@@ -23,6 +23,7 @@ export function validPhoto(value:unknown):value is PhotoSettings{
 }
 export function parseUnified(raw:string):UnifiedState|null{
  try{const s=JSON.parse(raw) as UnifiedState;if(!readState(raw)||!Array.isArray(s.presets)||s.presets.length<1||s.presets.length>20||!Array.isArray(s.collections)||s.collections.length>100)return null;
+ if(s.groupIntroSeen!==undefined&&typeof s.groupIntroSeen!=='boolean')return null;
  if(s.nicknameConfigured!==undefined&&typeof s.nicknameConfigured!=='boolean')return null;
  if(s.logs.some(l=>l.circleIds!==undefined&&(!Array.isArray(l.circleIds)||l.circleIds.some(id=>typeof id!=='string'))||l.photo!==undefined&&!validPhoto(l.photo)))return null;
  if(s.presets.some(p=>!p||typeof p.id!=='string'||typeof p.name!=='string'||p.name.length>40||!validEditorial(p.style)||!Array.isArray(p.defaults)))return null;
