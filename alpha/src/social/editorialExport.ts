@@ -23,7 +23,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
  try{
   clone.querySelectorAll<HTMLElement>('.ec-satin-sheen').forEach(node=>{node.style.backgroundPosition='45% 45%';node.style.transition='none';});
   clone.style.transform='none';clone.style.position='relative';clone.dataset.cardWidth='420';clone.dataset.cardHeight=clone.classList.contains('ec-square')?'420':String(672);
-  if(clone.classList.contains('ec-ticket')){clone.style.setProperty('--card-notch-radius','10');clone.style.setProperty('--card-notch-y',clone.classList.contains('ec-square')?'60':'73');}
+  if(clone.classList.contains('ec-ticket')){const seam=clone.querySelector<HTMLElement>('.ec-ticket-stub');clone.style.setProperty('--card-notch-radius','10');clone.style.setProperty('--card-notch-y',String((seam?.offsetTop||0)/clone.offsetHeight*100));}
   const scroll=clone.querySelector<HTMLElement>('[data-ec-scroll]'),inner=clone.querySelector<HTMLElement>('.ec-scroll-inner');
   // Paginate actual text nodes, preserving each page's header/footer. Negative
   // transforms inside SVG foreignObject can scroll/flatten the whole card.

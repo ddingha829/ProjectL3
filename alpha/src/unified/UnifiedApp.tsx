@@ -25,6 +25,7 @@ import UnifiedStudio from './UnifiedStudio';
 import MosaicBoard from './MosaicBoard';
 import useFeedPagination from './useFeedPagination';
 import SyncNotice from './SyncNotice';
+import SaveMoment from './SaveMoment';
 import useNewFeedCards from './useNewFeedCards';
 import {FeedSkeleton,RecordLoading} from './FeedLoading';
 import FeedToolbar from './FeedToolbar';
@@ -50,6 +51,7 @@ import useNotificationOnboarding from './useNotificationOnboarding';
 import {audienceIds,defaultStyle,inScope,destinations,type Destination,type UnifiedLog,type Collection} from './store';
 import '@/social/SocialLab.css';import '@/social/SocialMaterial.css';import '@/social/CollectionFocus.css';import '@/social/MapPolish.css';import '@/social/CameraComposer.css';import '@/social/StoryWriting.css';import './UnifiedApp.css';import './EntryFlow.css';
 import './AppViewport.css';
+import './ArchiveIdentity.css';
 
 type Panel='alpha'|'groups'|'scope'|'settings'|'collection'|'preset'|'save-preset'|'audience'|'members'|'backup'|null;
 const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||'사진으로 남긴 순간';
@@ -62,6 +64,10 @@ export default function UnifiedApp(){
  const [mode,setMode]=useState<'cards'|'list'|'calendar'>('cards'),[section,setSection]=useState<'all'|'saved'|'collections'|'taste'>('all'),[query,setQuery]=useState(''),[category,setCategory]=useState('all'),[selecting,setSelecting]=useState(false),[picked,setPicked]=useState<string[]>([]),[collectionName,setCollectionName]=useState(''),[collection,setCollection]=useState<Collection|null>(null),[cardDraft,setCardDraft]=useState<EditorialStyle|null>(null),[designOpen,setDesignOpen]=useState(false),[presetName,setPresetName]=useState(''),[audienceDraft,setAudienceDraft]=useState<string[]>([]),[comment,setComment]=useState(''),[backupProgress,setBackupProgress]=useState<number|null>(null),[guideReplay,setGuideReplay]=useState(0),[guideActive,setGuideActive]=useState(false),[district,setDistrict]=useState<{name:string;ids:string[]}|null>(null);
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
  const [mosaicFocus,setMosaicFocus]=useState(''),[mapFocus,setMapFocus]=useState('');
+ const [pendingMoment,setPendingMoment]=useState(''),[saveMoment,setSaveMoment]=useState<UnifiedLog|null>(null),[discoveryLog,setDiscoveryLog]=useState('');
+ const clearDiscovery=useCallback(()=>setDiscoveryLog(''),[]);
+ useEffect(()=>{setPendingMoment('');setSaveMoment(null);setDiscoveryLog('');},[identity?.id,accountMode]);
+ useEffect(()=>{if(!pendingMoment||syncStatus!=='idle')return;const log=state?.logs.find(row=>row.id===pendingMoment);setPendingMoment('');if(!log)return;if(view==='logs'&&!selectedId&&!panel)setSaveMoment(log);if(log.place)setDiscoveryLog(log.id);setToast('');},[pendingMoment,syncStatus,state,view,selectedId,panel]);
  const handledInvite=useRef('');
  useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||needsNickname||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(history.state,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join,needsNickname]);
  const [calendar,setCalendar]=useState<CalendarView>({month:todayKey().slice(0,7),start:'',end:'',timelineOpen:false});
@@ -78,13 +84,13 @@ export default function UnifiedApp(){
  useEffect(()=>{if(state&&scope!=='mine'&&!state.circles.some(c=>c.id===scope&&c.members.includes('me')))setScope('mine');},[state,scope]);
  useEffect(()=>{if(!ready||!session)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(history.state,'',url);},[view,scope,ready,session]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(t);},[toast]);
- useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#08080A':'#FFFFFF');},[dark]);
+ useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0C0C0D':'#F7F6F2');},[dark]);
  useEffect(()=>{if(accountMode==='cloud'&&syncStatus==='idle')setToast(previous=>previous==='서버에 저장하고 있어요.'?'서버에 저장했어요.':previous);},[accountMode,syncStatus]);
  const route=`${view}:${scope}:${section}:${mode}`;
- const navigate=(next:Destination)=>{setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,pageScrollPosition().top);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
- const changeScope=(next:string)=>{setMapFocus('');savedScroll.current.set(route,pageScrollPosition().top);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
+ const navigate=(next:Destination)=>{setSaveMoment(null);setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,pageScrollPosition().top);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
+ const changeScope=(next:string)=>{setSaveMoment(null);setMapFocus('');savedScroll.current.set(route,pageScrollPosition().top);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
  useEffect(()=>{setComposeKept(false);setComposing(false);},[identity?.id,accountMode]);
- const startCompose=useCallback(()=>{setInitialWork(undefined);setComposing(true);},[]);
+ const startCompose=useCallback(()=>{setSaveMoment(null);setInitialWork(undefined);setComposing(true);},[]);
  useEffect(()=>{const distance=swipeEntry.current||16,slide=swipeEntry.current>0;swipeEntry.current=0;if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const elements=Array.from(mainRoot.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0),animations=elements.map(element=>element.animate([{opacity:slide?1:.6,transform:`translateX(${navDirection.current*distance}px)`},{opacity:1,transform:'translateX(0)'}],{duration:slide?240:220,easing:'cubic-bezier(.2,.75,.2,1)'}));return()=>animations.forEach(animation=>animation.cancel());},[view]);
  const cardNavigation=useCardHistory({id:selectedId,canLeave:()=>{
   const top=Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]')).at(-1);
@@ -122,9 +128,9 @@ export default function UnifiedApp(){
  const selected=readable.find(l=>l.id===selectedId),selectedAuthor=state.people.find(p=>p.id===selected?.authorId),mine=selected?.authorId===actor.id;
  const mapLogs=scoped.filter(l=>!!l.place),style=selected?(cardDraft||styleOf(selected)):null;
  const notify=(text:string)=>setToast(text);
- const openLog=(log:LabLog)=>{savedScroll.current.set(route,pageScrollPosition().top);cardNavigation.open(log.id);};
+ const openLog=(log:LabLog)=>{setSaveMoment(null);savedScroll.current.set(route,pageScrollPosition().top);cardNavigation.open(log.id);};
  const closeLog=cardNavigation.back;
- const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){changeScope('mine');setView('logs');setMosaicFocus(log.work?log.id:'');}}return result;};
+ const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){setPendingMoment(log.id);changeScope('mine');setView('logs');setMosaicFocus(log.work?log.id:'');}}return result;};
  const toggle=(id:string,key:'likes'|'bookmarks')=>commit(s=>({...s,logs:s.logs.map(l=>l.id===id?{...l,[key]:l[key].includes(actor.id)?l[key].filter(v=>v!==actor.id):[...l[key],actor.id]}:l)}));
  const applyStyle=()=>{if(!selected||!cardDraft)return;if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,card:{...cardDraft},updatedAt:Date.now(),revision:(l.revision||0)+1}:l)}))){setCardDraft(null);setDesignOpen(false);notify('이 티끌의 디자인을 적용했어요.');}};
  const intend=(id:string)=>{try{commit(s=>toggleIntent(s,actor.id,id) as typeof s);}catch(e){notify(e instanceof Error?e.message:'작품을 담지 못했어요.');}};
@@ -149,7 +155,7 @@ export default function UnifiedApp(){
  {pagedFeed&&!pagination.loading&&(pagination.error||feedHasMore)&&<div className="un-feed-pagination" ref={pagination.sentinel}>{pagination.error&&<span role="alert">{pagination.error}</span>}<button onClick={pagination.more}>{pagination.error?'다시 불러오기':'티끌 4장 더 보기'}</button></div>}
  {!waitingForRecords&&!pagination.loading&&!pagination.error&&mode!=='calendar'&&section!=='taste'&&section!=='collections'&&!logs.length&&<div className="lab-empty"><BookOpen/><h3>{query||filterCount?'조건에 맞는 기록이 없어요':'오늘의 첫 장을 남겨볼까요?'}</h3><p>{query||filterCount?'검색어를 바꾸거나 필터를 초기화해보세요.':scope==='mine'?'사진 한 장, 짧은 한마디도 좋아요.':'이 모임에 선택해 남긴 기록이 여기에 모여요.'}</p><button onClick={query||filterCount?resetSearch:startCompose}>{query||filterCount?'검색·필터 초기화':'티끌 남기기'}</button></div>}
  </div>}
- {view==='map'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MapExplorer logs={mapLogs} people={state.people} dark={dark} scopeKey={`unified:${scope}`} focusedLog={mapFocus} onSelect={openLog} onDistrictSelect={showDong}/>)}
+ {view==='map'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MapExplorer logs={mapLogs} people={state.people} dark={dark} scopeKey={`unified:${scope}`} focusedLog={mapFocus} discoveryLog={scope==='mine'?discoveryLog:undefined} onDiscoveryConsumed={clearDiscovery} onSelect={openLog} onDistrictSelect={showDong}/>)}
  {view==='mosaic'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MosaicBoard key={scope} state={state} logs={scoped} scope={scope} actor={actor} circle={activeCircle} focusLogId={mosaicFocus} commit={commit} onOpen={openLog}/>)}
  <div hidden={view!=='studio'}>{waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<UnifiedStudio state={state} commit={commit} notify={notify}/>}</div>
  </main>
@@ -186,6 +192,7 @@ export default function UnifiedApp(){
  {backupProgress!==null&&<div className="un-backup-overlay" role="dialog" aria-modal="true" aria-label="백업 저장 중"><div><Download size={26}/><strong aria-live="polite">{backupProgress}%</strong><progress value={backupProgress} max={100}/><span>내 기록을 파일로 묶고 있어요</span></div></div>}
  {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}
  {(error||syncStatus==='failed')&&<SyncNotice message={error} failed={syncStatus==='failed'} busy={syncStatus==='saving'} onDismiss={clearError} onRetry={()=>void retry()} onRecover={()=>void discardPending()}/>}
+ {saveMoment&&view==='logs'&&!panel&&!selectedId&&!composing&&!editing&&<SaveMoment key={saveMoment.id} log={saveMoment} author={actor.name} onDone={()=>setSaveMoment(null)}/>}
  {toast&&<div className="lab-toast un-toast" role="status"><Check size={16}/>{toast}{mosaicFocus&&<button onClick={()=>{setView('mosaic');setToast('');}}>타일에 놓기<ArrowUpRight size={14}/></button>}</div>}
  </div>;
 }

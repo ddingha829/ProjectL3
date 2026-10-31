@@ -18,21 +18,22 @@ import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_DONG_ZOOM,MAP_TIER_LABE
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
-type Props={pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string};
+type Props={pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string;discoveryLog?:string;onDiscoveryConsumed?:()=>void};
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 티끌';
 const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
-export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog}:Props){
+export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
  const {revealed,markPainted}=useMapEntrance(ready,failed,scopeKey);
  const [currentPoint,setCurrentPoint]=useState<{lat:number;lng:number}|null>(null),[locating,setLocating]=useState(false),[locationError,setLocationError]=useState('');
  const locationRequest=useRef(0),locateIcon=useRef<LocateFixedIconHandle>(null),replayIcon=useRef<RotateCcwIconHandle>(null);
- const [replaying,setReplaying]=useState(false);
+ const [replaying,setReplaying]=useState(false),[discoveryName,setDiscoveryName]=useState('');
+ const discoveryCallback=useRef(onDiscoveryConsumed);discoveryCallback.current=onDiscoveryConsumed;
  const [tier,setTier]=useState<MapTier>('dong'),[regional,setRegional]=useState<Partial<Record<WideMapTier,DongCollection>>>({}),[regionError,setRegionError]=useState('');
  const userMoved=useRef(false),autoLocated=useRef(false);
  const reduceMotion=useMotionPreference();
@@ -149,6 +150,18 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   redraw();
  },[activeCoverage,ready,onPick,highlightedDong]);
  useEffect(()=>{if(ready&&revealed)replay();},[activeCoverage,ready,revealed]);
+ useEffect(()=>{
+  const m=map.current,L=engine.current;if(!discoveryLog||!ready||!revealed||!boundaries||!m||!L||onPick||compact)return;
+  const dong=coverage.dongs.find(region=>region.count===1&&region.logIds.includes(discoveryLog)),log=current.current.logs.find(row=>row.id===discoveryLog);
+  if(!dong||!log?.place){discoveryCallback.current?.();return;}
+  setDiscoveryName(dong.feature.properties.label);autoLocated.current=true;locationRequest.current++;setLocating(false);locateIcon.current?.stopAnimation();
+  m.setView([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:false});
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glow=reduced?null:L.geoJSON(dong.feature as unknown as FeatureCollection,{pane:'scratch-boundaries',interactive:false,style:{className:'scratch-discovery-area',color:'#ef632e',fillColor:'#ef632e',weight:1,opacity:0,fillOpacity:0}}).addTo(m);
+  const ring=reduced?null:L.circleMarker([log.place.lat,log.place.lng],{pane:'scratch-boundaries',interactive:false,className:'scratch-discovery-point',color:'#ef632e',fillColor:'#ef632e',radius:10,weight:2,opacity:0,fillOpacity:0}).addTo(m);
+  const timer=setTimeout(()=>{setDiscoveryName('');discoveryCallback.current?.();},4000);
+  return()=>{clearTimeout(timer);glow?.remove();ring?.remove();setDiscoveryName('');discoveryCallback.current?.();};
+ },[discoveryLog,ready,revealed,boundaries,coverage,compact,onPick]);
  const fit=()=>{const m=map.current,L=engine.current;if(m&&L&&places.length)m.fitBounds(L.latLngBounds(places.map(p=>[p.lat,p.lng])),{padding:[45,55],maxZoom:14,animate:!matchMedia('(prefers-reduced-motion: reduce)').matches});};
  const locate=(automatic=false)=>{
   if(locating)return;setFocused('');setLocationError('');
@@ -164,7 +177,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    setLocationError(error.code===1?'위치 권한을 허용하면 현재 위치를 볼 수 있어요.':'현재 위치를 확인하지 못했어요. 잠시 후 다시 눌러주세요.');
   },{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
  };
- useEffect(()=>{if(!ready||onPick||compact||focusedLog||autoLocated.current)return;autoLocated.current=true;locate(true);},[ready,onPick,compact,focusedLog]);
+ useEffect(()=>{if(!ready||onPick||compact||focusedLog||discoveryLog||autoLocated.current)return;autoLocated.current=true;locate(true);},[ready,onPick,compact,focusedLog]);
  const selected=located.find(log=>log.id===focused),selectedPerson=selected?people.find(person=>person.id===selected.authorId):undefined;
  const appearance=selected?cardView(selected):null;
  useEffect(()=>{
@@ -176,6 +189,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
  return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe={pageSwipeEdges?undefined:true} data-page-swipe-map={pageSwipeEdges||undefined} data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
   <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 티끌 지도'}/>
+  {discoveryName&&<div className="scratch-discovery-note" role="status"><strong>새로운 동네를 채웠어요</strong><span>{discoveryName}</span></div>}
   <MapEntrance revealed={revealed}/>
   {pageSwipeEdges&&<><span className="un-map-page-edge is-left" aria-hidden="true"/><span className="un-map-page-edge is-right" aria-hidden="true"/></>}
   {revealed&&!boundaries&&!boundaryError&&<div className="scratch-loading" role="status"><LoaderCircle size={22}/>{ready?'행정동 경계를 불러오는 중':'지도를 펼치고 있어요'}</div>}

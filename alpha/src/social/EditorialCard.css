@@ -144,6 +144,11 @@
 .ec-portrait .ec-ticket-stub{top:calc(745px * .73);padding:12px 25px 14px}
 .ec-portrait .ec-ticket-stub p{margin-top:5px}
 .ec-portrait .ec-notch{top:calc(745px * .73)}
+/* Punch the entire face, including its edge. Two overlapping half masks avoid
+   WebKit mask-composite differences and reveal any background behind the card. */
+.ec-ticket{--ec-ticket-seam:73%;--card-notch-radius:10;--card-notch-y:73;border:0;-webkit-mask:radial-gradient(circle at 0 var(--ec-ticket-seam),transparent 9.5px,#000 10px) left top/51% 100% no-repeat,radial-gradient(circle at 100% var(--ec-ticket-seam),transparent 9.5px,#000 10px) right top/51% 100% no-repeat;mask:radial-gradient(circle at 0 var(--ec-ticket-seam),transparent 9.5px,#000 10px) left top/51% 100% no-repeat,radial-gradient(circle at 100% var(--ec-ticket-seam),transparent 9.5px,#000 10px) right top/51% 100% no-repeat}
+.ec-portrait.ec-ticket{--ec-ticket-seam:calc(745px * .73);--card-notch-y:80.9300595}
+.ec-square.ec-ticket{--ec-ticket-seam:60%;--card-notch-y:60}
 .ec-portrait .ec-polaroid-photo{height:calc(705px * .62)}
 .ec-portrait .ec-polaroid-meta{margin-top:12px;padding-bottom:7px}
 .ec-portrait.ec-polaroid>h2{margin-top:11px;margin-bottom:8px}
