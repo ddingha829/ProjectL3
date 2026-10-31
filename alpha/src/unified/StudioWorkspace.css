@@ -119,7 +119,6 @@
  .un-studio-workspace .studio-workbench{overflow:hidden;min-height:152px}
  .un-studio-workspace .studio-workbench .studio-options{height:auto;min-height:0;overflow:auto;touch-action:pan-y pinch-zoom}
  .un-studio-workspace .studio-save-bar{position:relative;z-index:1}
- .un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-rows:minmax(208px,1fr) minmax(152px,min(208px,40%))}
 }
 
 .studio-canvas{position:relative}

@@ -21,7 +21,7 @@ html[data-unified-shell=true] .flc-shell.un-feed-toolbar{top:0}
 /* Size the fitted pages from the same available space as the fixed dock. */
 html[data-unified-shell=true] .un-mosaic,
 html[data-unified-shell=true] .un-map-explorer{height:100cqh;min-height:300px}
-@media(max-width:779px){html[data-unified-shell=true] .un-studio.un-studio-workspace{height:100cqh;min-height:400px}}
+@media(max-width:779px){html[data-unified-shell=true] .un-app .un-studio.un-studio-workspace{height:100cqh;min-height:400px}}
 html[data-unified-shell=true] .un-app .log-calendar{height:calc(100cqh - 49px)}
 /* Keep the four-column board usable on short phones by compacting its intro. */
 @media(max-width:400px) and (max-height:650px){

@@ -1,13 +1,26 @@
+/* A dedicated editor viewport. The header and workspace divide one definite
+   height; neither inherits the main Studio's container-query height. */
 .quick-dialog-backdrop:has(>.un-card-style-dialog){padding:0!important;align-items:stretch;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
-.lab-dialog.un-card-style-dialog{width:100vw!important;max-width:none!important;height:var(--lab-vvh,100dvh)!important;max-height:none!important;margin:0!important;padding:0 18px max(12px,env(safe-area-inset-bottom))!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:var(--bg)!important;box-shadow:none}
-.un-card-style-dialog>.quick-dialog-header{display:flex!important;align-items:center;justify-content:flex-start;gap:10px;height:calc(56px + env(safe-area-inset-top,0px));margin:0!important;padding-top:env(safe-area-inset-top,0px)}
-.un-card-style-dialog>.quick-dialog-header>.quick-control{order:-1;border:0;background:transparent;flex:none}
-.un-card-style-dialog>.quick-dialog-header h2{font-size:15px!important;font-weight:600}
-.un-card-style-dialog .un-studio.un-card-design-workspace{height:calc(var(--lab-vvh,100dvh) - 56px - env(safe-area-inset-top,0px) - max(12px,env(safe-area-inset-bottom,0px)));grid-template-rows:minmax(0,1fr) auto;gap:8px;margin:0 auto;align-items:stretch}
+.lab-dialog.un-card-style-dialog{display:grid;grid-template-rows:auto minmax(0,1fr);width:100vw!important;max-width:none!important;height:var(--lab-vvh,100dvh)!important;max-height:none!important;min-height:0;margin:0!important;padding:0 18px max(12px,env(safe-area-inset-bottom,0px))!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:var(--bg)!important;box-shadow:none}
+.un-card-style-dialog>.quick-dialog-header{display:flex!important;align-items:center;justify-content:flex-start;gap:10px;min-height:calc(56px + env(safe-area-inset-top,0px));margin:0!important;padding-top:env(safe-area-inset-top,0px)}
+.un-card-style-dialog>.quick-dialog-header>.quick-control{order:-1;flex:none;border:0;background:var(--ui-soft,var(--surface-2));color:var(--fg)}
+.un-card-style-dialog>.quick-dialog-header h2{font-size:17px!important;font-weight:700;letter-spacing:-.035em}
+.un-card-style-dialog .un-studio.un-card-design-workspace{height:100%;min-height:0;min-width:0;width:100%;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) clamp(230px,35%,270px);gap:12px;margin:0 auto;align-items:stretch}
+.un-card-style-dialog .un-card-design-workspace .studio-canvas{height:auto;min-height:0;padding:10px 12px 0}
+.un-card-style-dialog .un-card-design-workspace .studio-workbench{display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:100%;min-height:0;align-self:stretch;overflow:hidden}
+.un-card-style-dialog .un-card-design-workspace .studio-options{height:auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px;scroll-padding-block:12px;touch-action:pan-y pinch-zoom}
+.un-card-style-dialog .un-card-design-workspace .studio-tabs button{min-height:46px;font-size:12px}
+.un-card-style-dialog .un-card-design-workspace .studio-workbench[data-editor-section=front] .studio-options{padding-block:8px}
+.un-card-style-dialog .studio-options .lab-front-choices>button{min-height:clamp(76px,12dvh,100px);gap:6px;font-size:12px}
+.un-card-style-dialog .studio-options .lab-front-choices>button:before{width:28px;height:44px}
+.un-card-style-dialog .studio-options .lab-front-choices>button:nth-child(3):before{box-shadow:inset 0 -11px 0 currentColor}
+.un-card-style-dialog .un-card-design-workspace .studio-save-bar{position:relative;z-index:1;min-height:66px;padding:8px 12px;background:var(--surface);gap:12px}
+.un-card-style-dialog .studio-save-bar>.un-primary{min-height:48px;min-width:145px;font-size:13px}
+.un-card-style-dialog .studio-save-bar>.studio-settings{min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;color:var(--fg);font-size:12px}
 .studio-preview-kind{display:grid;place-items:center;min-width:44px;min-height:44px;color:var(--muted)}
 .un-edit-discard-actions{display:flex;gap:8px;margin-top:20px}.un-edit-discard-actions>button{flex:1;min-height:44px}
-.un-card-design-workspace .studio-save-bar{padding-bottom:8px}
-@media(min-width:780px){.un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-rows:minmax(0,1fr);gap:30px}.un-card-style-dialog .un-card-design-workspace .studio-canvas{height:100%;padding-top:14px}.un-card-design-workspace .studio-workbench{align-self:center}}
-@media(max-width:360px){.lab-dialog.un-card-style-dialog{padding-inline:12px!important}}
-
-@media(max-width:779px){.un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-rows:minmax(208px,1fr) minmax(152px,min(208px,40%))}}
+@media(min-width:780px){.un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:30px;max-width:1080px}.un-card-style-dialog .un-card-design-workspace .studio-workbench{height:min(100%,540px);align-self:center}}
+@media(max-width:360px){.lab-dialog.un-card-style-dialog{padding-inline:12px!important}.un-card-style-dialog .un-card-design-workspace .studio-tabs button{font-size:11px;gap:4px}.un-card-style-dialog .studio-save-bar>.un-primary{min-width:136px}.un-card-style-dialog .studio-save-bar>.studio-settings{padding-inline:10px}}
+@media(max-width:779px) and (max-height:620px){.un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-rows:minmax(0,1fr) 220px;gap:8px}.un-card-style-dialog .un-card-design-workspace .studio-options{padding:8px 10px}.un-card-style-dialog .un-card-design-workspace .studio-canvas{padding-top:6px}.un-card-style-dialog .studio-options .lab-front-choices>button{min-height:76px;gap:6px}.un-card-style-dialog .studio-options .lab-front-choices>button:before{width:19px;height:30px}.un-card-style-dialog .studio-options .lab-front-choices>button:nth-child(3):before{box-shadow:inset 0 -8px 0 currentColor}}
+/* In phone landscape, two columns keep all three editor regions reachable. */
+@media(max-width:779px) and (max-height:440px) and (min-width:560px){.un-card-style-dialog .un-studio.un-card-design-workspace{grid-template-columns:minmax(0,.8fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:12px}.un-card-style-dialog .un-card-design-workspace .studio-workbench{height:100%}.un-card-style-dialog .studio-save-bar>.un-primary{min-width:122px}.un-card-style-dialog .studio-save-bar>.studio-settings{padding-inline:8px}.un-card-style-dialog .studio-save-bar{gap:8px}}

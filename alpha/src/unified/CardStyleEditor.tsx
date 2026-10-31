@@ -14,7 +14,7 @@ export default function CardStyleEditor({log,author,value,presets,onChange,onApp
  return <>
   <AccessibleDialog open title="카드 꾸미기" closeLabel="카드 꾸미기 닫기" closeIcon={<ArrowLeft size={21}/>} onClose={close} panelClassName="lab-dialog un-card-style-dialog">
    <section className="un-studio un-studio-workspace un-card-design-workspace" aria-label="카드 디자인 편집">
-    <CardDesignWorkspace log={log} author={author} value={value} onChange={onChange} footer={<><button className="studio-settings" onClick={()=>setLibrary(true)}><Palette size={16}/>프리셋<ChevronDown size={12}/></button><button className="un-primary" disabled={!dirty} onClick={onApply}><Check size={16}/>카드에 적용</button></>}/>
+    <CardDesignWorkspace log={log} author={author} value={value} onChange={onChange} footer={<><button className="studio-settings" onClick={()=>setLibrary(true)}><Palette size={16}/>프리셋<ChevronDown size={12}/></button><button className="un-primary" disabled={!dirty} onClick={onApply}><Check size={16}/>{dirty?'꾸미기 확정':'적용됨'}</button></>}/>
    </section>
   </AccessibleDialog>
   <AccessibleDialog open={library} title="프리셋 적용" onClose={()=>setLibrary(false)} panelClassName="lab-dialog"><div className="un-preset-options">{presets.map(preset=><button key={preset.id} onClick={()=>{onChange({...preset.style});setLibrary(false);}}><span className="un-preset-swatch" style={{background:`linear-gradient(125deg,${preset.style.bg} 50%,${preset.style.accent} 50%)`}}/><span>{preset.name}<small>{FRONT_NAMES[preset.style.front]} · {BACK_NAMES[preset.style.back]}</small></span><ChevronDown size={15}/></button>)}</div></AccessibleDialog>
