@@ -11,7 +11,7 @@ export const FINISH_NAMES={none:'없음',film:'필름',satin:'새틴 코팅',let
 export const FINISH_HELP={none:'원래 색과 사진을 그대로',film:'앞면 사진 · 입자와 따뜻한 빛 번짐',satin:'앞·뒷면 · 플립에 반응하는 코팅 광택',letterpress:'타이틀·구분선 · 은은한 음각 인쇄',acrylic:'뒷면 · 사진의 색감만 비치는 아크릴'};
 export const FONT_MOOD_NAMES={swiss:'나눔바른고딕',neo:'나눔스퀘어 네오',serif:'나눔명조',analog:'금은보화'};
 export function cardCorner(layout:CardFront|CardBack){return ['polaroid','postcard','library','broadside'].includes(layout)?6:layout==='ticket'?12:20;}
-export const FRONT_NAMES={cover:'INSTA',ticket:'TICKET',polaroid:'POLAROID'};
+export const FRONT_NAMES={cover:'사진형',ticket:'티켓형',polaroid:'폴라로이드'};
 export const BACK_NAMES={postcard:'엽서',review:'리뷰 노트',day:'일력',doodle:'두들',broadside:'호외',passport:'여권',vinyl:'바이닐',library:'도서카드',paint:'페인트'};
 export const EDITORIAL_THEMES=[
  {id:'paper',name:'Warm Paper',bg:'#f6f3ec',text:'#161616',accent:'#d94e28'},

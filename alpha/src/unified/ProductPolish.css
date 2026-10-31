@@ -1,0 +1,110 @@
+/* Product chrome only: card artwork and viewport geometry have their own owners. */
+html[data-unified-shell=true]{--ui-radius:14px;--ui-action:#B93B14;--ui-action-ink:#fff;--ui-accent-ink:#B93B14;--ui-soft:color-mix(in srgb,var(--fg) 4%,var(--surface));--ui-stroke:color-mix(in srgb,var(--fg) 9%,transparent);--ui-fast:150ms;--ui-ease:cubic-bezier(.2,.7,.2,1)}
+html[data-unified-shell=true]:not(.light){--ui-action:#FF936D;--ui-action-ink:#20120D;--ui-accent-ink:#FFAB8B;--ui-soft:color-mix(in srgb,var(--fg) 5%,var(--surface));--ui-stroke:color-mix(in srgb,var(--fg) 12%,transparent)}
+
+/* One restrained control language, with an explicit pressed response. */
+.un-app :is(.un-primary,.un-outline,.studio-icon-button),.lab-dialog :is(.un-primary,.un-outline){border-radius:var(--ui-radius,14px);font-weight:700;letter-spacing:-.025em;transition:background var(--ui-fast,150ms),color var(--ui-fast,150ms),opacity var(--ui-fast,150ms)}
+html[data-unified-shell=true] :is(.un-app,.lab-dialog) .un-primary{background:var(--ui-action);border-color:var(--ui-action);color:var(--ui-action-ink);box-shadow:none}
+html[data-unified-shell=true] :is(.un-app,.lab-dialog) .un-primary:disabled{background:var(--ui-soft);border-color:var(--ui-stroke);color:var(--muted);opacity:1}
+.un-app :is(.flc-tool-trigger,.flc-search-toggle,.un-feed-view-toggle,.studio-icon-button,.studio-preview-bar button):active,.un-settings button:active{opacity:.65}
+html[data-unified-shell=true] .lab-dialog:not(.un-detail-dialog):not(.lab-compose-dialog):not(.mosaic-float-dialog)>.quick-dialog-header h2{font-size:21px;font-weight:800;line-height:1.35;letter-spacing:-.04em}
+html[data-unified-shell=true] .lab-dialog:not(.un-detail-dialog):not(.lab-compose-dialog)>.quick-dialog-header>button{background:var(--ui-soft);border:0;box-shadow:none;color:var(--muted)}
+
+/* Header: scope is a mode control, with a quiet neutral treatment. */
+.un-header.un-header-v2.un-header-centered .un-scope-picker>.flc-tool-trigger{background:var(--surface);border-color:var(--ui-stroke);font-weight:700;font-size:12px;box-shadow:0 1px 2px #00000003;transition:background var(--ui-fast),border-color var(--ui-fast)}
+.un-header.un-header-v2.un-header-centered .un-scope-picker.has-group>.flc-tool-trigger{background:color-mix(in srgb,var(--accent) 6%,var(--surface));border-color:color-mix(in srgb,var(--accent) 20%,var(--ui-stroke))}
+.un-header-centered .un-scope-type{color:var(--ui-accent-ink)}
+.un-header-centered .un-scope-picker>.flc-menu{padding:6px;border-radius:18px;box-shadow:0 12px 36px #00000014,0 2px 6px #00000008}
+.un-header-centered .un-scope-picker>.flc-menu>.un-scope-option{padding:0 12px;border-radius:12px;font-size:13px}
+.un-header-centered .un-scope-option[aria-pressed=true]{background:var(--ui-soft);color:var(--fg)}
+.un-header-centered .un-scope-option>.un-scope-check{color:var(--ui-accent-ink)}
+.un-header-centered .un-scope-manage{margin:6px 0 0;font-size:12px;color:var(--ui-accent-ink)!important}
+
+/* Search reads as an action even before expansion. Keep every target at 44px. */
+.un-app .flc-shell.un-log-controls.un-feed-toolbar{border-color:var(--ui-stroke);border-radius:16px;box-shadow:0 1px 2px #00000002}
+.un-feed-toolbar .un-feed-search-slot{flex-basis:80px;width:80px}
+.un-feed-toolbar .flc-search-toggle{display:flex;justify-content:center;align-items:center;gap:8px;width:80px;min-width:44px;border-radius:12px}
+.un-feed-search-label{font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap}
+.un-feed-toolbar.is-search-open .un-feed-search-label{display:none}
+.un-feed-toolbar.is-search-open .flc-search-toggle{width:44px}
+.un-feed-toolbar.is-search-open .un-feed-search-slot{border-radius:12px;border-color:color-mix(in srgb,var(--fg) 18%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--fg) 3%,transparent)}
+.un-feed-toolbar .flc-tool-trigger,.un-feed-toolbar .un-feed-view-toggle{border-radius:12px}
+.un-feed-toolbar .un-feed-category-label{font-size:11px;color:var(--muted)}
+.un-feed-toolbar .un-feed-library{border-left:1px solid var(--ui-stroke);padding-left:3px}
+.un-feed-toolbar :is(.un-feed-filter,.un-feed-library)>.flc-menu{border-radius:18px;box-shadow:0 12px 36px #00000014,0 2px 6px #00000008}
+.un-feed-toolbar :is(.un-feed-category-options,.un-feed-sort-options)>button[aria-pressed=true]{background:var(--ui-soft);color:var(--fg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 24%,transparent);font-weight:700}
+.un-app .un-feed-name{padding:4px 8px;font-size:10px;box-shadow:none;letter-spacing:-.02em}
+
+/* Map and collection share a compact section title, with calm, consistent art. */
+.un-app :is(.un-map-invitation,.mosaic-invitation){gap:10px;padding-inline:2px}
+.un-app :is(.un-map-invitation-art,.mosaic-invitation-art){display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;border:1px solid var(--ui-stroke);border-radius:12px;background:var(--surface);color:var(--ui-accent-ink)}
+.un-app .un-map-invitation-art>svg{position:static;fill:none;width:23px;height:23px;color:inherit}
+.un-app :is(.un-map-invitation,.mosaic-invitation) h1{font-size:17px;font-weight:800;line-height:1.45;letter-spacing:-.045em}
+.un-app :is(.un-map-invitation,.mosaic-invitation) p{font-size:11px;line-height:1.6;letter-spacing:-.02em;margin-top:2px}
+.un-app .un-map-panel{border-color:var(--ui-stroke)}
+.un-app .un-map-nearby{padding-inline:2px}
+.un-map-nearby>header{justify-content:space-between;margin-bottom:4px;font-size:11px}
+.un-map-nearby>header>span:first-child{color:var(--fg);font-weight:700}
+.un-map-nearby-log{border-top-color:var(--ui-stroke)}
+.mosaic-volume-number{color:var(--muted);font-size:8px;letter-spacing:.12em}
+.mosaic-volume-number strong{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:-.06em}
+.un-app .mosaic-slot.is-empty{background:color-mix(in srgb,var(--fg) 2.5%,transparent);border-color:color-mix(in srgb,var(--fg) 15%,transparent)}
+.un-app .mosaic-slot.is-empty>svg{color:var(--muted)}
+.un-app .mosaic-board-actions{background:var(--surface);border-color:var(--ui-stroke)}
+.un-app .mosaic-tray{border-color:var(--ui-stroke);box-shadow:none}
+.mosaic-empty-mark{background:var(--ui-soft);color:var(--muted);border:0}
+.mosaic-tray-empty strong{font-weight:700;letter-spacing:-.025em}
+
+/* Studio: a neutral stage and one accent for the selected setting. */
+.un-app .studio-canvas{background:color-mix(in srgb,var(--fg) 3%,var(--bg));border:1px solid var(--ui-stroke);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--surface) 55%,transparent)}
+.un-app .studio-preset-picker strong{font-weight:700;font-size:14px;letter-spacing:-.025em}
+.un-app .studio-preset-picker>.un-preset-swatch{box-shadow:0 2px 4px #0000000a}
+.un-app .studio-expand{border-radius:12px;box-shadow:0 2px 6px #00000006}
+.un-app .studio-workbench{border-color:var(--ui-stroke);box-shadow:0 2px 8px #00000003}
+.un-app .studio-tabs{gap:2px;padding:4px;background:var(--ui-soft);border-bottom-color:var(--ui-stroke)}
+.un-app .studio-tabs button{font-size:11px;border-radius:10px;font-weight:500}
+.un-app .studio-tabs button[aria-pressed=true]{background:var(--surface);color:var(--ui-accent-ink);font-weight:700;box-shadow:0 1px 4px #0000000b}
+.un-app .studio-options .lab-editorial-controls fieldset button[aria-pressed=true]{background:var(--ui-soft);color:var(--fg);border-color:color-mix(in srgb,var(--fg) 40%,transparent);box-shadow:none}
+.un-app .studio-save-bar{border-top-color:var(--ui-stroke)}
+.un-app .studio-settings{font-size:11px;color:var(--muted)}
+
+/* Settings groups replace a long undifferentiated list. One scroll owner stays. */
+.lab-dialog.un-settings{background:var(--bg)!important}
+.un-settings .un-profile-edit{width:100%;padding:12px;margin:0 0 20px;border:1px solid var(--ui-stroke);border-radius:16px;background:var(--surface)}
+.un-settings .un-profile-edit>.un-avatar{width:40px;height:40px;font-size:14px;flex:none}
+.un-settings .un-profile-edit>span:nth-child(2){display:grid;gap:5px;min-width:0;text-align:left}
+.un-settings .un-profile-edit strong{font-size:17px;font-weight:700}
+.un-settings .un-profile-edit small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.un-settings .un-profile-edit>span:last-child{font-size:10px;white-space:nowrap;color:var(--muted);margin-left:auto;flex:none}
+.un-settings .un-notification-settings{padding:0 0 16px;border-bottom:0}
+.un-settings .un-notification-settings h3,.un-settings .un-settings-section h3,.un-settings-group>h3{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:-.015em;margin:0 0 10px}
+.un-settings .un-notification-row{padding:8px 0}
+.un-settings .un-notification-row strong{font-size:13px;font-weight:700}
+.un-settings .un-notification-rule{font-size:11px;line-height:1.7;margin-top:10px}
+.un-settings .un-settings-section{border:0;padding:0 0 20px}
+.un-settings .un-theme-choice{gap:3px;padding:4px;border:1px solid var(--ui-stroke);border-radius:14px;background:var(--surface)}
+.un-settings .un-theme-choice>button{min-height:44px;border:0;border-radius:10px;color:var(--muted);font-size:12px}
+.un-settings .un-theme-choice>button[aria-pressed=true]{background:var(--ui-soft);color:var(--fg);box-shadow:inset 0 0 0 1px var(--ui-stroke);font-weight:700}
+.un-settings-group{margin:0 0 20px}
+.un-settings .un-settings-links{border:1px solid var(--ui-stroke);border-radius:16px;background:var(--surface);overflow:hidden}
+.un-settings .un-settings-links>button{min-height:50px;padding:0 14px;border:0;text-align:left;font-size:13px;gap:12px;position:relative}
+.un-settings .un-settings-links>button+button:before{content:'';position:absolute;top:0;left:44px;right:14px;height:1px;background:var(--ui-stroke)}
+.un-settings .un-settings-links>button>svg:first-child{color:var(--muted);stroke-width:1.65;flex:none}
+.un-settings .un-settings-links>button>span{flex:1;min-width:0}
+.un-settings .un-settings-links>button>svg:last-child{margin:0;color:var(--muted);flex:none}
+.un-settings-logout{display:flex;justify-content:center;align-items:center;gap:7px;width:100%;min-height:44px;margin:0 0 12px;font-size:12px;color:var(--muted)}
+.un-settings .un-preview-disclosure{font-size:10px;line-height:1.7;margin:16px 0 0;color:var(--muted)}
+.un-settings footer{margin-top:12px;font:9px ui-monospace,monospace;letter-spacing:.04em}
+
+.lab-dialog.un-group-entry .un-group-entry-tabs{background:var(--ui-soft);border:1px solid var(--ui-stroke);border-radius:14px}
+.lab-dialog.un-group-entry .un-group-entry-tabs>button[aria-selected=true]{background:var(--surface);color:var(--ui-accent-ink);box-shadow:0 1px 4px #0000000b;font-weight:700}
+.lab-dialog.un-group-entry .un-code-join input{background:var(--ui-soft);border-color:var(--ui-stroke);font-weight:500;border-radius:14px}
+.lab-dialog.un-entry-dialog .un-entry-options>button{border-radius:16px;box-shadow:none}
+.lab-dialog.un-entry-dialog .un-entry-options>.un-entry-camera{background:var(--ui-action);color:var(--ui-action-ink)}
+.lab-dialog.un-entry-dialog .un-entry-options>.un-entry-camera :is(svg,small){color:var(--ui-action-ink)}
+.lab-dialog.un-entry-dialog .un-entry-camera strong{font-size:18px;font-weight:800}
+
+@media(max-width:360px){.un-feed-toolbar .un-feed-search-slot{flex-basis:70px;width:70px}.un-feed-toolbar .flc-search-toggle{width:70px;gap:6px}.un-feed-toolbar.is-search-open .flc-search-toggle{width:44px}.un-app :is(.un-map-invitation-art,.mosaic-invitation-art){width:32px;height:32px;border-radius:10px}.un-app :is(.un-map-invitation,.mosaic-invitation) h1{font-size:15px}.un-settings .un-profile-edit{padding:10px;gap:8px}.un-settings .un-profile-edit>span:last-child{font-size:9px}}
+@media(max-height:650px){.un-app :is(.un-map-invitation,.mosaic-invitation) h1{font-size:14px}.un-app :is(.un-map-invitation-art,.mosaic-invitation-art){width:32px;height:32px}.mosaic-volume-number strong{font-size:17px}}
+@media(hover:hover){.un-settings .un-settings-links>button:hover{background:var(--ui-soft)}}
+@media(prefers-reduced-motion:reduce){html[data-unified-shell=true]{--ui-fast:0ms}.un-app :is(.un-primary,.un-outline,.studio-icon-button),.lab-dialog :is(.un-primary,.un-outline){transition:none}}

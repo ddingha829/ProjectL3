@@ -42,3 +42,13 @@ html:not(.light) .un-login .un-auth-error{color:#f18e85}
 .un-login .un-auth-heading{margin-bottom:16px}.un-auth-alpha-notice{margin:0 0 24px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--auth-line));border-radius:12px;background:color-mix(in srgb,var(--accent) 4%,var(--auth-canvas))}.un-auth-alpha-notice strong{font-size:12px;font-weight:700;color:var(--auth-ink)}.un-auth-alpha-notice p{margin:6px 0 0;font-size:12px;line-height:1.7;color:var(--auth-muted);word-break:keep-all}.un-auth-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}.un-auth-footer .un-auth-demo{width:auto;padding:0 3px;min-height:44px;border:0;border-radius:0;font-size:11px;opacity:.75}.un-auth-footer .un-auth-demo>svg{width:12px}.un-auth-feedback{font-size:11px;color:var(--auth-muted);min-height:44px}.un-auth-connection{flex-basis:100%}
 
 .un-signup-password-help{margin:-8px 0 0;font-size:12px;line-height:1.6;color:var(--muted);word-break:keep-all}
+
+/* Match the quieter in-app surfaces and keep the test notice clearly legible. */
+.un-login.un-auth-screen{--auth-canvas:#F7F6F2;--auth-field:#FFFFFF;--auth-muted:#67665F;--auth-line:#E1E0DA;--auth-focus:#B93B14;--auth-button:#B93B14;--auth-button-ink:#FFFFFF}
+html:not(.light) .un-login.un-auth-screen{--auth-canvas:#0C0C0D;--auth-field:#171719;--auth-muted:#A09D97;--auth-line:#333336;--auth-focus:#FFAB8B;--auth-button:#FF936D;--auth-button-ink:#20120D}
+.un-login .un-auth-heading{font-size:27px;font-weight:800;letter-spacing:-.04em}
+.un-login .un-auth-alpha-notice{background:var(--auth-field);border-color:var(--auth-line);border-radius:14px;padding:14px 16px;box-shadow:inset 3px 0 0 var(--auth-focus)}
+.un-login .un-auth-alpha-notice strong{font-size:12px;letter-spacing:-.02em}
+.un-login .un-auth-form>.un-auth-submit{box-shadow:none;border-radius:14px}
+.un-login .un-auth-form>.un-auth-submit:disabled{background:var(--auth-line);color:var(--auth-muted);opacity:1}
+.un-login .un-auth-form>.un-auth-submit:disabled .tween-slide-badge>svg{stroke:var(--auth-muted)}

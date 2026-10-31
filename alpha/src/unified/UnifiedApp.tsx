@@ -52,6 +52,7 @@ import {audienceIds,defaultStyle,inScope,destinations,type Destination,type Unif
 import '@/social/SocialLab.css';import '@/social/SocialMaterial.css';import '@/social/CollectionFocus.css';import '@/social/MapPolish.css';import '@/social/CameraComposer.css';import '@/social/StoryWriting.css';import './UnifiedApp.css';import './EntryFlow.css';
 import './AppViewport.css';
 import './ArchiveIdentity.css';
+import './ProductPolish.css';
 
 type Panel='alpha'|'groups'|'scope'|'settings'|'collection'|'preset'|'save-preset'|'audience'|'members'|'backup'|null;
 const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||'사진으로 남긴 순간';
