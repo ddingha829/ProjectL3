@@ -13,6 +13,16 @@ const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen};
 export const cardTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||new Date(log.createdAt).toLocaleDateString('ko-KR');
 const dateOf=(time:number)=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(time).replaceAll('-','.');
 
+/** A screen-only hairline follows the actual silhouette, including ticket holes. */
+function CardSurfaceEdge({layout,height,square}:{layout:EditorialStyle['front']|EditorialStyle['back'];height:number;square:boolean}){
+ if(layout==='cover')return null;
+ const r=cardCorner(layout),seam=square?height*.6:745*.73;
+ const path=layout==='ticket'
+  ?`M12 0H408L420 12V${seam-10}A10 10 0 0 0 420 ${seam+10}V${height-12}L408 ${height}H12L0 ${height-12}V${seam+10}A10 10 0 0 0 0 ${seam-10}V12Z`
+  :`M${r} 0H${420-r}A${r} ${r} 0 0 1 420 ${r}V${height-r}A${r} ${r} 0 0 1 ${420-r} ${height}H${r}A${r} ${r} 0 0 1 0 ${height-r}V${r}A${r} ${r} 0 0 1 ${r} 0Z`;
+ return <svg className="ec-surface-edge" data-ec-ui="surface-edge" aria-hidden="true" focusable="false" viewBox={`0 0 420 ${height}`}><path d={path}/></svg>;
+}
+
 export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number}){
  const s=appearance||styleOf(log),Icon=icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
  const needed=Boolean(log.image&&(s.finish==='film'||s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
@@ -27,10 +37,11 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const surface=<>{side==='back'&&(s.ambientBleed||s.finish==='acrylic')&&<div className={`ec-color-residue ${s.finish==='acrylic'?'ec-frosted':''}`} aria-hidden="true"/>}{s.finish==='satin'&&<div className="ec-satin-sheen" aria-hidden="true"/>}</>;
  const materialClass=`ec-finish-${s.finish||'none'} ${s.fontMood?`ec-mood-${s.fontMood}`:''}`;
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
+ const edge=<CardSurfaceEdge layout={layout} height={canvasHeight??(s.ratio==='1:1'?420:672)} square={s.ratio==='1:1'}/>;
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
  if(side==='front')return <div data-ec-face="front" data-ec-layout={s.front} data-ec-material={materialState} className={`ec-face ec-front ec-${s.front} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
   {s.front==='cover'?<>{photo}<div className="ec-cover-shade"/><div className="ec-cover-top"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div><div className="ec-cover-bottom"><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div></>:s.front==='ticket'?<><div className="ec-ticket-photo">{photo}{photoBadges}</div><div className="ec-ticket-stub"><div><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div><div className="ec-ticket-code"><i className="ec-barcode" aria-hidden="true"/></div></div></>:<><div className="ec-polaroid-photo">{photo}{photoBadges}</div><div className="ec-polaroid-meta"><span>{place}</span><span className="ec-meta">{date}<WeatherMark value={log.weather}/></span></div><h2>{title}</h2><p className="ec-polaroid-caption">{log.body}</p></>}
-  {surface}
+  {surface}{edge}
  </div>;
  return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
   {surface}
@@ -49,6 +60,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
    {specsView}
   </div></div>
   {(!(['day','broadside','library'] as string[]).includes(s.back)||log.weather)&&<footer className="ec-back-footer"><span>{s.back==='passport'?`<<<<${author.replace(/\s/g,'').toUpperCase()}<<<<`:!(['day','broadside','library'] as string[]).includes(s.back)?date:''}</span><WeatherMark value={log.weather}/></footer>}
+  {edge}
  </div>;
 }
 

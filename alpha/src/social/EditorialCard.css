@@ -162,3 +162,11 @@
 .ec-cover-top .ec-rating,.ec-photo-badges .ec-rating{font-size:13px}
 .ec-cover-top .ec-rating>svg,.ec-photo-badges .ec-rating>svg{width:17px;height:17px}
 .ec-back .ec-category{font-size:12px}.ec-back .ec-category>svg{width:15px;height:15px}.ec-square .ec-back-topline .ec-category{font-size:11px}
+
+/* Keep dark cards distinct from the canvas without changing their printed skin.
+   The mask clips half of the contour stroke: the visible inside half is 1px at
+   both feed and detail scale. Ticket curves follow, never bridge, the holes. */
+.ec-face>.ec-surface-edge{display:none;position:absolute;left:-1px;top:-1px;z-index:8;width:420px;height:var(--ec-height);padding:0;overflow:visible;pointer-events:none;fill:none;stroke:#ffffff38;stroke-width:calc(2px / var(--ec-scale,1));stroke-linejoin:round}
+.ec-ticket>.ec-surface-edge{left:0;top:0}
+html:not(.light) .ec-face>.ec-surface-edge{display:block}
+@media print{.ec-face>.ec-surface-edge{display:none!important}}
