@@ -1,6 +1,6 @@
 'use client';
 import {useId,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
-import {MessageCircle,MoreHorizontal,Share2} from 'lucide-react';
+import {ArrowUpRight,MessageCircle,MoreHorizontal,Share2,Users} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard,{cardTitle} from '@/social/EditorialCard';
@@ -10,8 +10,8 @@ import {useCardBackSwipe} from './useCardBackSwipe';
 const CardImageActions=dynamic(()=>import('@/social/CardImageActions'),{loading:()=> <p role="status">공유 도구를 불러오고 있어요.</p>});
 import './CardViewer.css';
 
-type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;options?:(close:()=>void)=>ReactNode;children:ReactNode};
-export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,options,children}:Props){
+type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;onShareToGroups?:()=>void;options?:(close:()=>void)=>ReactNode;children:ReactNode};
+export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
  const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),gesture=useRef<{x:number;y:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
  const viewer=useRef<HTMLDivElement>(null);useCardBackSwipe(viewer,onBack,!sharing&&!optionsOpen);
  const changeExpanded=(value:boolean)=>{if(!value&&tools.current?.contains(document.activeElement))document.getElementById(toolsId+'-toggle')?.focus({preventScroll:true});setExpanded(value);};
@@ -28,7 +28,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
    <div className="un-viewer-summary"><div className="un-viewer-action-bar"><div className="un-viewer-reactions">{actions}</div><button className="un-viewer-icon-action un-viewer-share" aria-label="공유하기" title="공유하기" onClick={()=>setSharing(true)}><Share2 size={18}/></button>{options&&<button className="un-viewer-icon-action" aria-label="티끌 옵션" title="티끌 옵션" onClick={()=>setOptionsOpen(true)}><MoreHorizontal size={21}/></button>}</div>{place}</div>
    <div ref={tools} id={toolsId} className="un-detail-tools un-viewer-tools" hidden={!expanded} inert={!expanded}>{children}</div>
   </section>
-  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog"><CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={!!log.image}/></AccessibleDialog>
+  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={!!log.image}/></AccessibleDialog>
   <AccessibleDialog open={optionsOpen} title="티끌 옵션" onClose={()=>setOptionsOpen(false)} panelClassName="lab-dialog un-log-options"><div className="un-log-options-list">{options?.(()=>setOptionsOpen(false))}</div></AccessibleDialog>
  </div>;
 }

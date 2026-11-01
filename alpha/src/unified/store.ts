@@ -3,7 +3,7 @@ import {DEFAULT_EDITORIAL,EDITORIAL_THEMES,normalizeEditorial,validEditorial,typ
 import {emptyMosaic,validMosaic,type MosaicBoardState} from './mosaic';
 export type PhotoSettings={x:number;y:number;zoom:number;saturation:number;brightness:number;contrast:number;fit:'cover'|'contain'};
 export const DEFAULT_PHOTO:PhotoSettings={x:50,y:50,zoom:1,saturation:100,brightness:100,contrast:100,fit:'cover'};
-export type UnifiedLog=LabLog&{circleIds?:string[];photo?:PhotoSettings;serverRevision?:number;imagePath?:string};
+export type UnifiedLog=LabLog&{circleIds?:string[];photo?:PhotoSettings;serverRevision?:number;serverPublishedAt?:number;imagePath?:string};
 export type Preset={id:string;name:string;style:EditorialStyle;defaults:string[]};
 export type Collection={id:string;name:string;logIds:string[];createdAt:number};
 export type UnifiedState=Omit<LabState,'logs'>&{logs:UnifiedLog[];presets:Preset[];collections:Collection[];mosaic:MosaicBoardState;serverPreferencesRevision?:number;nicknameConfigured?:boolean;groupIntroSeen?:boolean;recordsComplete?:boolean};
@@ -25,6 +25,7 @@ export function parseUnified(raw:string):UnifiedState|null{
  try{const s=JSON.parse(raw) as UnifiedState;if(!readState(raw)||!Array.isArray(s.presets)||s.presets.length<1||s.presets.length>20||!Array.isArray(s.collections)||s.collections.length>100)return null;
  if(s.groupIntroSeen!==undefined&&typeof s.groupIntroSeen!=='boolean')return null;
  if(s.nicknameConfigured!==undefined&&typeof s.nicknameConfigured!=='boolean')return null;
+ if(s.logs.some(l=>l.serverPublishedAt!==undefined&&(!Number.isFinite(l.serverPublishedAt)||Number(l.serverPublishedAt)<=0)))return null;
  if(s.logs.some(l=>l.circleIds!==undefined&&(!Array.isArray(l.circleIds)||l.circleIds.some(id=>typeof id!=='string'))||l.photo!==undefined&&!validPhoto(l.photo)))return null;
  if(s.presets.some(p=>!p||typeof p.id!=='string'||typeof p.name!=='string'||p.name.length>40||!validEditorial(p.style)||!Array.isArray(p.defaults)))return null;
  if(s.collections.some(c=>!c||typeof c.id!=='string'||typeof c.name!=='string'||!Array.isArray(c.logIds)||c.logIds.some(id=>typeof id!=='string')))return null;

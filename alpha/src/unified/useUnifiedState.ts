@@ -9,19 +9,22 @@ import {normalizeNickname,nicknameInitial} from './nickname';
 import {disconnectNotificationDevice} from './notificationClient';
 import {createRefreshQueue,cloudPollDelay} from './cloudRefresh';
 import {photoUrls} from './photoUrls';
+import {addsGroupShare,canAddGroupShare,SHARE_WINDOW_MESSAGE} from '@/lib/groupSharing';
+import {audienceIds} from './store';
 import {UI_STORAGE,UI_SESSION,initialUnified,parseUnified,type UnifiedState} from './store';
-import {persistNickname,configureCloud,emptyCloudState,fetchCloudState,cloudOperations,prepareCloudOperations,cloudError,type CloudOperation} from './cloudRepository';
+import {persistLogSharing,persistNickname,configureCloud,emptyCloudState,fetchCloudState,cloudOperations,prepareCloudOperations,cloudError,type CloudOperation} from './cloudRepository';
 type Pending={id:string;userId:string;operations:CloudOperation[];optimistic:UnifiedState;prepared:boolean};
 type Mode='login'|'demo'|'cloud';
 const cacheKey=(id:string)=>`l2_unified_account_cache:${id}`,pendingKey=(id:string)=>`l2_unified_account_pending:${id}`;
 export default function useUnifiedState(){
  const [state,setState]=useState<UnifiedState|null>(null),[error,setError]=useState(''),[ready,setReady]=useState(false),[identity,setIdentity]=useState<{id?:string;name:string;email?:string}|null>(null),[mode,setMode]=useState<Mode>('login'),[cloudEnabled,setCloudEnabled]=useState(false),[syncStatus,setSyncStatus]=useState<'idle'|'saving'|'failed'>('idle');
  const fullRecords=useRef(false),[recordsBusy,setRecordsBusy]=useState(false);
- const passwordSaving=useRef(false),profileSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
+ const shareAttempt=useRef<{key:string;operationId:string}|null>(null);
+ const passwordSaving=useRef(false),directSaving=useRef(false),[nicknameBusy,setNicknameBusy]=useState(false);
  const current=useRef<UnifiedState|null>(null),client=useRef<SupabaseClient|null>(null),userId=useRef(''),modeRef=useRef<Mode>('login'),pending=useRef<Pending|null>(null),sending=useRef(false),alive=useRef(true),generation=useRef(0),requestSequence=useRef(0);
  const show=useCallback((next:UnifiedState)=>{current.current=next;setState(next);},[]);
  const refreshQueue=useRef<ReturnType<typeof createRefreshQueue>|null>(null);if(!refreshQueue.current)refreshQueue.current=createRefreshQueue();
- const refresh=useCallback(async(invalidated=true)=>{const id=userId.current,epoch=generation.current;return refreshQueue.current!.run(id+':'+epoch,async()=>{if(profileSaving.current||!client.current||userId.current!==id||generation.current!==epoch||!id||pending.current||modeRef.current!=='cloud')return;const request=++requestSequence.current;try{const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(client.current):await fetchFeedState(client.current,id,current.current?.logs.map(l=>l.id));if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},invalidated);},[show]);
+ const refresh=useCallback(async(invalidated=true)=>{const id=userId.current,epoch=generation.current;return refreshQueue.current!.run(id+':'+epoch,async()=>{if(directSaving.current||!client.current||userId.current!==id||generation.current!==epoch||!id||pending.current||modeRef.current!=='cloud')return;const request=++requestSequence.current;try{const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(client.current):await fetchFeedState(client.current,id,current.current?.logs.map(l=>l.id));if(!alive.current||userId.current!==id||generation.current!==epoch||pending.current||request!==requestSequence.current)return;show(next);localStorage.setItem(cacheKey(id),JSON.stringify(next));setError('');}catch(e){if(alive.current&&generation.current===epoch)setError(cloudError(e));}},invalidated);},[show]);
  const retry=useCallback(async()=>{
   const item=pending.current,c=client.current;if(!item||!c||sending.current||item.userId!==userId.current)return false;
   sending.current=true;setSyncStatus('saving');const epoch=generation.current,request=++requestSequence.current;
@@ -58,9 +61,9 @@ export default function useUnifiedState(){
   const storage=(event:StorageEvent)=>{if(modeRef.current==='demo'&&event.key===UI_STORAGE&&event.newValue){const next=parseUnified(event.newValue);if(next)show(next);}else if(event.key===pendingKey(userId.current))void refresh();};
   const renewPhotos=async()=>{
    const c=client.current,id=userId.current,epoch=generation.current,paths=current.current?.logs.flatMap(log=>log.imagePath?[log.imagePath]:[])||[];
-   if(document.visibilityState!=='visible'||modeRef.current!=='cloud'||!c||!id||!paths.length||pending.current||profileSaving.current)return;
+   if(document.visibilityState!=='visible'||modeRef.current!=='cloud'||!c||!id||!paths.length||pending.current||directSaving.current)return;
    const images=await photoUrls(c,id,paths),latest=current.current;
-   if(!alive.current||generation.current!==epoch||userId.current!==id||!latest||pending.current||profileSaving.current)return;
+   if(!alive.current||generation.current!==epoch||userId.current!==id||!latest||pending.current||directSaving.current)return;
    let changed=false;const logs=latest.logs.map(log=>{const image=log.imagePath?images.get(log.imagePath):undefined;if(!image||image===log.image)return log;changed=true;return {...log,image};});
    if(changed)show({...latest,logs});
   };
@@ -72,7 +75,7 @@ export default function useUnifiedState(){
  const changePassword=useCallback(async(currentPassword:string,password:string,confirmation:string)=>{
   const c=client.current,id=userId.current,epoch=generation.current;
   if(!c||!id||modeRef.current!=='cloud')throw Error('로그인한 계정에서 변경할 수 있어요.');
-  if(passwordSaving.current||profileSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
+  if(passwordSaving.current||directSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
   passwordSaving.current=true;
   const isCurrent=()=>alive.current&&userId.current===id&&generation.current===epoch&&modeRef.current==='cloud';
   try{const account=await c.auth.getUser();if(account.error||account.data.user?.id!==id||!account.data.user.email)throw Error('로그인을 확인한 뒤 다시 시도해주세요.');await changeAccountPassword(c,id,account.data.user.email,currentPassword,password,confirmation,isCurrent);}
@@ -81,19 +84,19 @@ export default function useUnifiedState(){
  const resetPassword=useCallback(async(email:string)=>{const c=client.current;if(!c)throw Error('실제 계정 연결을 준비 중이에요.');const result=await c.auth.resetPasswordForEmail(email,{redirectTo:RECOVERY_REDIRECT});if(result.error)throw Error(authMessage(result.error));},[]);
  const enterDemo=useCallback((name='나')=>{try{const raw=localStorage.getItem(UI_STORAGE),next=raw?parseUnified(raw):initialUnified();if(!next)throw Error('미리보기 기록을 읽지 못했어요.');localStorage.setItem(UI_SESSION,JSON.stringify({mode:'demo',name}));modeRef.current='demo';setMode('demo');setIdentity({name});show(next);setError('');}catch(e){setError(e instanceof Error?e.message:'예시 화면을 열지 못했어요.');}},[show]);
  const logout=useCallback(async()=>{if(pending.current){setError('반영되지 않은 변경이 있어요. 다시 반영하거나 임시 변경을 백업한 뒤 로그아웃해주세요.');return;}if(modeRef.current==='cloud'){try{await disconnectNotificationDevice();}catch{setError('기기 알림 연결을 해제하지 못했어요. 잠시 후 다시 로그아웃해주세요.');return;}const result=await client.current?.auth.signOut();if(result?.error){setError('로그아웃하지 못했어요.');return;}}localStorage.removeItem(UI_SESSION);generation.current++;userId.current='';modeRef.current='login';setMode('login');setIdentity(null);show(emptyCloudState());setError('');},[show]);
- const commit=useCallback((change:(state:UnifiedState)=>UnifiedState)=>{if(profileSaving.current||!current.current)return false;try{const before=modeRef.current==='demo'?parseUnified(localStorage.getItem(UI_STORAGE)||JSON.stringify(current.current)):current.current;if(!before)throw Error('기존 기록을 읽지 못했어요.');const next=change(before),serialized=JSON.stringify(next);if(!parseUnified(serialized))throw Error('저장할 내용을 확인해주세요.');if(modeRef.current==='cloud'){const ops=cloudOperations(before,next);return ops.length?queue(ops,next):true;}if(modeRef.current!=='demo')return false;localStorage.setItem(UI_STORAGE,serialized);show(next);setError('');return true;}catch(e){setError(e instanceof Error?e.message:'저장하지 못했어요.');return false;}},[queue,show]);
+ const commit=useCallback((change:(state:UnifiedState)=>UnifiedState)=>{if(directSaving.current||!current.current)return false;try{const before=modeRef.current==='demo'?parseUnified(localStorage.getItem(UI_STORAGE)||JSON.stringify(current.current)):current.current;if(!before)throw Error('기존 기록을 읽지 못했어요.');const next=change(before),serialized=JSON.stringify(next);if(!parseUnified(serialized))throw Error('저장할 내용을 확인해주세요.');if(modeRef.current==='cloud'){const ops=cloudOperations(before,next);return ops.length?queue(ops,next):true;}if(modeRef.current!=='demo')return false;localStorage.setItem(UI_STORAGE,serialized);show(next);setError('');return true;}catch(e){setError(e instanceof Error?e.message:'저장하지 못했어요.');return false;}},[queue,show]);
  const ensureFullRecords=useCallback(async(force=false)=>{
-  fullRecords.current=true;if(modeRef.current!=='cloud'||current.current?.recordsComplete&&!force)return current.current;if(pending.current||profileSaving.current)return null;
+  fullRecords.current=true;if(modeRef.current!=='cloud'||current.current?.recordsComplete&&!force)return current.current;if(pending.current||directSaving.current)return null;
   setRecordsBusy(true);try{await refresh();return current.current;}finally{if(alive.current)setRecordsBusy(false);}
  },[refresh]);
  const enablePagedRecords=useCallback(()=>{fullRecords.current=false;},[]);
  const loadFeedPage=useCallback(async(query:FeedQuery,cursor?:FeedCursor)=>{
   const c=client.current,id=userId.current,epoch=generation.current;
   if(!c||!id||modeRef.current!=='cloud')throw Error('로그인이 필요해요.');
-  if(pending.current||sending.current||profileSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
+  if(pending.current||sending.current||directSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
   const result=await fetchFeedPage(c,id,query,cursor);
   if(!alive.current||id!==userId.current||epoch!==generation.current)throw Error('계정이 변경됐어요. 다시 불러와주세요.');
-  if(pending.current||sending.current||profileSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
+  if(pending.current||sending.current||directSaving.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');
   const before=current.current;if(!before)throw Error('기록을 불러오지 못했어요.');
   const merged=new Map(before.logs.map(log=>[log.id,log]));for(const log of result.logs)merged.set(log.id,log);
   if(!fullRecords.current)requestSequence.current++;show({...before,logs:[...merged.values()]});return result;
@@ -103,11 +106,32 @@ export default function useUnifiedState(){
   if(modeRef.current==='demo'){if(!commit(s=>({...s,nicknameConfigured:true,people:s.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)})))throw Error('닉네임을 저장하지 못했어요.');return;}
   const c=client.current,id=userId.current,epoch=generation.current;
   if(!c||!id||modeRef.current!=='cloud')throw Error('로그인이 필요해요.');
-  if(profileSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
-  profileSaving.current=true;setNicknameBusy(true);requestSequence.current++;
+  if(directSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
+  directSaving.current=true;setNicknameBusy(true);requestSequence.current++;
   try{const next=await persistNickname(c,before,name);if(!alive.current||id!==userId.current||epoch!==generation.current)return;requestSequence.current++;show(next);try{localStorage.setItem(cacheKey(id),JSON.stringify(next));}catch{}setIdentity(previous=>previous?.id===id?{...previous,name}:previous);setError('');}
   catch(e){throw Error(cloudError(e));}
-  finally{profileSaving.current=false;if(alive.current){setNicknameBusy(false);void refresh();}}
+  finally{directSaving.current=false;if(alive.current){setNicknameBusy(false);void refresh();}}
+ },[commit,show,refresh]);
+ const shareToGroups=useCallback(async(logId:string,groups:string[])=>{
+  const before=current.current,log=before?.logs.find(row=>row.id===logId);
+  if(!before||!log||log.authorId!=='me')throw Error('내가 작성한 티끌만 공유할 수 있어요.');
+  const ids=[...new Set(groups)];if(ids.some(group=>!audienceIds(log).includes(group)&&!before.circles.some(c=>c.id===group&&c.members.includes('me'))))throw Error('참여 중인 모임을 선택해주세요.');
+  if(addsGroupShare(audienceIds(log),ids)&&!canAddGroupShare(log))throw Error(SHARE_WINDOW_MESSAGE);
+  if(modeRef.current==='demo'){if(!commit(s=>({...s,logs:s.logs.map(row=>row.id===logId?{...row,circleIds:ids,circleId:ids[0]||null}:row)})))throw Error('공유 대상을 저장하지 못했어요.');return;}
+  const c=client.current,id=userId.current,epoch=generation.current;
+  if(!c||!id||modeRef.current!=='cloud')throw Error('로그인한 뒤 공유해주세요.');
+  if(directSaving.current||passwordSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
+  const key=JSON.stringify([id,logId,log.serverRevision,[...ids].sort()]);
+  if(shareAttempt.current?.key!==key)shareAttempt.current={key,operationId:crypto.randomUUID()};
+  const operationId=shareAttempt.current.operationId,isCurrent=()=>alive.current&&id===userId.current&&epoch===generation.current;
+  directSaving.current=true;requestSequence.current++;
+  try{
+   await persistLogSharing(c,log,ids,operationId);if(!isCurrent())throw Error('ACCOUNT_CHANGED');
+   const latest=current.current;if(!latest)return;
+   const next={...latest,logs:latest.logs.map(row=>row.id===logId?{...row,circleIds:ids,circleId:ids[0]||null,serverRevision:(log.serverRevision||0)+1}:row)};
+   requestSequence.current++;show(next);try{localStorage.setItem(cacheKey(id),JSON.stringify(next));}catch{}
+   shareAttempt.current=null;setError('');
+  }catch(e){const message=(e as {message?:string})?.message||'';throw Error(/fetch|network|timeout|load failed/i.test(message)?'공유 결과를 확인하지 못했어요. 연결 후 다시 시도해주세요. 중복으로 공유되지 않아요.':cloudError(e));}finally{directSaving.current=false;if(isCurrent())void refresh();}
  },[commit,show,refresh]);
  const discardPending=useCallback(async()=>{const item=pending.current;if(!item||sending.current)return;const url=URL.createObjectURL(new Blob([JSON.stringify(item,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='ticgle-unsynced-changes.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);localStorage.removeItem(pendingKey(item.userId));pending.current=null;setSyncStatus('idle');await refresh();},[refresh]);
  const invite=useCallback(async(groupId:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('실제 계정으로 로그인한 뒤 초대할 수 있어요.');const result=await client.current.rpc('l2u_create_invite',{p_group:groupId});if(result.error)throw Error(cloudError(result.error));return String(result.data);},[]);
@@ -115,5 +139,5 @@ export default function useUnifiedState(){
  const joinCode=useCallback(async(code:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 참여할 수 있어요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join_code',{p_code:code.trim().toUpperCase()});if(result.error)throw Error(cloudError(result.error));if(result.data?.error)throw Error(cloudError({message:result.data.error}));const id=result.data?.groupId;if(typeof id!=='string')throw Error('참여 결과를 확인하지 못했어요. 다시 시도해주세요.');await refresh();if(!current.current?.circles.some(c=>c.id===id&&c.members.includes('me')))throw Error('참여는 완료됐어요. 새로고침해 모임 목록을 불러와주세요.');return id;},[refresh]);
  const join=useCallback(async(token:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 초대 링크를 다시 열어주세요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join',{p_token:token});if(result.error)throw Error(cloudError(result.error));await refresh();return String(result.data);},[refresh]);
  const removeMember=useCallback((groupId:string,id:string,keepShares:boolean)=>{if(!current.current||modeRef.current!=='cloud')return false;return queue([{kind:'remove_member',groupId,userId:id==='me'?userId.current:id,keepShares}],current.current);},[queue]);
- return {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
+ return {state,commit,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
 }

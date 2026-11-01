@@ -4,8 +4,8 @@ import type {UnifiedLog} from './store';
 export const FEED_PAGE_SIZE=4;
 export type FeedCursor={date:string;id:string};
 export type FeedQuery={scope:string;category:string;query:string;sort:'recent'|'old';photosOnly:boolean;saved:boolean};
-type LogRow={id:string;author_id:string;revision:number;created_at:string;payload:UnifiedLog};
-const columns='id,author_id,revision,created_at,payload';
+type LogRow={id:string;author_id:string;revision:number;created_at:string;published_at:string;payload:UnifiedLog};
+const columns='id,author_id,revision,created_at,published_at,payload';
 const checked=<T>(result:{data:T|null;error:unknown}):T=>{if(result.error)throw result.error;return result.data as T;};
 const literal=(value:string)=>`"*${value.replace(/[\\"]/g,'\\$&')}*"`;
 export function applyFeedQuery(client:SupabaseClient,actorId:string,query:FeedQuery,cursor?:FeedCursor){
@@ -28,7 +28,7 @@ async function expandRows(client:SupabaseClient,rows:LogRow[]):Promise<UnifiedLo
   client.from('l2u_comments').select('id,log_id,author_id,body,created_at').in('log_id',ids).order('created_at'),
  ]);
  const s=checked(shares),r=checked(reactions),c=checked(comments);
- return rows.map(row=>({...row.payload,id:row.id,authorId:row.author_id,serverRevision:row.revision,circleIds:s.filter(s=>s.log_id===row.id).map(s=>s.group_id),likes:r.filter(r=>r.log_id===row.id&&r.kind==='like').map(r=>r.user_id),bookmarks:r.filter(r=>r.log_id===row.id&&r.kind==='bookmark').map(r=>r.user_id),comments:c.filter(c=>c.log_id===row.id).map(c=>({id:c.id,authorId:c.author_id,body:c.body}))}));
+ return rows.map(row=>({...row.payload,id:row.id,authorId:row.author_id,serverRevision:row.revision,serverPublishedAt:Date.parse(row.published_at),circleIds:s.filter(s=>s.log_id===row.id).map(s=>s.group_id),likes:r.filter(r=>r.log_id===row.id&&r.kind==='like').map(r=>r.user_id),bookmarks:r.filter(r=>r.log_id===row.id&&r.kind==='bookmark').map(r=>r.user_id),comments:c.filter(c=>c.log_id===row.id).map(c=>({id:c.id,authorId:c.author_id,body:c.body}))}));
 }
 export async function fetchFeedPage(client:SupabaseClient,actorId:string,query:FeedQuery,cursor?:FeedCursor){
  const rows=checked(await applyFeedQuery(client,actorId,query,cursor)) as unknown as LogRow[];

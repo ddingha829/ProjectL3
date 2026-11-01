@@ -23,6 +23,7 @@ export const emptyCloudState=():UnifiedState=>({...initialUnified(),logs:[],peop
 export function cloudError(error:unknown){
  const text=(error as {message?:string})?.message||'',code=(error as {code?:string})?.code||'';
  if(code==='42702')return '저장 처리에 문제가 생겼어요. 변경은 이 기기에 보관되어 있으니 다시 시도해주세요.';
+ if(text.includes('SHARE_WINDOW_EXPIRED'))return '등록 후 48시간이 지나 새 모임에 공유할 수 없어요. 기존 공유는 유지되며 해제할 수 있어요.';
  if(code==='42501'||text.includes('LOG_READ_REQUIRED'))return '이 티끌의 공유 권한이 바뀌었어요. 변경을 백업한 뒤 최신 기록을 불러와주세요.';
  if(/fetch|network|timeout|load failed/i.test(text))return '서버 연결이 끊겼어요. 변경은 이 기기에 보관되어 있어요. 연결 후 다시 시도해주세요.';
  const known:Record<string,string>={STALE_VERSION:'다른 기기에서 바뀐 내용이 있어요. 임시 변경을 백업한 뒤 최신 기록을 불러와주세요.',SLOT_TAKEN:'다른 모임원이 먼저 채운 칸이에요. 최신 보드에서 빈 칸을 골라주세요.',GROUP_FULL:'모임 정원이 찼어요.',INVALID_INVITE:'초대 코드를 확인해주세요. 만료되었거나 다시 발급된 코드일 수 있어요.',INVITE_RATE_LIMITED:'시도 횟수가 많아요. 잠시 뒤 다시 입력해주세요.',GROUP_OWNER_REQUIRED:'모임장만 변경할 수 있어요.',GROUP_MEMBER_REQUIRED:'이 모임에 참여한 뒤 다시 시도해주세요.',LOG_OWNER_REQUIRED:'내가 작성한 기록만 수정할 수 있어요.',OWNER_TRANSFER_REQUIRED:'다른 모임원이 있는 동안 모임장은 탈퇴할 수 없어요.',AUTH_REQUIRED:'로그인이 필요해요.'};
@@ -52,11 +53,17 @@ export async function hydrateSnapshot(client:SupabaseClient,snapshot:Snapshot):P
  const validated=parseUnified(JSON.stringify(state));if(!validated)throw Error('서버 기록 형식을 확인하지 못했어요.');return validated;
 }
 function logPayload(log:UnifiedLog){
- const {id,authorId,circleId,circleIds,serverRevision,likes,bookmarks,comments,...payload}=log;
- void id;void authorId;void circleId;void circleIds;void serverRevision;void likes;void bookmarks;void comments;
+ const {id,authorId,circleId,circleIds,serverRevision,serverPublishedAt,likes,bookmarks,comments,...payload}=log;
+ void id;void authorId;void circleId;void circleIds;void serverRevision;void serverPublishedAt;void likes;void bookmarks;void comments;
  if(payload.image.startsWith('data:'))delete payload.imagePath;
  else if(payload.imagePath)payload.image='';
  return payload;
+}
+/** Share the existing original through the checked, idempotent transaction.
+ * No image preparation/upload or optimistic pending record is created. */
+export async function persistLogSharing(client:SupabaseClient,log:UnifiedLog,groups:string[],operationId:string){
+ const result=await client.rpc('l2u_share_to_groups',{p_log:log.id,p_groups:groups,p_expected:log.serverRevision||0,p_operation:operationId});
+ if(result.error)throw result.error;
 }
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOperation[]{
