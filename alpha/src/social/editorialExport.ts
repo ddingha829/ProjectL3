@@ -22,6 +22,10 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
  const clone=source.cloneNode(true) as HTMLElement,host=document.createElement('div');host.inert=true;host.setAttribute('aria-hidden','true');Object.assign(host.style,{position:'fixed',left:'-15000px',top:'0',width:'420px',pointerEvents:'none'});host.append(clone);document.body.append(host);
  try{
   clone.querySelectorAll('[data-ec-ui]').forEach(node=>node.remove());
+  // The on-screen surface keyline is not printed artwork. A cover's absolute
+  // photo starts inside that border, leaving a pale rim in shared PNGs.
+  // Remove its width (not just its colour) so the image bleeds to the edge.
+  clone.style.border='0';
   clone.querySelectorAll<HTMLElement>('.ec-satin-sheen').forEach(node=>{node.style.backgroundPosition='45% 45%';node.style.transition='none';});
   clone.style.transform='none';clone.style.position='relative';clone.dataset.cardWidth='420';clone.dataset.cardHeight=clone.classList.contains('ec-square')?'420':String(672);
   if(clone.classList.contains('ec-ticket')){const seam=clone.querySelector<HTMLElement>('.ec-ticket-stub');clone.style.setProperty('--card-notch-radius','10');clone.style.setProperty('--card-notch-y',String((seam?.offsetTop||0)/clone.offsetHeight*100));}

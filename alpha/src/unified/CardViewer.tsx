@@ -1,6 +1,6 @@
 'use client';
-import {useId,useRef,useState,type CSSProperties,type PointerEvent,type ReactNode,type RefObject} from 'react';
-import {ArrowUpRight,MessageCircle,MoreHorizontal,Share2,Users} from 'lucide-react';
+import {useEffect,useId,useRef,useState,type CSSProperties,type PointerEvent,type ReactNode,type RefObject} from 'react';
+import {Film,Play,LoaderCircle,ArrowUpRight,MessageCircle,MoreHorizontal,Share2,Users} from 'lucide-react';
 import {AnimatePresence,motion,useMotionTemplate,useMotionValue,useSpring} from 'motion/react';
 import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
@@ -19,15 +19,18 @@ type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:stri
 export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
  const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),[draggingSheet,setDraggingSheet]=useState(false),[sheetOffset,setSheetOffset]=useState(0);
  const gesture=useRef<{x:number;y:number;lastY:number;lastT:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
+ const [videoOpen,setVideoOpen]=useState(false),[videoUrl,setVideoUrl]=useState(''),[videoError,setVideoError]=useState(''),videoRequest=useRef(0);
+ useEffect(()=>()=>{videoRequest.current++;},[]);
+ const playVideo=async()=>{if(!log.video)return;setVideoOpen(true);setVideoError('');const sequence=++videoRequest.current;try{const {configureCloud}=await import('./cloudRepository');const client=await configureCloud();if(!client)throw Error();const result=await client.storage.from('l2u-videos').createSignedUrl(log.video.path,300);if(result.error)throw result.error;if(sequence===videoRequest.current)setVideoUrl(result.data.signedUrl);}catch{if(sequence===videoRequest.current)setVideoError('영상을 불러오지 못했어요. 공유 권한이나 네트워크를 확인해주세요.');}};
  const reduced=useMotionPreference();
- const viewer=useRef<HTMLDivElement>(null);useCardBackSwipe(viewer,onBack,!sharing&&!optionsOpen);
+ const viewer=useRef<HTMLDivElement>(null);useCardBackSwipe(viewer,onBack,!sharing&&!optionsOpen&&!videoOpen);
  const rawRotateX=useMotionValue(0),rawRotateY=useMotionValue(0),rawGlareX=useMotionValue(50),rawGlareY=useMotionValue(50),rawGlareOpacity=useMotionValue(0);
  const rotateX=useSpring(rawRotateX,TILT_SPRING),rotateY=useSpring(rawRotateY,TILT_SPRING),glareX=useSpring(rawGlareX,TILT_SPRING),glareY=useSpring(rawGlareY,TILT_SPRING),glareOpacity=useSpring(rawGlareOpacity,TILT_SPRING);
  const glareBackground=useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.42), rgba(255,255,255,0.08) 42%, transparent 72%)`;
 
  const resetTilt=()=>{rawRotateX.set(0);rawRotateY.set(0);rawGlareOpacity.set(0);};
  const handleCardMove=(event:PointerEvent<HTMLDivElement>)=>{
-  if(reduced||sharing||optionsOpen)return;
+  if(reduced||sharing||optionsOpen||videoOpen)return;
   if(event.pointerType==='touch'&&event.clientX<32)return;
   const rect=event.currentTarget.getBoundingClientRect();
   if(!rect.width||!rect.height)return;
@@ -56,6 +59,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
     <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong"/></div>
     {!reduced&&<motion.span className="un-card-specular" aria-hidden="true" style={{opacity:glareOpacity,background:glareBackground}}/>}
    </motion.div>
+   {log.video&&<button type="button" className="un-viewer-video-control" onClick={()=>{resetTilt();void playVideo();}}><Play size={16} aria-hidden="true"/>영상 재생 · 2초</button>}
   </div>
   <section className="un-viewer-drawer" aria-label="티끌 반응과 댓글">
    <button id={toolsId+'-toggle'} className="un-viewer-toggle" aria-label={expanded?'댓글 접기':'댓글 펼치기'} aria-controls={toolsId} aria-expanded={expanded} onClick={event=>{if(skipClick.current&&event.detail>0){skipClick.current=false;return;}skipClick.current=false;changeExpanded(!expanded);}}
@@ -86,6 +90,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
    <div className="un-viewer-summary"><div className="un-viewer-action-bar"><div className="un-viewer-reactions">{actions}</div><motion.button whileTap={reduced?undefined:{scale:0.9}} whileHover={reduced?undefined:{scale:1.04}} transition={reduced?instantMotion:INTERACTION_SPRING} className="un-viewer-icon-action un-viewer-share" aria-label="공유하기" title="공유하기" onClick={()=>{resetTilt();setSharing(true);}}><Share2 size={18}/></motion.button>{options&&<motion.button whileTap={reduced?undefined:{scale:0.9}} whileHover={reduced?undefined:{scale:1.04}} transition={reduced?instantMotion:INTERACTION_SPRING} className="un-viewer-icon-action" aria-label="티끌 옵션" title="티끌 옵션" onClick={()=>{resetTilt();setOptionsOpen(true);}}><MoreHorizontal size={21}/></motion.button>}</div>{place}</div>
    <div ref={tools} id={toolsId} className="un-detail-tools un-viewer-tools" hidden={!expanded} inert={!expanded}>{children}</div>
   </section>
+  <AccessibleDialog open={videoOpen} title="움직이는 2초" closeLabel="영상 재생 닫기" onClose={()=>{videoRequest.current++;setVideoOpen(false);setVideoUrl('');}} panelClassName="lab-dialog un-video-picker">{videoError?<p className="lab-error" role="alert">{videoError}</p>:videoUrl?<video className="un-video-playback" src={videoUrl} poster={log.image} muted playsInline autoPlay controls preload="none"/>:<p role="status"><LoaderCircle size={18} className="lab-spin"/>영상을 불러오고 있어요</p>}<p className="un-video-note"><Film size={14}/>무음 2초 · 외부 공유는 정지 사진으로 보내요.</p></AccessibleDialog>
   <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={!!log.image}/></AccessibleDialog>
   <AccessibleDialog open={optionsOpen} title="티끌 옵션" onClose={()=>setOptionsOpen(false)} panelClassName="lab-dialog un-log-options"><div className="un-log-options-list">{options?.(()=>setOptionsOpen(false))}</div></AccessibleDialog>
  </div>;

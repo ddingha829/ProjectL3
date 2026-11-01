@@ -1,3 +1,4 @@
+import {configureCloud} from './cloudRepository';
 import {downloadCardFile} from '@/lib/cardExport';
 import {csvCell} from '@/lib/logBackup';
 import {type UnifiedState} from './store';
@@ -9,6 +10,9 @@ export async function backupOwn(state:UnifiedState,actorId:string,onProgress:(pe
  zip.file('logs.json',JSON.stringify(payload,null,2));zip.file('logs.csv',String.fromCharCode(0xfeff)+[['제목','내용','날짜','장소','카테고리','평점'],...logs.map(l=>[l.title,l.body,new Date(l.createdAt).toISOString(),l.locationLabel||l.place?.name||'',l.category,l.rating||''])].map(row=>row.map(csvCell).join(',')).join('\r\n'));
  const unique=new Map<string,string>();let total=0;
  for(let i=0;i<logs.length;i++){const log=logs[i];if(log.image&&!unique.has(log.image)){try{const response=await fetch(log.image,{signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error();const b=await response.blob();if(!b.type.startsWith('image/')||b.size>20*1024*1024||total+b.size>200*1024*1024)throw Error();total+=b.size;const name=`images/${log.id.replace(/[^a-zA-Z0-9-]/g,'_')}.${b.type.includes('webp')?'webp':b.type.includes('png')?'png':'jpg'}`;zip.file(name,b,{compression:'STORE'});unique.set(log.image,name);}catch{errors.push(log.id);}}onProgress(Math.round((i+1)/Math.max(1,logs.length)*60));}
+ const videos:Record<string,string>={};
+ for(const log of logs){if(!log.video)continue;try{const client=await configureCloud();if(!client)throw Error();const signed=await client.storage.from('l2u-videos').createSignedUrl(log.video.path,300);if(signed.error)throw signed.error;const response=await fetch(signed.data.signedUrl,{signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error();const blob=await response.blob();if(blob.size>450000||total+blob.size>200*1024*1024)throw Error();total+=blob.size;const name=`videos/${log.id.replace(/[^a-zA-Z0-9-]/g,'_')}.mp4`;zip.file(name,blob,{compression:'STORE'});videos[log.video.path]=name;}catch{errors.push(log.id+' (video)');}}
+ zip.file('video-references.json',JSON.stringify(videos,null,2));
  zip.file('image-references.json',JSON.stringify(Object.fromEntries(unique),null,2));if(errors.length)zip.file('missing-images.txt',errors.join('\n'));
  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'},meta=>onProgress(60+Math.round(meta.percent*.4)));
  downloadCardFile(new File([blob],`ticgle-my-records-${new Date().toISOString().slice(0,10)}.zip`,{type:'application/zip'}));return errors.length;

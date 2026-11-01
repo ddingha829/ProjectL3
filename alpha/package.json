@@ -14,12 +14,14 @@
     "test:weather": "node scripts/test-weather.mjs",
     "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs",
     "test:viewport": "node scripts/test-app-viewport.mjs",
-    "test:feed-toolbar": "node scripts/test-feed-toolbar-pinned.mjs"
+    "test:feed-toolbar": "node scripts/test-feed-toolbar-pinned.mjs",
+    "test:video": "node scripts/test-video-encoding.mjs && node scripts/test-video-schema.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",
     "@mapbox/vector-tile": "3.0.0",
     "@supabase/supabase-js": "^2.118.0",
+    "ffmpeg-static": "^5.3.0",
     "html-to-image": "^1.11.11",
     "jszip": "^3.10.2",
     "leaflet": "^1.9.4",

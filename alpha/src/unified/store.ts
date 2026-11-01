@@ -1,3 +1,4 @@
+import {validVideo} from '@/lib/video';
 import {seedState,readState,type LabState,type LabLog} from '@/social/model';
 import {DEFAULT_EDITORIAL,EDITORIAL_THEMES,normalizeEditorial,validEditorial,type EditorialStyle} from '@/social/editorialStyle';
 import {emptyMosaic,validMosaic,type MosaicBoardState} from './mosaic';
@@ -25,6 +26,7 @@ export function parseUnified(raw:string):UnifiedState|null{
  try{const s=JSON.parse(raw) as UnifiedState;if(!readState(raw)||!Array.isArray(s.presets)||s.presets.length<1||s.presets.length>20||!Array.isArray(s.collections)||s.collections.length>100)return null;
  if(s.groupIntroSeen!==undefined&&typeof s.groupIntroSeen!=='boolean')return null;
  if(s.nicknameConfigured!==undefined&&typeof s.nicknameConfigured!=='boolean')return null;
+ if(s.logs.some(l=>l.video!==undefined&&!validVideo(l.video)))return null;
  if(s.logs.some(l=>l.serverPublishedAt!==undefined&&(!Number.isFinite(l.serverPublishedAt)||Number(l.serverPublishedAt)<=0)))return null;
  if(s.logs.some(l=>l.circleIds!==undefined&&(!Array.isArray(l.circleIds)||l.circleIds.some(id=>typeof id!=='string'))||l.photo!==undefined&&!validPhoto(l.photo)))return null;
  if(s.presets.some(p=>!p||typeof p.id!=='string'||typeof p.name!=='string'||p.name.length>40||!validEditorial(p.style)||!Array.isArray(p.defaults)))return null;
