@@ -4,6 +4,8 @@ import { useEffect, useId, useRef, useState, type ReactNode, type CSSProperties 
 import { createPortal } from 'react-dom';
 import {isolateDialog} from '@/lib/dialogIsolation';
 import './AccessibleDialog.css';
+import {motion} from 'motion/react';
+import {useMotionPreference} from '@/lib/useMotionPreference';
 
 interface AccessibleDialogProps {
   open: boolean;
@@ -19,6 +21,8 @@ interface AccessibleDialogProps {
   panelClassName?: string;
   panelStyle?: CSSProperties;
   scrollBody?: boolean;
+  springSheet?:boolean;
+  onPanelHeight?: (height:number)=>void;
 }
 
 /** A small modal primitive shared by the optional composer controls. */
@@ -36,8 +40,13 @@ export default function AccessibleDialog({
   panelClassName = '',
   panelStyle,
   scrollBody = false,
+  onPanelHeight,
+  springSheet=false,
 }: AccessibleDialogProps) {
   const titleId = useId();
+  const reduced=useMotionPreference();
+  const [retained,setRetained]=useState(false);
+  useEffect(()=>{if(open&&springSheet)setRetained(true);},[open,springSheet]);
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -47,6 +56,12 @@ export default function AccessibleDialog({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+  useEffect(()=>{
+    if(!open||!mounted||!onPanelHeight||!panelRef.current)return;
+    const panel=panelRef.current,measure=()=>onPanelHeight(panel.getBoundingClientRect().height);
+    measure();const observer=new ResizeObserver(measure);observer.observe(panel);
+    return()=>observer.disconnect();
+  },[open,mounted,onPanelHeight]);
 
   useEffect(() => {
     if (!open || !mounted || !scrollBody) return;
@@ -122,17 +137,23 @@ export default function AccessibleDialog({
     };
   }, [open, mounted, initialFocusId]);
 
-  if (!mounted || !open) return null;
+  if (!mounted || (!open&&!(springSheet&&retained))) return null;
 
   return createPortal(
     <div
       ref={overlayRef}
       data-dialog-overlay="true"
+      aria-hidden={!open||undefined}
+      inert={!open||undefined}
       data-dialog-scroll-body={scrollBody || undefined}
       className="quick-dialog-backdrop fixed inset-0 z-[100] flex items-end justify-center bg-black/65 p-3 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
     >
-      <div
+      <motion.div
+        initial={springSheet&&!reduced?{y:40,opacity:0}:false}
+        animate={springSheet?{y:open?0:64,opacity:open?1:0}:undefined}
+        transition={reduced?{duration:0}:{type:'spring',stiffness:360,damping:26,mass:.85}}
+        onAnimationComplete={()=>{if(!open)setRetained(false);}}
         ref={panelRef}
         role="dialog"
         aria-modal="true"
@@ -141,7 +162,7 @@ export default function AccessibleDialog({
         tabIndex={-1}
         data-scroll-body={scrollBody || undefined}
         className={`quick-dialog-panel max-h-[88dvh] w-full max-w-xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-[28px] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl outline-none sm:p-7 ${panelClassName}`}
-        style={panelStyle}
+        style={springSheet?{...panelStyle,animation:'none'}:panelStyle}
       >
         <div className={`quick-dialog-header mb-6 flex items-start justify-between gap-4 ${headerAdornment ? 'has-adornment' : ''}`}>
           <div className={hideTitle ? 'sr-only' : undefined}>
@@ -152,7 +173,7 @@ export default function AccessibleDialog({
           <button type="button" onClick={onClose} aria-label={closeLabel} className="quick-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line)] text-xl">{closeIcon??'×'}</button>
         </div>
         {scrollBody ? <div ref={bodyRef} className="quick-dialog-body">{children}</div> : children}
-      </div>
+      </motion.div>
     </div>,
     document.body
   );

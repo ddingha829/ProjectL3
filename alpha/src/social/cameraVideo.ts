@@ -1,4 +1,6 @@
-/** Two-second, silent, portrait capture. Cancellation never returns a partial clip. */
+const cameraPosters=new WeakMap<File,string>();
+export const cameraVideoPoster=(file:File)=>cameraPosters.get(file);
+/** About two seconds, silent, portrait capture. Cancellation never returns a partial clip. */
 export function recordCameraVideo(source:HTMLVideoElement,options:{zoom:number;mirrored:boolean;signal:AbortSignal;onStart:()=>void}){
  return new Promise<File>((resolve,reject)=>{
   if(typeof MediaRecorder==='undefined'||!HTMLCanvasElement.prototype.captureStream){reject(Error('이 브라우저에서는 자동 영상 촬영을 지원하지 않아요. 앨범에서 영상을 선택해주세요.'));return;}
@@ -15,11 +17,11 @@ export function recordCameraVideo(source:HTMLVideoElement,options:{zoom:number;m
    if(options.signal.aborted){abort();return;}
    draw();stream=canvas.captureStream(24);
    const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'].find(type=>MediaRecorder.isTypeSupported(type));
-   recorder=new MediaRecorder(stream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:1600000});
+   recorder=new MediaRecorder(stream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:1000000});
    recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
    recorder.onerror=()=>fail(Error('영상을 촬영하지 못했어요. 다시 시도해주세요.'));
    recorder.onstart=()=>{options.onStart();timer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},2000);};
-   recorder.onstop=()=>{if(finished)return;finished=true;cleanup();if(!chunks.length){reject(Error('촬영된 영상이 없어요. 다시 시도해주세요.'));return;}const type=(recorder?.mimeType||chunks[0].type).split(';')[0];resolve(new File(chunks,'ticgle-2s.'+(type.includes('mp4')?'mp4':'webm'),{type}));};
+   recorder.onstop=()=>{if(finished)return;finished=true;cleanup();if(!chunks.length){reject(Error('촬영된 영상이 없어요. 다시 시도해주세요.'));return;}const type=(recorder?.mimeType||chunks[0].type).split(';')[0];const file=new File(chunks,'ticgle-2s.'+(type.includes('mp4')?'mp4':'webm'),{type});try{cameraPosters.set(file,canvas.toDataURL('image/webp',.85));}catch{/* Server cover is still available if local thumbnail capture fails. */}resolve(file);};
    options.signal.addEventListener('abort',abort,{once:true});document.addEventListener('visibilitychange',visibility);recorder.start();
   }catch{fail(Error('이 브라우저에서는 자동 영상 촬영을 시작하지 못했어요. 앨범에서 영상을 선택해주세요.'));}
  });

@@ -12,7 +12,7 @@ export async function POST(request:Request){
  const user=await notificationUser(request);if(!user)return json({error:'로그인한 뒤 영상을 추가해주세요.'},401);
  const admin=notificationAdmin();let sourcePath='';let jobId='';const uploaded:{bucket:string;path:string}[]=[];
  try{
-  const body=JSON.parse(await limitedBody(request,2048));
+  const body=JSON.parse(await limitedBody(request,420000));
   if(body.action==='prepare'){
    if(!Number.isInteger(body.size)||body.size<1||body.size>50*1024*1024)return json({error:'50MB 이하의 영상을 선택해주세요.'},400);
    if(await reserve(`video:${user.id}`,10,86400000)===null)return json({error:'영상은 하루에 10번까지 준비할 수 있어요. 내일 다시 이용해주세요.'},429);
@@ -27,7 +27,8 @@ export async function POST(request:Request){
   sourcePath=claim.data.path;jobId=claim.data.id;
   const raw=await admin.storage.from('l2u-video-uploads').download(sourcePath);if(raw.error||!raw.data)throw Error('SOURCE_MISSING');
   if(raw.data.size>50*1024*1024)throw Error('SOURCE_TOO_LARGE');
-  const encoded=await encodeVideo(new Uint8Array(await raw.data.arrayBuffer()),body.start,body.recorded===true&&body.start===0);
+  const poster=typeof body.poster==='string'&&/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(body.poster)?Buffer.from(body.poster.split(',')[1],'base64'):undefined;
+  const encoded=await encodeVideo(new Uint8Array(await raw.data.arrayBuffer()),body.start,body.recorded===true&&body.start===0,poster);
   const path=`${user.id}/${jobId}.mp4`,imagePath=`${user.id}/${jobId}/video-cover.webp`;
   for(const [bucket,name,content,type]of [['l2u-videos',path,encoded.video,'video/mp4'],['l2u-photos',imagePath,encoded.image,'image/webp']] as const){
    const result=await admin.storage.from(bucket).upload(name,content,{contentType:type,upsert:false,cacheControl:'0'});if(result.error)throw result.error;uploaded.push({bucket,path:name});

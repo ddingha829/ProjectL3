@@ -42,3 +42,11 @@
 - A completed in-app recording now automatically uploads and prepares its two-second attachment, then opens the normal writing screen. There is no playback preview or “use this clip” confirmation for camera recordings.
 - Preparation exposes progress and cancellation; a failed preparation retains the recording and offers retry. Album clips still allow choosing a two-second segment.
 - Both entry paths (Photo camera → Video mode, and Video menu → Record) were exercised with a synthetic browser camera. Strict Mode verification sent one prepare request and one encode request per recording, with no confirmation click.
+
+## Low-load capture and full media framing
+- Camera capture remains about two seconds rather than enforcing an exact frame count. Compatible silent H.264 MP4s at 480 × 768, 1.7–2.5s and within 450,000 bytes are stored byte-for-byte. Camera bitrate is requested at 1 Mbps. The server only checks metadata; it does not re-encode those files.
+- The camera creates its WebP cover locally. Valid bounded RIFF/WebP covers are reused without server image conversion. Other formats, oversize files and album segments use the bounded encoder fallback; camera fallback uses the ultrafast preset. No extra database schema or background media job was added.
+- The legacy `duration: 2` metadata remains the nominal two-second clip class for compatibility; preserved camera files can naturally be slightly shorter/longer. Album selection still produces a two-second segment.
+- Recording completion opens writing immediately with a local cover and local video preview while the single upload proceeds in the background. Registration is disabled until the verified media is ready, but text entry remains available. Errors expose retry/cancel; replacing the photo cancels the pending attachment.
+- Full media is fitted with `object-fit: contain` above the measured caption sheet. Folding expands the frame without cropping. Both the frame and caption sheet use the same restrained spring; reduced-motion disables it. Exiting caption sheets become inert/hidden and release focus before their short exit finishes.
+- Verified portrait video and a landscape image at mobile width, reopening/folding without overlap. Encoding checks confirm camera bytes and supplied cover bytes are reused unchanged and partial recordings are still rejected.

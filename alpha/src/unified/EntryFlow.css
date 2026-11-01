@@ -51,3 +51,13 @@
 .un-story-editor-v2 .lab-body-input{color:#faf9f6}
 .un-story-editor-v2 .lab-body-input::placeholder{color:#c6c3c9;opacity:1}
 .un-edit-discard-actions{flex-wrap:wrap}
+
+/* The media frame ends above the actual caption sheet, never behind it. */
+.un-story-v2.has-media .lab-story-viewport{padding:64px 12px 84px;box-sizing:border-box;background:#101012}
+.un-story-v2.has-media.is-writing .lab-story-viewport{bottom:calc(var(--story-sheet-height,430px) + 8px);padding:8px 12px;border-radius:18px;background:#101012}
+.un-story-v2.has-media .lab-story-photo{display:block;position:relative;width:100%;height:100%;object-fit:contain;object-position:center;border-radius:8px}
+.un-story-v2.has-media .un-video-replace{bottom:24px;left:160px;max-width:calc(100% - 176px);font-size:11px;white-space:nowrap}
+.un-story-v2.has-media .un-story-video-kind{top:24px;left:78px}
+.un-story-v2.is-writing :is(.un-video-replace,.un-story-video-kind){visibility:hidden;pointer-events:none}
+.un-media-saving{display:flex;align-items:center;gap:7px;flex:none;margin:0 0 10px;color:#e2d9d0;font-size:11px;line-height:1.5}.un-media-saving svg{flex:none}
+.lab-dialog.un-story-editor-v2::before{display:none}

@@ -11,5 +11,9 @@ let rejected=false;try{await encodeVideo(await fs.readFile(fixture),3);}catch{re
 
 const shortFixture='.test-data/camera-clip-source.mp4';execFileSync(ffmpeg,['-y','-f','lavfi','-i','testsrc2=size=480x768:rate=24','-t','1.92','-c:v','libx264','-pix_fmt','yuv420p',shortFixture],{stdio:'ignore',windowsHide:true});
 const captured=await encodeVideo(await fs.readFile(shortFixture),0,true);await fs.writeFile('.test-data/camera-clip-output.mp4',captured.video);let capturedProbe='';try{execFileSync(ffmpeg,['-hide_banner','-i','.test-data/camera-clip-output.mp4'],{stdio:['ignore','pipe','pipe'],windowsHide:true});}catch(e){capturedProbe=String(e.stderr);}
-if(!/Duration: 00:00:02.00/.test(capturedProbe)||/Audio:/.test(capturedProbe))throw Error(capturedProbe);
-let shortCaptureRejected=false;try{await encodeVideo(await fs.readFile(fixture),3,true);}catch{shortCaptureRejected=true;}if(!shortCaptureRejected)throw Error('Partial camera capture accepted');console.log('Camera frame-tail compensation produces exactly 2 seconds; partial captures rejected');
+if(!/Duration: 00:00:01.92/.test(capturedProbe)||/Audio:/.test(capturedProbe)||!captured.copied||!captured.video.equals(await fs.readFile(shortFixture)))throw Error(capturedProbe);
+const clientCover=await encodeVideo(await fs.readFile(shortFixture),0,true,captured.image);if(!clientCover.copied||!clientCover.image.equals(captured.image))throw Error('Client camera cover was re-encoded');
+let shortCaptureRejected=false;try{await encodeVideo(await fs.readFile(fixture),3,true);}catch{shortCaptureRejected=true;}if(!shortCaptureRejected)throw Error('Partial camera capture accepted');console.log('Camera duration is preserved without re-encoding, client cover reused, partial captures rejected');
+
+const webmFixture='.test-data/camera-fallback.webm';execFileSync(ffmpeg,['-y','-f','lavfi','-i','testsrc2=size=480x768:rate=24','-t','2.1','-c:v','libvpx','-deadline','realtime','-cpu-used','8','-b:v','500k',webmFixture],{stdio:'ignore',windowsHide:true});
+const fallback=await encodeVideo(await fs.readFile(webmFixture),0,true);if(fallback.copied||fallback.video.length>450000)throw Error('Camera compatibility fallback failed');console.log('WebM camera fallback produces bounded MP4');
