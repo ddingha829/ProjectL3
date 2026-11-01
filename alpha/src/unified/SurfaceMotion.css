@@ -1,0 +1,85 @@
+/* Shared surfaces inherit from the document, including portalled chrome/dialogs.
+   The viewport, scroll pane, map and swipe surfaces never receive transforms. */
+html[data-unified-shell=true]{
+ --un-surface-edge:color-mix(in srgb,var(--fg) 9%,transparent);
+ --un-surface-edge-strong:color-mix(in srgb,var(--fg) 15%,transparent);
+ --un-surface-highlight:inset 0 1px 0 #ffffffb8;
+ --un-surface-glass:color-mix(in srgb,var(--surface) 92%,transparent);
+ --un-surface-shadow:0 1px 3px #17140f08,0 6px 18px -4px #17140f0c,var(--un-surface-highlight);
+ --un-surface-overlay:0 2px 6px #17140f0c,0 18px 40px -10px #17140f24,var(--un-surface-highlight);
+ --un-surface-dock:0 2px 6px #17140f0a,0 12px 28px -8px #17140f1c,var(--un-surface-highlight);
+}
+html[data-unified-shell=true]:not(.light){
+ --un-surface-highlight:inset 0 1px 0 #ffffff12;
+ --un-surface-shadow:0 1px 3px #0003,0 6px 18px -4px #0005,var(--un-surface-highlight);
+ --un-surface-overlay:0 2px 6px #0004,0 18px 40px -10px #0008,var(--un-surface-highlight);
+ --un-surface-dock:0 2px 6px #0004,0 12px 28px -8px #0007,var(--un-surface-highlight);
+}
+
+/* Motion owns the popup transform. The previous CSS entrance must not run too. */
+.flc-menu[data-motion-popover]{animation:none}
+.flc-menu[data-motion-popover][inert]{pointer-events:none}
+html[data-unified-shell=true] .flc-popover>.flc-menu[data-motion-popover]{
+ background:var(--surface);background:var(--un-surface-glass);
+ border:1px solid var(--un-surface-edge-strong);border-radius:20px;
+ box-shadow:var(--un-surface-overlay);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+/* Keep a solid, unfiltered header: no new blur layer near iOS's status bar. */
+html[data-unified-shell=true] .un-header.un-header-v2.un-header-centered .un-scope-picker>.flc-tool-trigger{
+ box-shadow:var(--un-surface-shadow);border-color:var(--un-surface-edge);backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+html[data-unified-shell=true] .un-scope-option{position:relative;isolation:isolate;overflow:hidden}
+.un-surface-scope-active-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:12px;background:var(--ui-soft);box-shadow:var(--un-surface-highlight)}
+
+html[data-unified-shell=true] .un-app .flc-shell.un-log-controls.un-feed-toolbar{
+ background:var(--surface);border-color:var(--un-surface-edge);border-radius:20px;box-shadow:var(--un-surface-shadow);
+ backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+html[data-unified-shell=true] .un-app .flc-shell.un-log-controls.un-feed-toolbar.is-pinned{
+ background:var(--un-surface-glass);border-color:var(--un-surface-edge-strong);box-shadow:var(--un-surface-overlay);
+ backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+html[data-unified-shell=true] :is(.un-feed-category-options,.un-feed-sort-options)>button{
+ position:relative;isolation:isolate;overflow:hidden;border-radius:12px;
+}
+html[data-unified-shell=true] :is(.un-feed-category-options,.un-feed-sort-options)>button[aria-pressed=true]{background:transparent;box-shadow:none}
+.un-surface-filter-active-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:12px;background:var(--ui-soft);border:1px solid var(--un-surface-edge-strong);box-shadow:var(--un-surface-highlight)}
+/* The thumb's x is spring-driven; do not also interpolate its CSS transform. */
+html[data-unified-shell=true] .un-feed-photo-switch>i{transition:background .15s}
+html[data-unified-shell=true] .un-feed-toolbar .flc-clear{width:44px;min-width:44px;height:44px}
+html[data-unified-shell=true] .un-feed-filter-reset{min-height:44px}
+
+html[data-unified-shell=true] .un-navigation .lab-nav-rail{
+ background:var(--surface);background:var(--un-surface-glass);border-color:var(--un-surface-edge-strong);
+ box-shadow:var(--un-surface-dock);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+}
+html[data-unified-shell=true] .un-navigation .lab-nav-rail>button{isolation:isolate;transition:color .15s}
+html[data-unified-shell=true] .un-navigation :is(.lab-nav-rail>button,.un-dock-add):active{transform:none}
+.un-surface-nav-active-pill{position:absolute;inset:2px 4px;z-index:-1;pointer-events:none;border-radius:999px;background:var(--surface);border:1px solid var(--un-surface-edge);box-shadow:var(--un-surface-shadow)}
+html[data-unified-shell=true] .un-navigation>.un-dock-add{transition:none;box-shadow:0 2px 5px color-mix(in srgb,var(--accent) 18%,transparent),0 8px 18px -6px color-mix(in srgb,var(--accent) 24%,transparent),inset 0 1px 0 #ffffff5c}
+
+/* Preserve the cards' original shape (including transparent ticket punches). */
+html[data-unified-shell=true] .un-log .lab-poster-art{outline-offset:3px}
+html[data-unified-shell=true] :is(.mosaic-tray,.studio-workbench,.un-map-panel){border-color:var(--un-surface-edge);box-shadow:var(--un-surface-shadow)}
+html[data-unified-shell=true] .studio-canvas{box-shadow:var(--un-surface-highlight)}
+html[data-unified-shell=true] .quick-dialog-panel.lab-dialog:not(.un-detail-dialog):not(.lab-story-editor){border-color:var(--un-surface-edge-strong);box-shadow:var(--un-surface-overlay)}
+html[data-unified-shell=true] :is(.un-scope-member-count,.mosaic-volume-number strong,.mosaic-page-number,.mosaic-board-meter span,.mosaic-tray-title span,.un-viewer-comment-count span,.un-viewer-icon-action span,.un-selection-bar span){font-variant-numeric:tabular-nums}
+
+/* Centering and fixed positioning have a separate owner from the spring. */
+.un-toast-anchor{position:fixed;left:0;right:0;bottom:max(100px,calc(var(--un-dock-space,92px) + 8px));z-index:1700;display:flex;justify-content:center;pointer-events:none;padding-inline:14px}
+.un-toast-anchor .lab-toast.un-toast{position:relative;left:auto;bottom:auto!important;margin:0;animation:none;max-width:min(480px,100%);pointer-events:auto}
+html[data-unified-shell=true] .un-toast-anchor .un-toast{background:var(--surface);background:var(--un-surface-glass);color:var(--fg);border:1px solid var(--un-surface-edge-strong);border-radius:20px;box-shadow:var(--un-surface-overlay);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.un-toast-anchor .un-toast>svg{flex:none}
+
+@media(prefers-reduced-motion:reduce){
+ html[data-unified-shell=true] :is(.un-navigation button,.un-scope-picker button,.flc-menu[data-motion-popover]){transition:none}
+}
+@media(prefers-reduced-transparency:reduce){
+ html[data-unified-shell=true] :is(.flc-menu[data-motion-popover],.un-navigation .lab-nav-rail,.un-app .flc-shell.un-log-controls.un-feed-toolbar.is-pinned,.un-toast-anchor .un-toast){background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ html[data-unified-shell=true] :is(.flc-menu[data-motion-popover],.un-navigation .lab-nav-rail,.un-app .flc-shell.un-log-controls.un-feed-toolbar.is-pinned,.un-toast-anchor .un-toast){background:var(--surface)}
+}
+@media(forced-colors:active){
+ html[data-unified-shell=true] :is(.flc-menu[data-motion-popover],.un-navigation .lab-nav-rail,.un-surface-nav-active-pill,.un-surface-filter-active-bg){background:Canvas;border:1px solid ButtonText;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+}

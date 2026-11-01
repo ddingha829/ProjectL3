@@ -15,3 +15,6 @@
 .un-scope-option[aria-pressed=true] .un-scope-member-count{background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent)}
 .un-scope-option>.un-scope-check{grid-column:4;display:grid;place-items:center;width:16px;color:var(--accent)}
 @media(max-width:360px){.un-header.un-header-v2.un-header-centered[data-install-visible=true]{--un-header-wing:88px}.un-header-actions{gap:0}.un-header-actions .un-install-trigger{width:44px;min-width:44px;padding:0;gap:0}.un-header-actions .un-install-trigger>span{display:none}.un-header.un-header-v2.un-header-centered .un-scope-picker>.flc-tool-trigger{padding-inline:8px;gap:5px;font-size:12px}}
+/* Give a three-character group name its full width on smaller browser views,
+   while keeping the install action labelled and the scope centred. */
+@media(min-width:361px) and (max-width:430px){.un-header.un-header-v2.un-header-centered[data-install-visible=true]{--un-header-wing:116px}.un-header-actions .un-install-trigger{padding-inline:6px}}
