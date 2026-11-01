@@ -5,13 +5,14 @@ import AccessibleDialog from '@/components/AccessibleDialog';
 import {configureCloud} from '@/unified/cloudRepository';
 import {VIDEO_SOURCE_LIMIT,validVideo,type VideoClip} from '@/lib/video';
 import './VideoPicker.css';
+import CameraSurface from './CameraSurface';
 export type VideoAttachment={video:VideoClip;image:string;imagePath:string};
-export default function VideoPicker({cloud,onDone,onClose}:{cloud:boolean;onDone:(asset:VideoAttachment)=>void;onClose:()=>void}){
- const [file,setFile]=useState<File>(),[url,setUrl]=useState(''),[duration,setDuration]=useState(0),[start,setStart]=useState(0),[playing,setPlaying]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState('');
- const player=useRef<HTMLVideoElement>(null),album=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null),alive=useRef(true),lock=useRef(false),cancel=useRef<AbortController|null>(null);
+export default function VideoPicker({cloud,onDone,onClose,initialFile}:{initialFile?:File;cloud:boolean;onDone:(asset:VideoAttachment)=>void;onClose:()=>void}){
+ const [file,setFile]=useState<File|undefined>(initialFile),[cameraClip,setCameraClip]=useState(Boolean(initialFile)),[captureOpen,setCaptureOpen]=useState(false),[url,setUrl]=useState(''),[duration,setDuration]=useState(0),[start,setStart]=useState(0),[playing,setPlaying]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState('');
+ const player=useRef<HTMLVideoElement>(null),album=useRef<HTMLInputElement>(null),alive=useRef(true),lock=useRef(false),cancel=useRef<AbortController|null>(null);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;cancel.current?.abort();};},[]);
  useEffect(()=>{if(!file){setUrl('');return;}const next=URL.createObjectURL(file);setUrl(next);return()=>URL.revokeObjectURL(next);},[file]);
- const choose=(input:HTMLInputElement)=>{const chosen=input.files?.[0];input.value='';if(!chosen)return;if(chosen.size>VIDEO_SOURCE_LIMIT){setError('50MB 이하의 영상을 선택해주세요.');return;}setError('');setDuration(0);setStart(0);setPlaying(false);setFile(chosen);};
+ const choose=(input:HTMLInputElement)=>{const chosen=input.files?.[0];input.value='';if(!chosen)return;if(chosen.size>VIDEO_SOURCE_LIMIT){setError('50MB 이하의 영상을 선택해주세요.');return;}setError('');setCameraClip(false);setDuration(0);setStart(0);setPlaying(false);setFile(chosen);};
  const valid=duration>=2&&duration<=120;
  const preview=async()=>{const video=player.current;if(!video)return;if(playing){video.pause();setPlaying(false);return;}video.currentTime=start;try{await video.play();setPlaying(true);}catch{setError('미리보기를 시작하지 못했어요. 다시 눌러주세요.');}};
  const save=async()=>{
@@ -23,20 +24,21 @@ export default function VideoPicker({cloud,onDone,onClose}:{cloud:boolean;onDone
    const target=await call({action:'prepare',size:file.size});if(!alive.current)return;
    const uploaded=await client.storage.from('l2u-video-uploads').uploadToSignedUrl(target.path,target.token,file,{contentType:file.type||'application/octet-stream'});if(uploaded.error)throw Error('업로드하지 못했어요. 네트워크 연결을 확인해주세요.');
    if(!alive.current)return;setPhase('정확히 2초로 다듬는 중…');
-   const result=await call({action:'encode',id:target.id,start});
+   const result=await call({action:'encode',id:target.id,start,recorded:cameraClip});
    const latest=await client.auth.getSession();if(latest.data.session?.user.id!==owner)throw Error('계정이 변경됐어요. 다시 선택해주세요.');
    if(!validVideo(result.video)||typeof result.imagePath!=='string'||typeof result.image!=='string')throw Error('영상 형식을 확인하지 못했어요.');
    if(alive.current)onDone(result);
   }catch(e){if(alive.current)setError(e instanceof Error?e.message:'영상을 준비하지 못했어요. 다시 시도해주세요.');}finally{lock.current=false;if(alive.current)setPhase('');}
  };
+ if(captureOpen)return <AccessibleDialog open title="2초 영상 촬영" hideTitle closeLabel="영상 촬영 닫기" onClose={()=>setCaptureOpen(false)} panelClassName="lab-dialog lab-story-dialog un-story-v2 un-video-capture"><div className="lab-story-viewport"><CameraSurface active captureKind="video" onCapture={async()=>{}} onFallback={()=>{setCaptureOpen(false);setError('앨범에서 영상을 선택해주세요.');}} onVideo={next=>{setFile(next);setCameraClip(true);setStart(0);setDuration(0);setPlaying(false);setError('');setCaptureOpen(false);}}/><p className="un-video-capture-guide">무음으로 2초 촬영 후 자동으로 끝나요.</p></div></AccessibleDialog>;
  return <AccessibleDialog open title="움직이는 2초" closeLabel="영상 선택 닫기" onClose={onClose} scrollBody panelClassName="lab-dialog un-video-picker">
   <p className="un-video-lead">사진처럼 가볍게, 잠깐 움직이는 티끌.<br/><strong>무음 · 정확히 2초 · 480p</strong>로 남겨요.</p>
   {!cloud?<p className="un-video-login" role="status">영상은 실제 계정으로 로그인하면 이용할 수 있어요. 예시 계정에서는 사진으로 둘러봐주세요.</p>:<>
-   <div className="un-video-sources"><button type="button" disabled={!!phase} onClick={()=>album.current?.click()}><ImagePlus size={20}/><span>앨범에서 영상</span></button><button type="button" disabled={!!phase} onClick={()=>camera.current?.click()}><Camera size={20}/><span>영상 촬영</span></button></div>
-   {url&&<><div className="un-video-preview"><video ref={player} src={url} muted playsInline preload="metadata" onLoadedMetadata={event=>{const length=event.currentTarget.duration;setDuration(length);event.currentTarget.currentTime=0;if(!Number.isFinite(length)||length<2||length>120)setError('2초 이상, 2분 이하의 영상을 선택해주세요.');}} onError={()=>setError('이 영상 형식을 열지 못했어요. MP4 또는 MOV 영상을 선택해주세요.')} onTimeUpdate={event=>{if(event.currentTarget.currentTime>=start+2){event.currentTarget.pause();event.currentTarget.currentTime=start;setPlaying(false);}}} onEnded={()=>setPlaying(false)}/><span><Film size={14}/>영상 · 2초</span></div>
-    {valid&&<div className="un-video-trim"><div><strong>{start.toFixed(1)}초 — {(start+2).toFixed(1)}초</strong><button type="button" aria-label={playing?'2초 미리보기 정지':'선택한 2초 미리보기'} disabled={!!phase} onClick={()=>void preview()}>{playing?<Square size={16}/>:<Play size={16}/>}미리보기</button></div><label>시작 지점<input type="range" aria-label="2초 영상 시작 지점" min="0" max={Math.max(0,duration-2)} step="0.1" value={start} disabled={!!phase} onChange={event=>{const next=Number(event.target.value);setStart(next);player.current?.pause();if(player.current)player.current.currentTime=next;setPlaying(false);}}/></label><small>슬라이더로 원하는 구간을 골라요. 카드 비율에 맞춰 가운데를 담아요.</small></div>}
+   <div className="un-video-sources"><button type="button" disabled={!!phase} onClick={()=>album.current?.click()}><ImagePlus size={20}/><span>앨범에서 영상</span></button><button type="button" disabled={!!phase} onClick={()=>{player.current?.pause();setPlaying(false);setCaptureOpen(true);}}><Camera size={20}/><span>영상 촬영</span></button></div>
+   {url&&<><div className="un-video-preview"><video ref={player} src={url} muted playsInline preload="metadata" onLoadedMetadata={event=>{const length=cameraClip?2:event.currentTarget.duration;setDuration(length);event.currentTarget.currentTime=0;if(!Number.isFinite(length)||length<2||length>120)setError('2초 이상, 2분 이하의 영상을 선택해주세요.');}} onError={()=>setError('이 영상 형식을 열지 못했어요. MP4 또는 MOV 영상을 선택해주세요.')} onTimeUpdate={event=>{if(event.currentTarget.currentTime>=start+2){event.currentTarget.pause();event.currentTarget.currentTime=start;setPlaying(false);}}} onEnded={()=>setPlaying(false)}/><span><Film size={14}/>영상 · 2초</span></div>
+    {valid&&<div className="un-video-trim"><div><strong>{start.toFixed(1)}초 — {(start+2).toFixed(1)}초</strong><button type="button" aria-label={playing?'2초 미리보기 정지':'선택한 2초 미리보기'} disabled={!!phase} onClick={()=>void preview()}>{playing?<Square size={16}/>:<Play size={16}/>}미리보기</button></div>{!cameraClip&&<label>시작 지점<input type="range" aria-label="2초 영상 시작 지점" min="0" max={Math.max(0,duration-2)} step="0.1" value={start} disabled={!!phase} onChange={event=>{const next=Number(event.target.value);setStart(next);player.current?.pause();if(player.current)player.current.currentTime=next;setPlaying(false);}}/></label>}<small>{cameraClip?'2초 자동 촬영을 마쳤어요. 미리보기로 확인하고 담아주세요.':'슬라이더로 원하는 구간을 골라요. 카드 비율에 맞춰 가운데를 담아요.'}</small></div>}
    </>}
-   <input ref={album} type="file" accept="video/mp4,video/quicktime,video/webm,video/*" hidden aria-label="앨범 영상 선택" onChange={event=>choose(event.currentTarget)}/><input ref={camera} type="file" accept="video/*" capture="environment" hidden aria-label="2초 영상 촬영" onChange={event=>choose(event.currentTarget)}/>
+   <input ref={album} type="file" accept="video/mp4,video/quicktime,video/webm,video/*" hidden aria-label="앨범 영상 선택" onChange={event=>choose(event.currentTarget)}/>
   </>}
   {error&&<p className="lab-error" role="alert">{error}</p>}
   {phase&&<p className="un-video-progress" role="status"><LoaderCircle className="lab-spin" size={17}/>{phase}</p>}

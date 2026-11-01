@@ -29,3 +29,11 @@
 - `npm run test:video`: exact encoding, silent output, byte limits, short-segment rejection, 14 isolated DB/RLS checks (no live test accounts).
 - Local mobile-width composer → trim → save → detail playback tested with mocked uploads and actual encoded MP4. Duration 2 seconds, muted, controls available, stops at end.
 - Real iPhone/Android native camera selection and live authenticated uploading still require device smoke testing; local browser tests do not substitute for that.
+
+## Automatic in-app recording update
+- The shooting screen now has Photo / Video 2s controls. Video capture uses a silent 480 × 768 canvas stream, preserving digital zoom and front-camera mirroring, and schedules automatic stop 2,000ms after MediaRecorder starts.
+- Camera recording in the video picker uses the same in-app capture path; it no longer delegates to a native recorder that requires a manual stop.
+- Capture completion opens a confirmation preview. Album clips retain the start-point slider; automatically recorded clips use the complete capture.
+- Closing the screen or backgrounding the app aborts recording and releases capture tracks, timers, animation frames and listeners. Camera preview pauses while video confirmation is open and resumes when it closes.
+- For automatically recorded clips only, the encoder permits up to 125ms of last-frame compensation for browser frame-tail variance, then trims to exactly 48 frames. Ordinary album clips keep strict short-segment rejection; seriously incomplete camera clips are rejected too.
+- Added six recorder lifecycle checks and an encoding regression for a 1.92s camera frame tail. Actual Chromium MediaRecorder output from a synthetic camera was also captured through the UI and normalized to exactly 2.00s, 480 × 768, silent. No real camera permission or production upload was used for that check.

@@ -27,7 +27,7 @@ export async function POST(request:Request){
   sourcePath=claim.data.path;jobId=claim.data.id;
   const raw=await admin.storage.from('l2u-video-uploads').download(sourcePath);if(raw.error||!raw.data)throw Error('SOURCE_MISSING');
   if(raw.data.size>50*1024*1024)throw Error('SOURCE_TOO_LARGE');
-  const encoded=await encodeVideo(new Uint8Array(await raw.data.arrayBuffer()),body.start);
+  const encoded=await encodeVideo(new Uint8Array(await raw.data.arrayBuffer()),body.start,body.recorded===true&&body.start===0);
   const path=`${user.id}/${jobId}.mp4`,imagePath=`${user.id}/${jobId}/video-cover.webp`;
   for(const [bucket,name,content,type]of [['l2u-videos',path,encoded.video,'video/mp4'],['l2u-photos',imagePath,encoded.image,'image/webp']] as const){
    const result=await admin.storage.from(bucket).upload(name,content,{contentType:type,upsert:false,cacheControl:'0'});if(result.error)throw result.error;uploaded.push({bucket,path:name});

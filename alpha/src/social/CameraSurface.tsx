@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Camera,RotateCw,LoaderCircle,SlidersHorizontal,Grid2X2,Zap,Check} from 'lucide-react';
 import {cameraStill,knownLenses,type CameraLens} from './cameraQuality';
+import {recordCameraVideo} from './cameraVideo';
 
 type ZoomRange={min:number;max:number;step:number};
 type Device={track:MediaStreamTrack;nativeZoom:boolean;torch:boolean;working:boolean;appliedZoom:number;appliedTorch:boolean};
@@ -15,7 +16,9 @@ function cameraFeatures(track:MediaStreamTrack|undefined){
  return {capabilities,values};
 }
 
-export default function CameraSurface({active,onCapture,onFallback}:{active:boolean;onCapture:(photo:Blob)=>Promise<void>;onFallback:()=>void}){
+export default function CameraSurface({active,onCapture,onFallback,captureKind='photo',onVideo,onRecordingChange}:{active:boolean;onCapture:(photo:Blob)=>Promise<void>;onFallback:()=>void;captureKind?:'photo'|'video';onVideo?:(file:File)=>void;onRecordingChange?:(recording:boolean)=>void}){
+ const recording=useRef<AbortController|null>(null),[recordingNow,setRecordingNow]=useState(false),[recordingTake,setRecordingTake]=useState(0);
+ useEffect(()=>()=>{recording.current?.abort();},[active,captureKind]);
  const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null),captureLock=useRef(false);
  const [lenses,setLenses]=useState<CameraLens[]>([]),[selection,setSelection]=useState<CameraLens&{zoom:number}|null>(null),[lensBase,setLensBase]=useState(1);
  const [facing,setFacing]=useState<'environment'|'user'>('environment'),[attempt,setAttempt]=useState(0),[status,setStatus]=useState<'loading'|'ready'|'unavailable'>('loading'),[capturing,setCapturing]=useState(false),[error,setError]=useState('');
@@ -112,17 +115,26 @@ export default function CameraSurface({active,onCapture,onFallback}:{active:bool
    await onCapture(photo);
   }catch(e){setError(e instanceof Error?e.message:'촬영하지 못했어요. 앨범에서 사진을 선택해주세요.');}finally{captureLock.current=false;setCapturing(false);}
  };
+ const captureVideo=async()=>{
+  if(captureLock.current||changing||!active)return;
+  if(status!=='ready'||!video.current||video.current.readyState<2){setError('카메라를 켠 뒤 영상 촬영을 눌러주세요.');return;}
+  captureLock.current=true;setCapturing(true);setError('');setSettings(false);const controller=new AbortController();recording.current=controller;onRecordingChange?.(true);
+  try{const file=await recordCameraVideo(video.current,{zoom:digitalZoom,mirrored,signal:controller.signal,onStart:()=>{setRecordingTake(value=>value+1);setRecordingNow(true);}});if(!controller.signal.aborted)onVideo?.(file);}
+  catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'영상을 촬영하지 못했어요.');}
+  finally{captureLock.current=false;setCapturing(false);setRecordingNow(false);onRecordingChange?.(false);if(recording.current===controller)recording.current=null;}
+ };
  const presets=[.5,1,2,3];
  return <div className="lab-camera-surface" data-zoom-mode={nativeZoom?'device':'digital'} data-zoom={zoom} data-lens-base={lensBase}>
   <video ref={video} autoPlay muted playsInline aria-label="카메라 미리보기" style={{transform:`scale(${mirrored?-digitalZoom:digitalZoom},${digitalZoom})`}}/>
   {grid&&<div className="lab-camera-grid" aria-hidden="true"><i/><i/><i/><i/></div>}
   {active&&status==='ready'&&<>
-   <button className="lab-camera-settings-button" aria-label="카메라 설정" aria-expanded={settings} onClick={()=>setSettings(value=>!value)}><SlidersHorizontal size={19}/></button>
-   {settings&&<div className="lab-camera-settings" role="group" aria-label="카메라 설정 메뉴"><button disabled={capturing} onClick={nativeCapture}><Camera size={17}/>기본 카메라로 촬영</button>{!nativeZoom&&<p className="lab-camera-quality-note">확대하면 화질이 낮아질 수 있어요. 더 선명한 사진은 기본 카메라로 촬영해 주세요.</p>}<button aria-pressed={grid} onClick={()=>setGrid(value=>!value)}><Grid2X2 size={17}/>격자선{grid&&<Check size={14}/>}</button>{torchAvailable&&<button aria-pressed={torch} disabled={capturing} onClick={()=>setTorch(value=>!value)}><Zap size={17}/>조명{torch&&<Check size={14}/>}</button>}</div>}
+   <button className="lab-camera-settings-button" aria-label="카메라 설정" aria-expanded={settings} disabled={capturing} onClick={()=>setSettings(value=>!value)}><SlidersHorizontal size={19}/></button>
+   {settings&&<div className="lab-camera-settings" role="group" aria-label="카메라 설정 메뉴">{captureKind==='photo'&&<button disabled={capturing} onClick={nativeCapture}><Camera size={17}/>기본 카메라로 촬영</button>}{captureKind==='photo'&&!nativeZoom&&<p className="lab-camera-quality-note">확대하면 화질이 낮아질 수 있어요. 더 선명한 사진은 기본 카메라로 촬영해 주세요.</p>}<button aria-pressed={grid} onClick={()=>setGrid(value=>!value)}><Grid2X2 size={17}/>격자선{grid&&<Check size={14}/>}</button>{torchAvailable&&<button aria-pressed={torch} disabled={capturing} onClick={()=>setTorch(value=>!value)}><Zap size={17}/>조명{torch&&<Check size={14}/>}</button>}</div>}
    <div className="lab-camera-zoom" role="group" aria-label="카메라 배율 조절"><div>{presets.map(value=><button key={value} disabled={capturing||value<zoomMin||value>zoomMax} title={value<zoomMin||value>zoomMax?'이 기기 또는 브라우저에서 지원하지 않는 배율':undefined} aria-label={`배율 ${value}배`} aria-pressed={Math.abs(zoom-value)<.025} onClick={()=>changeZoom(value)}>{value}×</button>)}</div><output className="lab-camera-zoom-status" aria-label="현재 카메라 배율" aria-live="off">{zoom.toFixed(1)}×</output></div>
   </>}
-  {active&&status!=='ready'&&<div className="lab-camera-placeholder">{status==='loading'?<><LoaderCircle className="lab-spin" size={30}/><p>카메라를 여는 중</p></>:<><Camera size={46} strokeWidth={1}/><p>사진으로 남기는 지금</p><button onClick={()=>setAttempt(value=>value+1)}>카메라 켜기</button><small>앨범을 고르거나 글만 남겨도 좋아요</small></>}</div>}
+  {active&&status!=='ready'&&<div className="lab-camera-placeholder">{status==='loading'?<><LoaderCircle className="lab-spin" size={30}/><p>카메라를 여는 중</p></>:<><Camera size={46} strokeWidth={1}/><p>{captureKind==='video'?'움직이는 2초를 남겨요':'사진으로 남기는 지금'}</p><button onClick={()=>setAttempt(value=>value+1)}>카메라 켜기</button><small>앨범을 고르거나 글만 남겨도 좋아요</small></>}</div>}
   {error&&<p className="lab-camera-error" role="alert">{error}</p>}
-  <div className="lab-camera-capture"><button className="lab-camera-shutter" aria-label="사진 촬영" aria-busy={capturing||changing||status==='loading'} disabled={capturing||changing||status==='loading'||!active} onClick={()=>void capture()}>{capturing?<LoaderCircle className="lab-spin" size={24}/>:<span/>}</button><button className="lab-camera-flip" aria-label="전면 후면 카메라 전환" disabled={capturing||status==='loading'||!active} onClick={()=>{setSelection(null);setFacing(value=>value==='user'?'environment':'user');}}><RotateCw size={22}/></button></div>
+  {recordingNow&&<div key={recordingTake} className="un-camera-recording" role="status"><span/><strong>촬영 중 · 2초 후 자동 종료</strong><i/></div>}
+  <div className="lab-camera-capture"><button className={`lab-camera-shutter ${captureKind==='video'?'is-video':''}`} aria-label={captureKind==='video'?'2초 영상 촬영':'사진 촬영'} aria-busy={capturing||changing||status==='loading'} disabled={capturing||changing||status==='loading'||!active} onClick={()=>void (captureKind==='video'?captureVideo():capture())}>{capturing?<LoaderCircle className="lab-spin" size={24}/>:<span/>}</button><button className="lab-camera-flip" aria-label="전면 후면 카메라 전환" disabled={capturing||status==='loading'||!active} onClick={()=>{setSelection(null);setFacing(value=>value==='user'?'environment':'user');}}><RotateCw size={22}/></button></div>
  </div>;
 }
