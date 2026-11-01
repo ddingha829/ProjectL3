@@ -14,7 +14,7 @@ type Props={state:UnifiedState;logs:UnifiedLog[];scope:string;actor:Person;circl
 export default function MosaicBoard({state,logs,scope,actor,circle,focusLogId,commit,onOpen}:Props){
  const [encouragement,setEncouragement]=useState<{text:string;complete:boolean;stamp:number}|null>(null),[landing,setLanding]=useState<{index:number;stamp:number}|null>(null),[flight,setFlight]=useState<{id:string;x:number;y:number;dx:number;dy:number;width:number;height:number;scaleX:number;scaleY:number}|null>(null),[page,setPage]=useState(0),[editing,setEditing]=useState(false),[selected,setSelected]=useState(''),[popup,setPopup]=useState<{id:string;x:number;y:number}|null>(null),[message,setMessage]=useState(''),[drag,setDrag]=useState<{id:string;x:number;y:number;over:number|null}|null>(null);
  const gesture=useRef<{id:string;x:number;y:number;source:'tray'|'board';moving:boolean;scrolling:boolean;scrollLeft:number;timer:ReturnType<typeof setTimeout>|null}|null>(null),skipClick=useRef(false),popupCard=useRef<HTMLDivElement>(null),board=useRef<HTMLDivElement>(null),tray=useRef<HTMLDivElement>(null);
- const [exhibition,setExhibition]=useState(false);
+ const [exhibition,setExhibition]=useState(false),handledFocus=useRef('');
  const mine=scope==='mine',workLogs=logs.filter(mosaicWork),logMap=new Map(workLogs.map(l=>[l.id,l])),rows=Object.fromEntries(Object.entries(boardRows(state,scope)).filter(([,p])=>logMap.has(p.logId))),placed=new Set(Object.values(rows).map(p=>p.logId)),unplaced=workLogs.filter(l=>!placed.has(l.id)).sort((a,b)=>b.createdAt-a.createdAt),available=unplaced.filter(l=>l.authorId===actor.id),selectedLog=logMap.get(selected),popupLog=popup?logMap.get(popup.id):undefined;
  const pages=Math.min(MOSAIC_PAGE_COUNT,Math.max(1,Math.ceil((Math.max(-1,...Object.keys(rows).map(Number))+1)/MOSAIC_PAGE_SIZE)+(Object.keys(rows).length%MOSAIC_PAGE_SIZE===0&&Object.keys(rows).length>0?1:0),page+1));
  const pageCapacity=Math.min(MOSAIC_PAGE_SIZE,MAX_MOSAIC_SLOTS-page*MOSAIC_PAGE_SIZE),pageSlots=Array.from({length:pageCapacity},(_,index)=>Boolean(rows[page*MOSAIC_PAGE_SIZE+index])),pageFilled=pageSlots.filter(Boolean).length;
@@ -25,8 +25,17 @@ export default function MosaicBoard({state,logs,scope,actor,circle,focusLogId,co
  const finished=pageFilled===MOSAIC_PAGE_SIZE;
  useEffect(()=>{setExhibition(false);},[scope,page,finished]);
  const owner=(id:string)=>state.people.find(p=>p.id===id)||actor;
- useEffect(()=>{setPage(0);setPopup(null);setEditing(false);setSelected('');setDrag(null);setLanding(null);setFlight(null);},[scope]);
- useEffect(()=>{if(focusLogId&&available.some(l=>l.id===focusLogId))setSelected(focusLogId);else if(!selected||!logMap.has(selected))setSelected(available[0]?.id||'');},[focusLogId,scope,logs.map(l=>l.id).join('|')]);
+ useEffect(()=>{handledFocus.current='';setPage(0);setPopup(null);setEditing(false);setSelected('');setDrag(null);setLanding(null);setFlight(null);},[scope]);
+ useEffect(()=>{
+  const key=scope+':'+focusLogId;
+  if(focusLogId&&handledFocus.current!==key&&available.some(l=>l.id===focusLogId)){
+   handledFocus.current=key;setSelected(focusLogId);setEditing(false);setPopup(null);
+   let vacant=0;while(vacant<MAX_MOSAIC_SLOTS&&rows[vacant])vacant++;
+   if(vacant<MAX_MOSAIC_SLOTS){setPage(Math.floor(vacant/MOSAIC_PAGE_SIZE));setMessage('');}
+   else setMessage('보드가 가득 찼어요. 내 타일 하나를 트레이로 돌려놓고 빈 칸을 골라주세요.');
+  }else if(!selected||!logMap.has(selected))setSelected(available[0]?.id||'');
+ },[focusLogId,scope,logs.map(l=>l.id).join('|')]);
+ useEffect(()=>{if(!focusLogId||selected!==focusLogId)return;const frame=requestAnimationFrame(()=>Array.from(tray.current?.querySelectorAll<HTMLElement>('[data-tray-log]')||[]).find(node=>node.dataset.trayLog===focusLogId)?.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'}));return()=>cancelAnimationFrame(frame);},[focusLogId,selected]);
  useEffect(()=>()=>{if(gesture.current?.timer)clearTimeout(gesture.current.timer);},[]);
  useEffect(()=>{if(popup&&!popupLog)setPopup(null);},[popup,popupLog]);
  const place=(id:string,index:number,viaDrag=false)=>{try{

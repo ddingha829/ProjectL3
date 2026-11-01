@@ -1,0 +1,13 @@
+.un-collection-offer{position:absolute;z-index:4;left:50%;bottom:calc(var(--un-dock-space,104px) + 4px);translate:-50% 0;width:min(420px,calc(100% - 32px));padding:14px 14px 12px;border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--fg);box-shadow:0 10px 32px #00000014,0 2px 5px #00000008;pointer-events:auto;animation:collection-offer-enter .24s cubic-bezier(.2,.75,.2,1) both}
+.un-collection-offer-main{display:flex;gap:11px;align-items:center;min-width:0}
+.un-collection-offer-art{display:grid;place-items:center;flex:none;width:38px;height:52px;overflow:hidden;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--accent)}
+.un-collection-offer-art>img{width:100%;height:100%;object-fit:cover}
+.un-collection-offer-copy{flex:1;min-width:0}.un-collection-offer-copy strong{display:block;font-size:13px;font-weight:700;line-height:1.6;letter-spacing:-.025em;text-wrap:pretty}.un-collection-offer-copy>span{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:1.5;color:var(--muted)}
+.un-collection-offer .un-collection-offer-close{display:grid;place-items:center;align-self:flex-start;flex:none;width:44px;height:44px;margin:-7px -7px 0 0;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer}
+.un-collection-offer-intro{margin:12px 0 0;padding-top:11px;border-top:1px solid var(--line);font-size:12px;line-height:1.75;color:var(--muted);word-break:keep-all}
+.un-collection-offer-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.un-collection-offer-actions>span{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--muted)}
+.un-collection-offer .un-collection-offer-actions>button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:0 15px;border:0;border-radius:999px;background:color-mix(in srgb,var(--accent) 80%,#000);color:var(--accent-fg,#fff);font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;transition:opacity .16s}
+.un-collection-offer button:active{opacity:.72}.un-collection-offer button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+html[data-lab-keyboard=open] .un-collection-offer{display:none}
+@keyframes collection-offer-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.un-collection-offer{animation:none}.un-collection-offer button{transition:none}}

@@ -26,6 +26,8 @@ import MosaicBoard from './MosaicBoard';
 import useFeedPagination from './useFeedPagination';
 import SyncNotice from './SyncNotice';
 import SaveMoment from './SaveMoment';
+import CollectionPlacementOffer from './CollectionPlacementOffer';
+import useCollectionPlacementOffer from './useCollectionPlacementOffer';
 import useNewFeedCards from './useNewFeedCards';
 import {FeedSkeleton,RecordLoading} from './FeedLoading';
 import FeedToolbar from './FeedToolbar';
@@ -68,6 +70,8 @@ export default function UnifiedApp(){
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
  const [mosaicFocus,setMosaicFocus]=useState(''),[mapFocus,setMapFocus]=useState('');
  const [pendingMoment,setPendingMoment]=useState(''),[saveMoment,setSaveMoment]=useState<UnifiedLog|null>(null),[discoveryLog,setDiscoveryLog]=useState('');
+ const collectionOwner=session?(identity?.id||accountMode):'';
+ const collectionOffer=useCollectionPlacementOffer({owner:collectionOwner,logs:state?.logs||[],personalBoard:state?.mosaic.personalBoard||{},sync:syncStatus});
  const clearDiscovery=useCallback(()=>setDiscoveryLog(''),[]);
  useEffect(()=>{setPendingMoment('');setSaveMoment(null);setDiscoveryLog('');},[identity?.id,accountMode]);
  useEffect(()=>{if(!pendingMoment||syncStatus!=='idle')return;const log=state?.logs.find(row=>row.id===pendingMoment);setPendingMoment('');if(!log)return;if(view==='logs'&&!selectedId&&!panel)setSaveMoment(log);if(log.place)setDiscoveryLog(log.id);setToast('');},[pendingMoment,syncStatus,state,view,selectedId,panel]);
@@ -89,10 +93,10 @@ export default function UnifiedApp(){
  useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0C0C0D':'#F7F6F2');},[dark]);
  useEffect(()=>{if(accountMode==='cloud'&&syncStatus==='idle')setToast(previous=>previous==='서버에 저장하고 있어요.'?'서버에 저장했어요.':previous);},[accountMode,syncStatus]);
  const route=`${view}:${scope}:${section}:${mode}`;
- const navigate=(next:Destination)=>{setSaveMoment(null);setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,pageScrollPosition().top);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
- const changeScope=(next:string)=>{setSaveMoment(null);setMapFocus('');savedScroll.current.set(route,pageScrollPosition().top);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
+ const navigate=(next:Destination)=>{collectionOffer.dismiss();setSaveMoment(null);setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,pageScrollPosition().top);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
+ const changeScope=(next:string)=>{collectionOffer.dismiss();setSaveMoment(null);setMapFocus('');savedScroll.current.set(route,pageScrollPosition().top);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
  useEffect(()=>{setComposeKept(false);setComposing(false);},[identity?.id,accountMode]);
- const startCompose=useCallback(()=>{setSaveMoment(null);setInitialWork(undefined);setComposing(true);},[]);
+ const startCompose=useCallback(()=>{collectionOffer.dismiss();setSaveMoment(null);setInitialWork(undefined);setComposing(true);},[collectionOffer.dismiss]);
  useEffect(()=>{const distance=swipeEntry.current||16,slide=swipeEntry.current>0;swipeEntry.current=0;if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const elements=Array.from(mainRoot.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0),animations=elements.map(element=>element.animate([{opacity:slide?1:.6,transform:`translateX(${navDirection.current*distance}px)`},{opacity:1,transform:'translateX(0)'}],{duration:slide?240:220,easing:'cubic-bezier(.2,.75,.2,1)'}));return()=>animations.forEach(animation=>animation.cancel());},[view]);
  const cardNavigation=useCardHistory({id:selectedId,canLeave:()=>{
   const top=Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]')).at(-1);
@@ -115,7 +119,7 @@ export default function UnifiedApp(){
  useNewFeedCards(ready&&session&&!needsNickname?(identity?.id||accountMode):'',pagedFeed&&!pagination.loading&&!pagination.initial&&section==='all'&&sort==='recent'&&!query&&category==='all'&&!photosOnly,state?.logs||[],mainRoot,`${scope}:${mode}`);
  const groupIntroPending=Boolean(ready&&session&&accountMode==='cloud'&&!needsNickname&&state?.groupIntroSeen!==true&&circles.length===0);
  const groupIntroOpen=groupIntroPending&&!panel&&!selectedId&&!composing&&!editing&&!work&&!photoOpen&&!designOpen&&!collection&&!pwa.guideOpen&&backupProgress===null;
- const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(groupIntroPending||needsNickname||guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
+ const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(collectionOffer.log||groupIntroPending||needsNickname||guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!groupIntroOpen&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
@@ -130,9 +134,9 @@ export default function UnifiedApp(){
  const selected=readable.find(l=>l.id===selectedId),selectedAuthor=state.people.find(p=>p.id===selected?.authorId),mine=selected?.authorId===actor.id;
  const mapLogs=scoped.filter(l=>!!l.place),style=selected?(cardDraft||styleOf(selected)):null;
  const notify=(text:string)=>setToast(text);
- const openLog=(log:LabLog)=>{setSaveMoment(null);savedScroll.current.set(route,pageScrollPosition().top);cardNavigation.open(log.id);};
+ const openLog=(log:LabLog)=>{collectionOffer.dismiss();setSaveMoment(null);savedScroll.current.set(route,pageScrollPosition().top);cardNavigation.open(log.id);};
  const closeLog=cardNavigation.back;
- const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){setPendingMoment(log.id);changeScope('mine');setView('logs');setMosaicFocus(log.work?log.id:'');}}return result;};
+ const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){setPendingMoment(log.id);changeScope('mine');setView('logs');setMosaicFocus('');collectionOffer.request(log.id);}}return result;};
  const toggle=(id:string,key:'likes'|'bookmarks')=>commit(s=>({...s,logs:s.logs.map(l=>l.id===id?{...l,[key]:l[key].includes(actor.id)?l[key].filter(v=>v!==actor.id):[...l[key],actor.id]}:l)}));
  const applyStyle=()=>{if(!selected||!cardDraft)return;if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,card:{...cardDraft},updatedAt:Date.now(),revision:(l.revision||0)+1}:l)}))){setCardDraft(null);setDesignOpen(false);notify('이 티끌의 디자인을 적용했어요.');}};
  const intend=(id:string)=>{try{commit(s=>toggleIntent(s,actor.id,id) as typeof s);}catch(e){notify(e instanceof Error?e.message:'작품을 담지 못했어요.');}};
@@ -195,7 +199,8 @@ export default function UnifiedApp(){
  {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}
  {(error||syncStatus==='failed')&&<SyncNotice message={error} failed={syncStatus==='failed'} busy={syncStatus==='saving'} onDismiss={clearError} onRetry={()=>void retry()} onRecover={()=>void discardPending()}/>}
  {saveMoment&&view==='logs'&&!panel&&!selectedId&&!composing&&!editing&&<SaveMoment key={saveMoment.id} log={saveMoment} author={actor.name} onDone={()=>setSaveMoment(null)}/>}
- {toast&&<div className="lab-toast un-toast" role="status"><Check size={16}/>{toast}{mosaicFocus&&<button onClick={()=>{setView('mosaic');setToast('');}}>타일에 놓기<ArrowUpRight size={14}/></button>}</div>}
+ {collectionOffer.log&&!saveMoment&&view==='logs'&&!panel&&!selectedId&&!composing&&!editing&&!work&&!collection&&!photoOpen&&!designOpen&&!guideActive&&!groupIntroOpen&&!notificationGuide.open&&!pwa.guideOpen&&backupProgress===null&&!toast&&syncStatus==='idle'&&<CollectionPlacementOffer key={collectionOffer.log.id} log={collectionOffer.log} owner={collectionOwner} onDismiss={collectionOffer.dismiss} onPlace={()=>{const id=collectionOffer.log?.id;if(!id)return;changeScope('mine');setMosaicFocus(id);setView('mosaic');setToast('');}}/>}
+ {toast&&<div className="lab-toast un-toast" role="status"><Check size={16}/>{toast}</div>}
  </div>;
 }
 function MapPinIcon(){return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;}
