@@ -1,7 +1,7 @@
 'use client';
-import {useCallback,useState} from 'react';
+import {useCallback,useId,useState} from 'react';
 import {Check,ChevronDown,KeyRound,Lock,Settings,Users} from 'lucide-react';
-import {motion} from 'motion/react';
+import {AnimatePresence,LayoutGroup,motion} from 'motion/react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import type {Circle} from '@/social/model';
 import type {PwaState} from '@/components/PwaInstallControl';
@@ -29,7 +29,7 @@ export default function UnifiedHeader({
   pwa:PwaState;
 }){
   const [scopeOpen,setScopeOpen]=useState(false);
-  const reduced=useMotionPreference();
+  const reduced=useMotionPreference(),scopeGroupId=useId();
   const scopeChanged=useCallback((value:boolean)=>setScopeOpen(value),[]);
   const selectedCircle=circles.find(c=>c.id===scope),ScopeIcon=selectedCircle?Users:Lock;
 
@@ -39,7 +39,7 @@ export default function UnifiedHeader({
         type="button"
         className="un-brand"
         aria-label="티끌 피드 화면"
-        whileTap={reduced?undefined:{scale:0.98}}
+        whileTap={reduced?undefined:{scale:0.95}}
         whileHover={reduced?undefined:{scale:1.01}}
         transition={reduced?instantMotion:INTERACTION_SPRING}
         onClick={onHome}
@@ -53,8 +53,19 @@ export default function UnifiedHeader({
         className={`un-scope-picker ${selectedCircle?'has-group':''}`}
         trigger={
           <>
-            <ScopeIcon size={14} className="un-scope-type" aria-hidden="true"/>
-            <span className="un-scope-name">{selectedCircle?.name||'내 티끌'}</span>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={scope}
+                className="un-scope-pill-morph"
+                initial={reduced?false:{opacity:0,y:5,filter:'blur(3px)'}}
+                animate={{opacity:1,y:0,filter:'blur(0px)'}}
+                exit={reduced?undefined:{opacity:0,y:-5,filter:'blur(3px)'}}
+                transition={reduced?instantMotion:INTERACTION_SPRING}
+              >
+                <ScopeIcon size={14} className="un-scope-type" aria-hidden="true"/>
+                <span className="un-scope-name">{selectedCircle?.name||'내 티끌'}</span>
+              </motion.span>
+            </AnimatePresence>
             <motion.span
               className="un-scope-chevron"
               aria-hidden="true"
@@ -68,17 +79,17 @@ export default function UnifiedHeader({
         }
       >
         {close=>(
-          <>
+          <LayoutGroup id={scopeGroupId}>
             <motion.button
               type="button"
               className="un-scope-option"
               aria-pressed={scope==='mine'}
-              whileTap={reduced?undefined:{scale:0.98}}
+              whileTap={reduced?undefined:{scale:0.97}}
               whileHover={reduced?undefined:{scale:1.01}}
               transition={reduced?instantMotion:INTERACTION_SPRING}
               onClick={()=>{onScope('mine');close();}}
             >
-              {scope==='mine'&&<span className="un-surface-scope-active-bg" aria-hidden="true"/>}
+              {scope==='mine'&&<motion.span layoutId={reduced?undefined:"un-surface-scope-pill"} className="un-surface-scope-active-bg" transition={reduced?instantMotion:INTERACTION_SPRING} aria-hidden="true"/>}
               <Lock size={15} aria-hidden="true"/>
               <span className="un-scope-option-name">내 티끌</span>
               <span className="un-scope-check" aria-hidden="true">{scope==='mine'&&<Check aria-hidden="true" size={14}/>}</span>
@@ -86,15 +97,15 @@ export default function UnifiedHeader({
             {circles.map(c=>(
               <motion.button
                 type="button"
-                className="un-scope-option"
                 key={c.id}
+                className="un-scope-option"
                 aria-pressed={scope===c.id}
-                whileTap={reduced?undefined:{scale:0.98}}
+                whileTap={reduced?undefined:{scale:0.97}}
                 whileHover={reduced?undefined:{scale:1.01}}
                 transition={reduced?instantMotion:INTERACTION_SPRING}
                 onClick={()=>{onScope(c.id);close();}}
               >
-                {scope===c.id&&<span className="un-surface-scope-active-bg" aria-hidden="true"/>}
+                {scope===c.id&&<motion.span layoutId={reduced?undefined:"un-surface-scope-pill"} className="un-surface-scope-active-bg" transition={reduced?instantMotion:INTERACTION_SPRING} aria-hidden="true"/>}
                 <Users size={15} aria-hidden="true"/>
                 <span className="un-scope-option-name">{c.name}</span>
                 <small className="un-scope-member-count">{c.members.length}명</small>
@@ -104,7 +115,7 @@ export default function UnifiedHeader({
             <motion.button
               type="button"
               className="un-scope-manage"
-              whileTap={reduced?undefined:{scale:0.98}}
+              whileTap={reduced?undefined:{scale:0.97}}
               whileHover={reduced?undefined:{scale:1.01}}
               transition={reduced?instantMotion:INTERACTION_SPRING}
               onClick={()=>{close();onGroups();}}
@@ -112,7 +123,7 @@ export default function UnifiedHeader({
               <KeyRound aria-hidden="true" size={15}/>
               <span>코드로 참여 · 모임 만들기</span>
             </motion.button>
-          </>
+          </LayoutGroup>
         )}
       </CompactPopover>
       <div className="un-header-actions">
@@ -121,8 +132,8 @@ export default function UnifiedHeader({
           type="button"
           className="un-header-action"
           aria-label="설정 열기"
-          whileTap={reduced?undefined:{scale:0.98}}
-          whileHover={reduced?undefined:{scale:1.01}}
+          whileTap={reduced?undefined:{scale:0.9,rotate:-15}}
+          whileHover={reduced?undefined:{scale:1.04}}
           transition={reduced?instantMotion:INTERACTION_SPRING}
           onClick={onSettings}
         >

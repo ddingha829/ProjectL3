@@ -24,8 +24,8 @@ export default function UnifiedNavigation({
         type="button"
         className="un-dock-add"
         aria-label="새 티끌 남기기"
-        whileTap={reduced?undefined:{scale:0.98}}
-        whileHover={reduced?undefined:{scale:1.01}}
+        whileTap={reduced?undefined:{scale:0.9,rotate:-12}}
+        whileHover={reduced?undefined:{scale:1.04}}
         transition={reduced?instantMotion:INTERACTION_SPRING}
         onClick={onCompose}
       >
@@ -44,8 +44,8 @@ export default function UnifiedNavigation({
                 type="button"
                 key={id}
                 aria-current={isActive?'page':undefined}
-                whileTap={reduced?undefined:{scale:0.98}}
-                whileHover={reduced?undefined:{scale:1.01}}
+                whileTap={reduced?undefined:{scale:0.94}}
+                whileHover={reduced?undefined:{scale:1.02}}
                 transition={reduced?instantMotion:INTERACTION_SPRING}
                 onClick={()=>onChange(id)}
               >
@@ -59,7 +59,14 @@ export default function UnifiedNavigation({
                     aria-hidden="true"
                   />
                 )}
-                <Icon aria-hidden="true" size={22} strokeWidth={1.7}/>
+                <motion.span
+                  className="un-nav-icon-bounce"
+                  style={{display:'inline-grid',placeItems:'center'}}
+                  animate={reduced||!isActive?{scale:1,y:0}:{scale:[0.86,1.16,1],y:[0,-2.5,0]}}
+                  transition={reduced?instantMotion:INTERACTION_SPRING}
+                >
+                  <Icon aria-hidden="true" size={22} strokeWidth={1.7}/>
+                </motion.span>
                 <span>{label}</span>
               </motion.button>
             );

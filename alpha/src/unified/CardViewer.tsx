@@ -1,31 +1,89 @@
 'use client';
-import {useId,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {useId,useRef,useState,type CSSProperties,type PointerEvent,type ReactNode,type RefObject} from 'react';
 import {ArrowUpRight,MessageCircle,MoreHorizontal,Share2,Users} from 'lucide-react';
+import {AnimatePresence,motion,useMotionTemplate,useMotionValue,useSpring} from 'motion/react';
 import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard,{cardTitle} from '@/social/EditorialCard';
 import type {EditorialStyle} from '@/social/editorialStyle';
+import {useMotionPreference} from '@/lib/useMotionPreference';
+import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import type {UnifiedLog} from './store';
 import {useCardBackSwipe} from './useCardBackSwipe';
 const CardImageActions=dynamic(()=>import('@/social/CardImageActions'),{loading:()=> <p role="status">공유 도구를 불러오고 있어요.</p>});
 import './CardViewer.css';
 
+const TILT_SPRING={stiffness:280,damping:24,mass:0.6};
+
 type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;onShareToGroups?:()=>void;options?:(close:()=>void)=>ReactNode;children:ReactNode};
 export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
- const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),gesture=useRef<{x:number;y:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
+ const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),[draggingSheet,setDraggingSheet]=useState(false),[sheetOffset,setSheetOffset]=useState(0);
+ const gesture=useRef<{x:number;y:number;lastY:number;lastT:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
+ const reduced=useMotionPreference();
  const viewer=useRef<HTMLDivElement>(null);useCardBackSwipe(viewer,onBack,!sharing&&!optionsOpen);
+ const rawRotateX=useMotionValue(0),rawRotateY=useMotionValue(0),rawGlareX=useMotionValue(50),rawGlareY=useMotionValue(50),rawGlareOpacity=useMotionValue(0);
+ const rotateX=useSpring(rawRotateX,TILT_SPRING),rotateY=useSpring(rawRotateY,TILT_SPRING),glareX=useSpring(rawGlareX,TILT_SPRING),glareY=useSpring(rawGlareY,TILT_SPRING),glareOpacity=useSpring(rawGlareOpacity,TILT_SPRING);
+ const glareBackground=useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.42), rgba(255,255,255,0.08) 42%, transparent 72%)`;
+
+ const resetTilt=()=>{rawRotateX.set(0);rawRotateY.set(0);rawGlareOpacity.set(0);};
+ const handleCardMove=(event:PointerEvent<HTMLDivElement>)=>{
+  if(reduced||sharing||optionsOpen)return;
+  if(event.pointerType==='touch'&&event.clientX<32)return;
+  const rect=event.currentTarget.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  const nx=Math.max(-1,Math.min(1,(event.clientX-(rect.left+rect.width/2))/(rect.width/2)));
+  const ny=Math.max(-1,Math.min(1,(event.clientY-(rect.top+rect.height/2))/(rect.height/2)));
+  rawRotateX.set(-ny*6.5);
+  rawRotateY.set(nx*6.5);
+  rawGlareX.set((nx+1)*50);
+  rawGlareY.set((ny+1)*50);
+  rawGlareOpacity.set(0.22);
+ };
+
  const changeExpanded=(value:boolean)=>{if(!value&&tools.current?.contains(document.activeElement))document.getElementById(toolsId+'-toggle')?.focus({preventScroll:true});setExpanded(value);};
- return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/672,'--viewer-peek-content':place?'136px':'112px'} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
-  <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;}}>
-   <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong"/></div>
+ const damp=(over:number)=>Math.sign(over)*Math.pow(Math.abs(over),0.72)*0.36;
+
+ return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/672,'--viewer-peek-content':place?'136px':'112px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
+  <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY,lastY:event.clientY,lastT:performance.now()};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;resetTilt();if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;resetTilt();}}>
+   <motion.div
+    className="un-detail-card-tilt"
+    style={reduced?undefined:{rotateX,rotateY,transformPerspective:1100}}
+    onPointerMove={handleCardMove}
+    onPointerUp={resetTilt}
+    onPointerLeave={resetTilt}
+    onPointerCancel={resetTilt}
+   >
+    <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong"/></div>
+    {!reduced&&<motion.span className="un-card-specular" aria-hidden="true" style={{opacity:glareOpacity,background:glareBackground}}/>}
+   </motion.div>
   </div>
   <section className="un-viewer-drawer" aria-label="티끌 반응과 댓글">
    <button id={toolsId+'-toggle'} className="un-viewer-toggle" aria-label={expanded?'댓글 접기':'댓글 펼치기'} aria-controls={toolsId} aria-expanded={expanded} onClick={event=>{if(skipClick.current&&event.detail>0){skipClick.current=false;return;}skipClick.current=false;changeExpanded(!expanded);}}
-    onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;skipClick.current=false;gesture.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;if(start&&Math.abs(event.clientY-start.y)>24&&Math.abs(event.clientY-start.y)>Math.abs(event.clientX-start.x)*1.3){skipClick.current=true;changeExpanded(event.clientY<start.y);}}} onPointerCancel={()=>{gesture.current=null;}}>
+    onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;skipClick.current=false;gesture.current={x:event.clientX,y:event.clientY,lastY:event.clientY,lastT:performance.now()};event.currentTarget.setPointerCapture(event.pointerId);}}
+    onPointerMove={event=>{
+     const start=gesture.current;if(!start||reduced)return;
+     const dy=event.clientY-start.y,dx=event.clientX-start.x;
+     if(!draggingSheet&&Math.abs(dy)>6&&Math.abs(dy)>Math.abs(dx)){setDraggingSheet(true);}
+     start.lastY=event.clientY;start.lastT=performance.now();
+     const pullUp=-dy;
+     if(!expanded){
+      setSheetOffset(pullUp>=0?Math.min(160,pullUp):damp(pullUp));
+     }else{
+      setSheetOffset(pullUp<=0?Math.max(-160,pullUp):damp(pullUp));
+     }
+    }}
+    onPointerUp={event=>{
+     const start=gesture.current;gesture.current=null;
+     if(draggingSheet){setDraggingSheet(false);setSheetOffset(0);}
+     if(!start)return;
+     const dy=event.clientY-start.y,dx=event.clientX-start.x,dt=Math.max(1,performance.now()-start.lastT),vy=(event.clientY-start.lastY)/dt;
+     if((Math.abs(dy)>22||Math.abs(vy)>0.42)&&Math.abs(dy)>Math.abs(dx)*1.2){skipClick.current=true;changeExpanded(vy<-0.38?true:vy>0.38?false:dy<0);}
+    }}
+    onPointerCancel={()=>{gesture.current=null;setDraggingSheet(false);setSheetOffset(0);}}>
     <span className="un-viewer-grab" aria-hidden="true"/>
-    <span className="un-viewer-peek-row"><span className="un-viewer-author-mark" style={{'--author-color':authorColor||'var(--muted)'} as CSSProperties}>{authorInitial||author.slice(0,1)}</span><span className="un-viewer-author-copy"><strong>{author}</strong><small>{new Date(log.createdAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</small></span><span className="un-viewer-comment-count"><MessageCircle size={17}/><span>{log.comments.length}</span></span></span>
+    <span className="un-viewer-peek-row"><span className="un-viewer-author-mark" style={{'--author-color':authorColor||'var(--muted)'} as CSSProperties}>{authorInitial||author.slice(0,1)}</span><span className="un-viewer-author-copy"><strong>{author}</strong><small>{new Date(log.createdAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</small></span><span className="un-viewer-comment-count"><MessageCircle size={17}/><AnimatePresence mode="popLayout" initial={false}><motion.span key={log.comments.length} initial={reduced?false:{y:7,opacity:0}} animate={{y:0,opacity:1}} exit={reduced?undefined:{y:-7,opacity:0}} transition={reduced?instantMotion:INTERACTION_SPRING}>{log.comments.length}</motion.span></AnimatePresence></span></span>
    </button>
-   <div className="un-viewer-summary"><div className="un-viewer-action-bar"><div className="un-viewer-reactions">{actions}</div><button className="un-viewer-icon-action un-viewer-share" aria-label="공유하기" title="공유하기" onClick={()=>setSharing(true)}><Share2 size={18}/></button>{options&&<button className="un-viewer-icon-action" aria-label="티끌 옵션" title="티끌 옵션" onClick={()=>setOptionsOpen(true)}><MoreHorizontal size={21}/></button>}</div>{place}</div>
+   <div className="un-viewer-summary"><div className="un-viewer-action-bar"><div className="un-viewer-reactions">{actions}</div><motion.button whileTap={reduced?undefined:{scale:0.9}} whileHover={reduced?undefined:{scale:1.04}} transition={reduced?instantMotion:INTERACTION_SPRING} className="un-viewer-icon-action un-viewer-share" aria-label="공유하기" title="공유하기" onClick={()=>{resetTilt();setSharing(true);}}><Share2 size={18}/></motion.button>{options&&<motion.button whileTap={reduced?undefined:{scale:0.9}} whileHover={reduced?undefined:{scale:1.04}} transition={reduced?instantMotion:INTERACTION_SPRING} className="un-viewer-icon-action" aria-label="티끌 옵션" title="티끌 옵션" onClick={()=>{resetTilt();setOptionsOpen(true);}}><MoreHorizontal size={21}/></motion.button>}</div>{place}</div>
    <div ref={tools} id={toolsId} className="un-detail-tools un-viewer-tools" hidden={!expanded} inert={!expanded}>{children}</div>
   </section>
   <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={!!log.image}/></AccessibleDialog>

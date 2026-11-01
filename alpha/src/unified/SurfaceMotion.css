@@ -27,7 +27,9 @@ html[data-unified-shell=true] .flc-popover>.flc-menu[data-motion-popover]{
 /* Keep a solid, unfiltered header: no new blur layer near iOS's status bar. */
 html[data-unified-shell=true] .un-header.un-header-v2.un-header-centered .un-scope-picker>.flc-tool-trigger{
  box-shadow:var(--un-surface-shadow);border-color:var(--un-surface-edge);backdrop-filter:none;-webkit-backdrop-filter:none;
+ transition:width .24s cubic-bezier(.22,1,.36,1),background .18s,border-color .18s;
 }
+.un-scope-pill-morph{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
 html[data-unified-shell=true] .un-scope-option{position:relative;isolation:isolate;overflow:hidden}
 html[data-unified-shell=true] .un-scope-option[aria-pressed=true] .un-scope-member-count{color:var(--ui-accent-ink)}
 .un-surface-scope-active-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:12px;background:var(--ui-soft);box-shadow:var(--un-surface-highlight)}
@@ -35,10 +37,14 @@ html[data-unified-shell=true] .un-scope-option[aria-pressed=true] .un-scope-memb
 html[data-unified-shell=true] .un-app .flc-shell.un-log-controls.un-feed-toolbar{
  background:var(--surface);border-color:var(--un-surface-edge);border-radius:20px;box-shadow:var(--un-surface-shadow);
  backdrop-filter:none;-webkit-backdrop-filter:none;
+ transition:box-shadow .24s cubic-bezier(.22,1,.36,1),background .2s,border-color .2s;
 }
 html[data-unified-shell=true] .un-app .flc-shell.un-log-controls.un-feed-toolbar.is-pinned{
  background:var(--un-surface-glass);border-color:var(--un-surface-edge-strong);box-shadow:var(--un-surface-overlay);
  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+html[data-unified-shell=true] .un-feed-toolbar :is(.flc-search-field,.un-feed-view-options){
+ transition:grid-template-columns .28s cubic-bezier(.22,1.12,.36,1),opacity .2s ease,margin .28s cubic-bezier(.22,1.12,.36,1);
 }
 html[data-unified-shell=true] :is(.un-feed-category-options,.un-feed-sort-options)>button{
  position:relative;isolation:isolate;overflow:hidden;border-radius:12px;
@@ -66,6 +72,68 @@ html[data-unified-shell=true] .studio-canvas{box-shadow:var(--un-surface-highlig
 html[data-unified-shell=true] .quick-dialog-panel.lab-dialog:not(.un-detail-dialog):not(.lab-story-editor){border-color:var(--un-surface-edge-strong);box-shadow:var(--un-surface-overlay)}
 html[data-unified-shell=true] :is(.un-scope-member-count,.mosaic-volume-number strong,.mosaic-page-number,.mosaic-board-meter span,.mosaic-tray-title span,.un-viewer-comment-count span,.un-viewer-icon-action span,.un-selection-bar span){font-variant-numeric:tabular-nums}
 
+/* 1. CardViewer Apple Wallet 3D Tilt & Specular Glare */
+.un-detail-card-tilt{
+ position:relative;
+ width:min(100%,calc((var(--viewer-height) - var(--viewer-peek) - max(0px,var(--viewer-drag-y,0px)) - 68px) * var(--viewer-ratio)));
+ max-width:540px;
+ margin:0;
+ transform-style:preserve-3d;
+ will-change:transform;
+ transition:width .34s cubic-bezier(.22,1.12,.36,1);
+}
+.un-card-viewer.is-expanded .un-detail-card-tilt{
+ width:min(100%,calc((var(--viewer-height) - var(--viewer-open) - var(--viewer-drag-y,0px) - 60px) * var(--viewer-ratio)));
+}
+.un-card-viewer .un-detail-card-tilt>.un-detail-card{
+ width:100%!important;
+ max-width:none!important;
+}
+.un-card-specular{
+ position:absolute;
+ inset:0;
+ z-index:4;
+ border-radius:22px;
+ pointer-events:none;
+ mix-blend-mode:soft-light;
+}
+@media(min-width:780px){
+ .un-detail-card-tilt,.un-card-viewer.is-expanded .un-detail-card-tilt{
+  width:min(100%,calc((var(--viewer-height) - 90px) * var(--viewer-ratio)));
+  max-width:520px;
+ }
+}
+
+/* 2. CardViewer 1:1 Rubber-Band Sheet Drag */
+@media(max-width:779px){
+ .un-card-viewer{
+  grid-template-rows:minmax(0,1fr) max(84px,calc(var(--viewer-peek) + var(--viewer-drag-y,0px)));
+  transition:grid-template-rows .36s cubic-bezier(.22,1.14,.36,1);
+ }
+ .un-card-viewer.is-expanded{
+  grid-template-rows:minmax(0,1fr) max(120px,calc(var(--viewer-open) + var(--viewer-drag-y,0px)));
+ }
+ .un-card-viewer.is-sheet-dragging,
+ .un-card-viewer.is-sheet-dragging .un-detail-card-tilt{
+  transition:none!important;
+ }
+}
+
+/* 3. Mosaic Board Velocity Swing, Magnetic Slot & Squash-and-Stretch */
+html[data-unified-shell=true] .mosaic-drag-ghost{
+ transform:translate(-50%,-82%) rotate(var(--drag-tilt,-6deg)) scale(1.11);
+ transition:transform 65ms cubic-bezier(.2,.85,.25,1);
+ box-shadow:0 20px 38px #00000047,0 4px 10px #00000024;
+}
+html[data-unified-shell=true] .mosaic-slot.is-over{
+ transform:scale(1.06) translateY(-2px);
+ box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),0 10px 22px -6px color-mix(in srgb,var(--accent) 34%,transparent);
+ transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s ease,border-color .18s ease;
+}
+
+/* 5. Odometer Counter Alignment */
+.un-odometer-num{display:inline-block;font-variant-numeric:tabular-nums}
+
 /* Centering and fixed positioning have a separate owner from the spring. */
 .un-toast-anchor{position:fixed;left:0;right:0;bottom:max(100px,calc(var(--un-dock-space,92px) + 8px));z-index:1700;display:flex;justify-content:center;pointer-events:none;padding-inline:14px}
 .un-toast-anchor .lab-toast.un-toast{position:relative;left:auto;bottom:auto!important;margin:0;animation:none;max-width:min(480px,100%);pointer-events:auto}
@@ -73,7 +141,8 @@ html[data-unified-shell=true] .un-toast-anchor .un-toast{background:var(--surfac
 .un-toast-anchor .un-toast>svg{flex:none}
 
 @media(prefers-reduced-motion:reduce){
- html[data-unified-shell=true] :is(.un-navigation button,.un-scope-picker button,.flc-menu[data-motion-popover]){transition:none}
+ html[data-unified-shell=true] :is(.un-navigation button,.un-scope-picker button,.flc-menu[data-motion-popover],.un-detail-card-tilt,.mosaic-drag-ghost,.mosaic-slot.is-over){transition:none}
+ .un-card-specular{display:none}
 }
 @media(prefers-reduced-transparency:reduce){
  html[data-unified-shell=true] :is(.flc-menu[data-motion-popover],.un-navigation .lab-nav-rail,.un-app .flc-shell.un-log-controls.un-feed-toolbar.is-pinned,.un-toast-anchor .un-toast){background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
