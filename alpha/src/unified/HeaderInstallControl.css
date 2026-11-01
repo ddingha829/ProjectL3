@@ -12,3 +12,4 @@
 @media(display-mode:standalone),(display-mode:minimal-ui),(display-mode:window-controls-overlay){.un-install-trigger{display:none}}
 @media(prefers-reduced-motion:reduce){.un-install-trigger{transition:none}}
 .un-install-coming{margin:-6px 0 18px;font-size:11px;line-height:1.6;color:var(--muted)}
+.un-install-browser-note{margin:16px 0 0;padding:12px;border-radius:12px;background:var(--surface-2);font-size:12px;line-height:1.65;color:var(--muted);word-break:keep-all}

@@ -36,6 +36,8 @@ try{
  await run('iOS home-screen mode is recognized',{iosApp:true,ua:'iPhone'},({read})=>{assert.equal(read().isStandalone,true);assert.equal(read().platform,'ios');});
  await run('desktop-mode iPad receives iPhone/iPad instructions',{platform:'MacIntel',touch:5},({read})=>assert.equal(read().platform,'ios'));
  await run('Android receives Android instructions',{ua:'Mozilla Android Chrome'},({read})=>assert.equal(read().platform,'android'));
+ await run('Samsung Internet receives its address-bar install instructions',{ua:'Mozilla Android SamsungBrowser/28.0 Chrome/130'},({read})=>{assert.equal(read().platform,'android');assert.equal(read().browser,'samsung');});
+ await run('Samsung native install prompt remains a one-tap action',{ua:'Mozilla Android SamsungBrowser/28.0'},async({read,win})=>{const prompt=nativePrompt();win.dispatchEvent(prompt.event);assert.equal(await read().triggerInstall(),'installed');assert.equal(prompt.calls(),1);});
  await run('Kakao in-app browser gets an external browser handoff',{ua:'Mozilla Android KAKAOTALK'},({read})=>assert.equal(read().inAppName,'카카오톡'));
  await run('unsupported browsers open the manual guide',{},async({read})=>{assert.equal(await read().triggerInstall(),'guide');assert.equal(read().guideOpen,true);assert.equal(read().canPromptNative,false);});
  await run('native install event is used once',{},async({read,win})=>{const prompt=nativePrompt();win.dispatchEvent(prompt.event);assert.equal(prompt.event.defaultPrevented,true);assert.equal(read().canPromptNative,true);assert.equal(await read().triggerInstall(),'installed');assert.equal(read().canPromptNative,false);await read().triggerInstall();assert.equal(prompt.calls(),1);assert.equal(read().guideOpen,true);});

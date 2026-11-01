@@ -44,6 +44,7 @@ import GroupWelcome from './GroupWelcome';
 import GroupEntrySheet from './GroupEntrySheet';
 import PhotoEditor from './PhotoEditor';
 import useUnifiedState from './useUnifiedState';
+import useRememberedScope from './useRememberedScope';
 import useNotifications from './useNotifications';
 import NotificationSettings from './NotificationSettings';
 import NotificationOnboarding from './NotificationOnboarding';
@@ -59,8 +60,9 @@ const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||
 function Avatar({person}:{person:Person}){return <span className="un-avatar" style={{'--person':person.color} as CSSProperties}>{person.initial}</span>;}
 export default function UnifiedApp(){
  const pwa=usePwaInstall();
- const {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[scope,setScope]=useState('mine'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[composeKept,setComposeKept]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
+ const {state,commit,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[composeKept,setComposeKept]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
  const session=identity?.name||null;
+ const {scope,setScope,scopeReady}=useRememberedScope(session?(accountMode==='cloud'&&identity?.id?`cloud:${identity.id}`:accountMode==='demo'?'demo':''):'',ready,state?.circles.filter(c=>c.members.includes('me')).map(c=>c.id)||[]);
  const needsNickname=accountMode==='cloud'&&state?.nicknameConfigured!==true&&syncStatus==='idle';
  const [mode,setMode]=useState<'cards'|'list'|'calendar'>('cards'),[section,setSection]=useState<'all'|'saved'|'collections'|'taste'>('all'),[query,setQuery]=useState(''),[category,setCategory]=useState('all'),[selecting,setSelecting]=useState(false),[picked,setPicked]=useState<string[]>([]),[collectionName,setCollectionName]=useState(''),[collection,setCollection]=useState<Collection|null>(null),[cardDraft,setCardDraft]=useState<EditorialStyle|null>(null),[designOpen,setDesignOpen]=useState(false),[presetName,setPresetName]=useState(''),[audienceDraft,setAudienceDraft]=useState<string[]>([]),[comment,setComment]=useState(''),[backupProgress,setBackupProgress]=useState<number|null>(null),[guideReplay,setGuideReplay]=useState(0),[guideActive,setGuideActive]=useState(false),[district,setDistrict]=useState<{name:string;ids:string[]}|null>(null);
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
@@ -76,14 +78,13 @@ export default function UnifiedApp(){
  const {theme,changeTheme:chooseTheme}=useThemePreference();
  const [systemDark,setSystemDark]=useState(false);const dark=theme==='dark'||theme==='auto'&&systemDark;
  useEffect(()=>{const m=matchMedia('(prefers-color-scheme:dark)'),sync=()=>setSystemDark(m.matches);sync();m.addEventListener('change',sync);return()=>m.removeEventListener('change',sync);},[]);
- useEffect(()=>{const params=new URLSearchParams(location.search),v=params.get('view'),s=params.get('scope');if(['logs','map','mosaic','studio'].includes(v||''))setView(v as Destination);if(s)setScope(s);},[]);
+ useEffect(()=>{const v=new URLSearchParams(location.search).get('view');if(['logs','map','mosaic','studio'].includes(v||''))setView(v as Destination);},[]);
  useAppViewport(ready&&!!session&&!needsNickname,pwa.ready&&pwa.platform==='ios'&&pwa.isStandalone);
  const actor=state?.people.find(p=>p.id==='me'),circles=state?.circles.filter(c=>c.members.includes('me'))||[],activeCircle=circles.find(c=>c.id===scope),own=state?.logs.filter(l=>l.authorId==='me')||[];
  // A removed share can disappear while its viewer is open. Clear the old
  // selection as well so the hidden viewer does not keep swipe entry disabled.
  useEffect(()=>{if(!state||!selectedId||state.logs.some(l=>l.id===selectedId&&(l.authorId==='me'||audienceIds(l).some(id=>state.circles.some(c=>c.id===id&&c.members.includes('me'))))))return;setSelectedId('');setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setEditing(previous=>previous?.id===selectedId?null:previous);},[state,selectedId]);
- useEffect(()=>{if(state&&scope!=='mine'&&!state.circles.some(c=>c.id===scope&&c.members.includes('me')))setScope('mine');},[state,scope]);
- useEffect(()=>{if(!ready||!session)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(history.state,'',url);},[view,scope,ready,session]);
+ useEffect(()=>{if(!ready||!session||!scopeReady)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(history.state,'',url);},[view,scope,ready,session,scopeReady]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(t);},[toast]);
  useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0C0C0D':'#F7F6F2');},[dark]);
  useEffect(()=>{if(accountMode==='cloud'&&syncStatus==='idle')setToast(previous=>previous==='서버에 저장하고 있어요.'?'서버에 저장했어요.':previous);},[accountMode,syncStatus]);
@@ -110,7 +111,7 @@ export default function UnifiedApp(){
  useEffect(()=>{if(!ready||!session||needsNickname||accountMode!=='cloud')return;if(wantsFullRecords)void ensureFullRecords();else enablePagedRecords();},[ready,session,needsNickname,accountMode,wantsFullRecords,syncStatus,ensureFullRecords,enablePagedRecords]);
  const waitingForRecords=accountMode==='cloud'&&wantsFullRecords&&state?.recordsComplete!==true;
  const pagedFeed=view==='logs'&&mode!=='calendar'&&(section==='all'||section==='saved')&&!selecting&&!district;
- const pagination=useFeedPagination({owner:identity?.id||accountMode,enabled:ready&&!!session&&!needsNickname&&pagedFeed&&(!wantsFullRecords||state?.recordsComplete===true),remote:accountMode==='cloud'&&state?.recordsComplete!==true,query:{scope,category,query,sort,photosOnly,saved:section==='saved'},load:loadFeedPage});
+ const pagination=useFeedPagination({owner:identity?.id||accountMode,enabled:ready&&scopeReady&&!!session&&!needsNickname&&pagedFeed&&(!wantsFullRecords||state?.recordsComplete===true),remote:accountMode==='cloud'&&state?.recordsComplete!==true,query:{scope,category,query,sort,photosOnly,saved:section==='saved'},load:loadFeedPage});
  useNewFeedCards(ready&&session&&!needsNickname?(identity?.id||accountMode):'',pagedFeed&&!pagination.loading&&!pagination.initial&&section==='all'&&sort==='recent'&&!query&&category==='all'&&!photosOnly,state?.logs||[],mainRoot,`${scope}:${mode}`);
  const groupIntroPending=Boolean(ready&&session&&accountMode==='cloud'&&!needsNickname&&state?.groupIntroSeen!==true&&circles.length===0);
  const groupIntroOpen=groupIntroPending&&!panel&&!selectedId&&!composing&&!editing&&!work&&!photoOpen&&!designOpen&&!collection&&!pwa.guideOpen&&backupProgress===null;
@@ -118,7 +119,7 @@ export default function UnifiedApp(){
  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!groupIntroOpen&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
- if(!ready||!state||!actor)return <div className="lab-boot"><TicgleWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
+ if(!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><TicgleWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
  if(needsNickname)return <NicknameSetup busy={nicknameBusy} onSave={saveNickname} onLogout={()=>void logout()} initialName={actor.name!==identity?.email?.split('@')[0]&&actor.name!=='나'?actor.name:''}/>;
  const readable=state.logs.filter(l=>l.authorId==='me'||audienceIds(l).some(id=>circles.some(c=>c.id===id)));

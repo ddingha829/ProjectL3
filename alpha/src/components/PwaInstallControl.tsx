@@ -18,6 +18,7 @@ export interface PwaState {
   isStandalone: boolean;
   canPromptNative: boolean;
   platform: PwaPlatform;
+  browser?: 'samsung' | 'other';
   inAppName: string | null;
   triggerInstall: () => Promise<'installed' | 'guide'>;
   openGuide: () => void;
@@ -32,6 +33,7 @@ export function usePwaInstall(): PwaState {
   const [isStandalone, setIsStandalone] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState<PwaPlatform>('desktop');
+  const [browser, setBrowser] = useState<'samsung' | 'other'>('other');
   const [inAppName, setInAppName] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -58,6 +60,7 @@ export function usePwaInstall(): PwaState {
     window.addEventListener('pageshow', checkStandalone);
 
     const ua = window.navigator.userAgent.toLowerCase();
+    setBrowser(ua.includes('samsungbrowser/') ? 'samsung' : 'other');
     const isIOS =
       /iphone|ipad|ipod/.test(ua) ||
       (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
@@ -120,6 +123,7 @@ export function usePwaInstall(): PwaState {
     isStandalone,
     canPromptNative: Boolean(deferredPrompt),
     platform,
+    browser,
     inAppName,
     triggerInstall,
     openGuide: () => setGuideOpen(true),
@@ -321,7 +325,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
           <div className="pwa-guide-native-box">
             <div>
               <strong>원탭 설치 지원 브라우저</strong>
-              <p>아래 버튼을 누르면 즉시 홈 화면에 티끌 앱이 설치됩니다.</p>
+              <p>아래 버튼을 누른 뒤 브라우저의 설치 확인 창에서 [설치]를 선택해주세요.</p>
             </div>
             <button
               type="button"
@@ -350,7 +354,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
             className={tab === 'android' ? 'active' : ''}
             onClick={() => setTab('android')}
           >
-            Android · PC (Chrome)
+            Android · PC
           </button>
         </div>
 
@@ -397,29 +401,25 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
             <li>
               <span className="pwa-step-num">1</span>
               <div>
-                <strong>브라우저 우측 상단 메뉴 [⋮] 탭</strong>
-                <p>Chrome 또는 삼성 인터넷 우측 메뉴 버튼을 눌러주세요.</p>
+                <strong>삼성 인터넷: 주소창의 설치 아이콘</strong>
+                <p>주소창 오른쪽에 ↓ · + 또는 앱 설치 모양 아이콘이 보이면 누른 뒤 [설치]를 선택하세요. 아이콘 모양과 표시 여부는 브라우저 버전과 설치 상태에 따라 달라요.</p>
               </div>
             </li>
             <li>
               <span className="pwa-step-num">2</span>
               <div>
-                <strong>[앱 설치] 또는 [홈 화면에 추가] 선택</strong>
+                <strong>아이콘이 없으면 브라우저 메뉴</strong>
                 <p>
-                  확인 창에서{' '}
-                  <span className="pwa-inline-badge">
-                    <Smartphone size={12} /> 설치
-                  </span>
-                  를 누르면 홈 화면과 앱 서랍에 <b>티끌</b> 앱이 설치됩니다.
+                  삼성 인터넷의 ≡ 메뉴에서 [현재 페이지 추가] → [홈 화면] 또는 [앱 설치]를 찾아주세요. Chrome은 ⋮ → [홈 화면에 추가] → [설치]예요. 단순 바로가기 대신 앱 설치 확인 창이 나오면 [설치]를 눌러주세요.
                 </p>
               </div>
             </li>
             <li>
               <span className="pwa-step-num">3</span>
               <div>
-                <strong>PC Chrome / Edge에서도 설치 가능</strong>
+                <strong>설치한 티끌 아이콘으로 실행</strong>
                 <p>
-                  데스크톱 주소창 우측의 <b>[앱 설치 ⊕]</b> 아이콘을 누르면 독립된 데스크톱 앱 창으로 실행됩니다.
+                  홈 화면이나 앱 서랍에서 티끌을 열면 주소창 없이 실행돼요. PC Chrome · Edge에서는 주소창의 [앱 설치] 아이콘을 이용하세요.
                 </p>
               </div>
             </li>
@@ -431,7 +431,7 @@ export function PwaInstallGuideDialog({ pwa }: { pwa: PwaState }) {
           <div>
             <strong>홈 화면 앱 실행 후 로그인 안내</strong>
             <p>
-              홈 화면에 추가한 앱을 처음 실행하면 <b>우측 상단 설정 버튼</b>을 눌러 아이디/비밀번호로 로그인해 주세요.
+              홈 화면에 추가한 앱을 처음 실행하면 <b>이메일과 비밀번호로 로그인</b>해주세요.
               브라우저에서 작성한 기록과 사진이 그대로 연동됩니다.
             </p>
           </div>
