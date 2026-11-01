@@ -28,7 +28,8 @@ async function loadKakao():Promise<KakaoSDK>{
 }
 // Warm up the public SDK only; this never uploads an image or sends an invite.
 export const warmKakao=()=>loadKakao().then(()=>undefined);
-/** Called only after an explicit Kakao-share click. No log is made public. */
+/** Called only after an explicit Kakao-share click. No log is made public.
+ * Invoke the returned launch function from a fresh click, never after this await. */
 export async function prepareKakaoCard(file:File,title:string):Promise<()=>void>{
  if(file.size>5*1024*1024)throw Error('카카오톡에는 5MB 이하 이미지만 보낼 수 있어요. 앞면 한 장으로 다시 준비해주세요.');
  const sdk=await loadKakao(),transfer=new DataTransfer();transfer.items.add(file);

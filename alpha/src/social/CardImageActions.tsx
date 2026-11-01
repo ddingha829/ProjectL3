@@ -4,6 +4,7 @@ import {Download,Copy,Columns2,Share2,LoaderCircle,MessageCircle,Image as ImageI
 import {downloadCardFile,isShareCanceled} from '@/lib/cardExport';
 import {exportEditorialFace,exportEditorialMode,saveEditorialFiles,pairEditorialFiles,type EditorialExportMode} from './editorialExport';
 import {prepareKakaoCard,warmKakao} from '@/lib/kakaoCardShare';
+import {canShareFiles,isInstalledIosBrowser,preferNativeKakaoShare} from '@/lib/sharePlatform';
 import './CardImageActions.css';
 import ExportActionIcon from './ExportActionIcon';
 
@@ -16,7 +17,7 @@ export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<H
  const [kakaoBusy,setKakaoBusy]=useState(false),[kakaoReady,setKakaoReady]=useState(false),[kakaoMessage,setKakaoMessage]=useState(''),kakaoOpen=useRef<(()=>void)|null>(null);
  useEffect(()=>{kakaoOpen.current=null;setKakaoReady(false);setKakaoMessage('');},[ready]);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
- useEffect(()=>{void warmKakao().catch(()=>{});},[]);
+ useEffect(()=>{if(!isInstalledIosBrowser())void warmKakao().catch(()=>{});},[]);
  const report=(value:Progress)=>{if(alive.current)setProgress(value);};
  const zipProgress=(percent:number)=>report({stage:'zip',completed:percent,total:100,message:`ZIP ${Math.round(percent)}%`});
  const prepare=async(mode:Mode)=>{
@@ -29,14 +30,14 @@ export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<H
  };
  const kakao=async()=>{
   if(!ready||shareLock.current)return;shareLock.current=true;setKakaoBusy(true);setError('');
-  try{if(!kakaoOpen.current){const file=ready.files.length>1?await pairEditorialFiles(ready.files[0],ready.files[1],'#ffffff',title):ready.files[0];const open=await prepareKakaoCard(file,title);if(!alive.current)return;kakaoOpen.current=open;setKakaoReady(true);}kakaoOpen.current();setKakaoMessage('카카오톡에서 받을 사람을 선택해주세요. 열리지 않으면 아래 버튼을 다시 눌러주세요.');}
+  try{if(kakaoOpen.current){kakaoOpen.current();setKakaoMessage('카카오톡에서 받을 사람을 선택해주세요. 열리지 않으면 다른 앱으로 공유를 이용해주세요.');}else{const file=ready.files.length>1?await pairEditorialFiles(ready.files[0],ready.files[1],'#ffffff',title):ready.files[0];const open=await prepareKakaoCard(file,title);if(!alive.current)return;kakaoOpen.current=open;setKakaoReady(true);setKakaoMessage('준비됐어요. 카카오톡 열기를 눌러 받을 사람을 선택해주세요.');}}
   catch(e){if(alive.current)setError(e instanceof Error?e.message:'카카오톡 공유를 열지 못했어요.');}
   finally{shareLock.current=false;if(alive.current)setKakaoBusy(false);}
  };
- const share=async()=>{
+ const share=async(forKakao=false)=>{
   if(!ready||shareLock.current)return;shareLock.current=true;setSharing(true);setError('');
-  try{await navigator.share({files:ready.files});}
-  catch(e){if(alive.current&&!isShareCanceled(e))setError('기기 공유를 열지 못했어요. 이미지 저장을 이용해주세요.');}
+  try{if(forKakao)setKakaoMessage('');await navigator.share({files:ready.files});}
+  catch(e){if(alive.current&&!isShareCanceled(e))setError('공유창을 열지 못했어요. 이미지를 저장한 뒤 카카오톡에 첨부해주세요.');}
   finally{shareLock.current=false;if(alive.current)setSharing(false);}
  };
  const save=async()=>{
@@ -45,7 +46,7 @@ export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<H
   catch(e){if(alive.current)setError(e instanceof Error?e.message:'이미지를 저장하지 못했어요.');}
   finally{lock.current=false;if(alive.current)setBusy(null);}
  };
- const canShare=Boolean(ready&&typeof navigator!=='undefined'&&navigator.canShare?.({files:ready.files})),disabled=Boolean(busy)||sharing||kakaoBusy;
+ const canShare=Boolean(ready&&canShareFiles(ready.files)),nativeKakao=Boolean(ready&&preferNativeKakaoShare(ready.files)),disabled=Boolean(busy)||sharing||kakaoBusy;
  const selected=(mode:Mode)=>ready?.mode===mode||busy===mode;
  const icon=(mode:Mode,fallback:React.ReactNode)=><ExportActionIcon working={busy===mode} done={ready?.mode===mode&&!busy} stage={busy===mode?progress?.stage||'':''}>{fallback}</ExportActionIcon>;
  return <div className="lab-image-actions lab-export-actions lab-share-flow" data-export-stage={busy?progress?.stage:ready&&!error?'done':error?'error':'idle'}>
@@ -57,8 +58,8 @@ export default function CardImageActions({root,title,hasPhoto}:{root:RefObject<H
   {busy&&<div className="lab-export-progress"><p role="status"><LoaderCircle size={14} className="lab-spin"/>{progress?.message||'이미지 준비 중'}</p><div role="progressbar" aria-label="이미지 준비 단계" aria-valuemin={0} aria-valuemax={progress?.total||1} aria-valuenow={progress?.completed||0} aria-valuetext={progress?.message}><i style={{transform:`scaleX(${Math.min(1,(progress?.completed||0)/(progress?.total||1))})`}}/></div></div>}
   {ready&&!busy&&<section className="lab-share-destinations" aria-label="공유·저장 방법 선택">
    <p className="lab-share-step"><span>2</span>공유하거나 저장하세요<small><Check size={12}/>{modeName[ready.mode]}</small></p>
-   <div className="lab-kakao-share"><button type="button" disabled={disabled} onClick={()=>void kakao()}><MessageCircle size={18} fill="currentColor"/>{kakaoBusy?'카카오톡 준비 중':kakaoReady?'카카오톡 다시 열기':'카카오톡 공유'}</button>{ready.files.length>1&&<small>카카오톡에는 {ready.files.length>2?'첫 두 장을':'앞뒤를'} 나란히 붙여 보내요.</small>}{kakaoMessage&&<p role="status">{kakaoMessage}</p>}</div>
-   <div className="lab-share-secondary">{canShare&&<button type="button" disabled={disabled} onClick={()=>void share()}><Share2 size={17}/>{sharing?'공유 중':'다른 앱으로 공유'}</button>}<button type="button" disabled={disabled} onClick={()=>void save()}><Download size={17}/>{ready.files.length>1?'이미지 ZIP 저장':'이미지 저장'}</button></div>
+   <div className="lab-kakao-share"><button type="button" disabled={disabled} onClick={()=>nativeKakao?void share(true):void kakao()}><MessageCircle size={18} fill="currentColor"/>{nativeKakao?(sharing?'공유창 여는 중':'카카오톡으로 이미지 보내기'):kakaoBusy?'카카오톡 준비 중':kakaoReady?'카카오톡 열기':'카카오톡 공유 준비'}</button>{nativeKakao?<small>아이폰 공유창에서 카카오톡을 선택해요. 목록에 없으면 더 보기를 눌러주세요.</small>:ready.files.length>1&&<small>카카오톡에는 {ready.files.length>2?'첫 두 장을':'앞뒤를'} 나란히 붙여 보내요.</small>}{kakaoMessage&&<p role="status">{kakaoMessage}</p>}</div>
+   <div className="lab-share-secondary">{canShare&&!nativeKakao&&<button type="button" disabled={disabled} onClick={()=>void share()}><Share2 size={17}/>{sharing?'공유 중':'다른 앱으로 공유'}</button>}<button type="button" disabled={disabled} onClick={()=>void save()}><Download size={17}/>{ready.files.length>1?'이미지 ZIP 저장':'이미지 저장'}</button></div>
    {ready.files.length>1&&<details className="lab-share-individual"><summary>한 장씩 저장</summary><div className="lab-export-file-actions">{ready.files.map((file,index)=><button type="button" key={file.name} disabled={disabled} onClick={()=>downloadCardFile(file)}>{ready.mode==='carousel'?(index===0?'앞면':'뒷면'):`${index+1}번째 이미지`}</button>)}</div></details>}
   </section>}
   {!ready&&!busy&&!error&&<p className="lab-share-hint">선택한 모양으로 이미지를 준비한 뒤 공유할 수 있어요.</p>}
