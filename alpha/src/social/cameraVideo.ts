@@ -19,7 +19,7 @@ export function recordCameraVideo(source:HTMLVideoElement,options:{zoom:number;m
    recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
    recorder.onerror=()=>fail(Error('영상을 촬영하지 못했어요. 다시 시도해주세요.'));
    recorder.onstart=()=>{options.onStart();timer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},2000);};
-   recorder.onstop=()=>{if(finished)return;finished=true;cleanup();if(!chunks.length){reject(Error('촬영된 영상이 없어요. 다시 시도해주세요.'));return;}const type=recorder?.mimeType||chunks[0].type;resolve(new File(chunks,'ticgle-2s.'+(type.includes('mp4')?'mp4':'webm'),{type}));};
+   recorder.onstop=()=>{if(finished)return;finished=true;cleanup();if(!chunks.length){reject(Error('촬영된 영상이 없어요. 다시 시도해주세요.'));return;}const type=(recorder?.mimeType||chunks[0].type).split(';')[0];resolve(new File(chunks,'ticgle-2s.'+(type.includes('mp4')?'mp4':'webm'),{type}));};
    options.signal.addEventListener('abort',abort,{once:true});document.addEventListener('visibilitychange',visibility);recorder.start();
   }catch{fail(Error('이 브라우저에서는 자동 영상 촬영을 시작하지 못했어요. 앨범에서 영상을 선택해주세요.'));}
  });
