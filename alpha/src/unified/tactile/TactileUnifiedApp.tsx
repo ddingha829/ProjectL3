@@ -1,0 +1,526 @@
+'use client';
+import {useCallback,useEffect,useRef,useState,type CSSProperties} from 'react';
+import {AnimatePresence,LayoutGroup,motion} from 'motion/react';
+import {useMotionPreference} from '@/lib/useMotionPreference';
+import MapExplorer from '../MapExplorer';
+import {LoaderCircle,Plus,Settings2,ChevronDown,Check,Lock,Users,X,CalendarDays,Bookmark,FolderOpen,BookOpen,CheckSquare,ArrowUpRight,Palette,Image as ImageIcon,Pencil,Heart,Share2,LogOut,Download,HelpCircle,Sun,Moon,Monitor,FolderPlus,ArrowLeft} from 'lucide-react';
+import AccessibleDialog from '@/components/AccessibleDialog';
+import LogCalendar from '@/components/LogCalendar';
+import {todayKey,type CalendarView} from '@/lib/logCalendar';
+import {useThemePreference} from '@/hooks/useThemePreference';
+import {usePwaInstall} from '@/components/PwaInstallControl';
+import EditorialCard,{styleOf} from '@/social/EditorialCard';
+import CardStyleEditor from '../CardStyleEditor';
+import CardViewer from '../CardViewer';
+import CameraComposer from '@/social/CameraComposer';
+import FirstUseGuide from '@/social/FirstUseGuide';
+import TasteShelf,{WorkDetail} from '@/social/TasteShelf';
+import {toggleIntent,type Work} from '@/social/taste';
+import {archive,CATEGORY_LABEL,type LabLog,type Person} from '@/social/model';
+import type {EditorialStyle} from '@/social/editorialStyle';
+import BookmarkToggle from '@/social/BookmarkToggle';
+import {usePageSwipe} from '../usePageSwipe';
+import {useCardHistory} from '../useCardHistory';
+import {swipeDestination} from '../pageSwipe';
+import type {DongCount} from '@/social/adminDong';
+import UnifiedStudio from '../UnifiedStudio';
+import MosaicBoard from '../MosaicBoard';
+import useFeedPagination from '../useFeedPagination';
+import SyncNotice from '../SyncNotice';
+import SaveMoment from '../SaveMoment';
+import ShareToGroupsSheet from '../ShareToGroupsSheet';
+import {addsGroupShare,canAddGroupShare,SHARE_WINDOW_MESSAGE} from '@/lib/groupSharing';
+import CollectionPlacementOffer from '../CollectionPlacementOffer';
+import useCollectionPlacementOffer from '../useCollectionPlacementOffer';
+import useNewFeedCards from '../useNewFeedCards';
+import {FeedSkeleton,RecordLoading} from '../FeedLoading';
+import TactileFeedToolbar from './TactileFeedToolbar';
+import TactileHeader from './TactileHeader';
+import SettingsSheet from '../SettingsSheet';
+import TactileNavigation from './TactileNavigation';
+import UnifiedChrome from '../UnifiedChrome';
+import useAppViewport from '../useAppViewport';
+import TicgleWordmark from '@/components/TicgleBrand';
+import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
+import NicknameSetup from '../NicknameForm';
+import PreviewLogin from '../PreviewLogin';
+import AlphaSupport from '../AlphaSupport';
+import CloudMembers from '../CloudMembers';
+import GroupWelcome from '../GroupWelcome';
+import GroupEntrySheet from '../GroupEntrySheet';
+import PhotoEditor from '../PhotoEditor';
+import useUnifiedState from '../useUnifiedState';
+import useRememberedScope from '../useRememberedScope';
+import useNotifications from '../useNotifications';
+import NotificationSettings from '../NotificationSettings';
+import NotificationOnboarding from '../NotificationOnboarding';
+import useNotificationOnboarding from '../useNotificationOnboarding';
+import {audienceIds,defaultStyle,inScope,destinations,type Destination,type UnifiedLog,type Collection} from '../store';
+import {INTERACTION_SPRING,OVERLAY_SPRING} from './TactilePopover';
+import '@/social/SocialLab.css';
+import '@/social/SocialMaterial.css';
+import '@/social/CollectionFocus.css';
+import '@/social/MapPolish.css';
+import '@/social/CameraComposer.css';
+import '@/social/StoryWriting.css';
+import '../UnifiedApp.css';
+import '../EntryFlow.css';
+import '../AppViewport.css';
+import '../ArchiveIdentity.css';
+import '../ProductPolish.css';
+import './TactileMotion.css';
+
+type Panel='alpha'|'groups'|'scope'|'settings'|'collection'|'preset'|'save-preset'|'audience'|'members'|'backup'|null;
+const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||'사진으로 남긴 순간';
+function Avatar({person}:{person:Person}){return <span className="un-avatar" style={{'--person':person.color} as CSSProperties}>{person.initial}</span>;}
+
+export default function TactileUnifiedApp(){
+  const pwa=usePwaInstall();
+  const reduced=useMotionPreference();
+  const {state,commit,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[composeKept,setComposeKept]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
+  const session=identity?.name||null;
+  const {scope,setScope,scopeReady}=useRememberedScope(session?(accountMode==='cloud'&&identity?.id?`cloud:${identity.id}`:accountMode==='demo'?'demo':''):'',ready,state?.circles.filter(c=>c.members.includes('me')).map(c=>c.id)||[]);
+  const needsNickname=accountMode==='cloud'&&state?.nicknameConfigured!==true&&syncStatus==='idle';
+  const [mode,setMode]=useState<'cards'|'list'|'calendar'>('cards'),[section,setSection]=useState<'all'|'saved'|'collections'|'taste'>('all'),[query,setQuery]=useState(''),[category,setCategory]=useState('all'),[selecting,setSelecting]=useState(false),[picked,setPicked]=useState<string[]>([]),[collectionName,setCollectionName]=useState(''),[collection,setCollection]=useState<Collection|null>(null),[cardDraft,setCardDraft]=useState<EditorialStyle|null>(null),[designOpen,setDesignOpen]=useState(false),[presetName,setPresetName]=useState(''),[comment,setComment]=useState(''),[backupProgress,setBackupProgress]=useState<number|null>(null),[guideReplay,setGuideReplay]=useState(0),[guideActive,setGuideActive]=useState(false),[district,setDistrict]=useState<{name:string;ids:string[]}|null>(null);
+  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);
+  const [mosaicFocus,setMosaicFocus]=useState(''),[mapFocus,setMapFocus]=useState('');
+  const [pendingMoment,setPendingMoment]=useState(''),[saveMoment,setSaveMoment]=useState<UnifiedLog|null>(null),[discoveryLog,setDiscoveryLog]=useState('');
+  const collectionOwner=session?(identity?.id||accountMode):'';
+  const collectionOffer=useCollectionPlacementOffer({owner:collectionOwner,logs:state?.logs||[],personalBoard:state?.mosaic.personalBoard||{},sync:syncStatus});
+  const clearDiscovery=useCallback(()=>setDiscoveryLog(''),[]);
+  useEffect(()=>{setPendingMoment('');setSaveMoment(null);setDiscoveryLog('');},[identity?.id,accountMode]);
+  useEffect(()=>{if(!pendingMoment||syncStatus!=='idle')return;const log=state?.logs.find(row=>row.id===pendingMoment);setPendingMoment('');if(!log)return;if(view==='logs'&&!selectedId&&!panel)setSaveMoment(log);if(log.place)setDiscoveryLog(log.id);setToast('');},[pendingMoment,syncStatus,state,view,selectedId,panel]);
+  const handledInvite=useRef('');
+  useEffect(()=>{const token=new URLSearchParams(location.search).get('invite');if(!token||needsNickname||!ready||accountMode!=='cloud'||handledInvite.current===token)return;handledInvite.current=token;void join(token).then(id=>{setScope(id);setView('logs');setToast('모임에 참여했어요.');const url=new URL(location.href);url.searchParams.delete('invite');history.replaceState(history.state,'',url);}).catch(e=>setToast(e instanceof Error?e.message:'모임에 참여하지 못했어요.'));},[ready,accountMode,join,needsNickname]);
+  const [calendar,setCalendar]=useState<CalendarView>({month:todayKey().slice(0,7),start:'',end:'',timelineOpen:false});
+  const cardRoot=useRef<HTMLDivElement>(null),mainRoot=useRef<HTMLElement>(null),navDirection=useRef(1),swipeEntry=useRef(0),savedScroll=useRef(new Map<string,number>()),saveLock=useRef(false);
+  const {theme,changeTheme:chooseTheme}=useThemePreference();
+  const [systemDark,setSystemDark]=useState(false);const dark=theme==='dark'||theme==='auto'&&systemDark;
+  useEffect(()=>{const m=matchMedia('(prefers-color-scheme:dark)'),sync=()=>setSystemDark(m.matches);sync();m.addEventListener('change',sync);return()=>m.removeEventListener('change',sync);},[]);
+  useEffect(()=>{const v=new URLSearchParams(location.search).get('view');if(['logs','map','mosaic','studio'].includes(v||''))setView(v as Destination);},[]);
+  useAppViewport(ready&&!!session&&!needsNickname,pwa.ready&&pwa.platform==='ios'&&pwa.isStandalone);
+  const actor=state?.people.find(p=>p.id==='me'),circles=state?.circles.filter(c=>c.members.includes('me'))||[],activeCircle=circles.find(c=>c.id===scope),own=state?.logs.filter(l=>l.authorId==='me')||[];
+  useEffect(()=>{if(!state||!selectedId||state.logs.some(l=>l.id===selectedId&&(l.authorId==='me'||audienceIds(l).some(id=>state.circles.some(c=>c.id===id&&c.members.includes('me'))))))return;setSelectedId('');setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setEditing(previous=>previous?.id===selectedId?null:previous);},[state,selectedId]);
+  useEffect(()=>{if(!ready||!session||!scopeReady)return;const url=new URL(location.href);url.searchParams.set('view',view);url.searchParams.set('scope',scope);history.replaceState(history.state,'',url);},[view,scope,ready,session,scopeReady]);
+  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(t);},[toast]);
+  useEffect(()=>{document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0C0C0D':'#F7F6F2');},[dark]);
+  useEffect(()=>{if(accountMode==='cloud'&&syncStatus==='idle')setToast(previous=>previous==='서버에 저장하고 있어요.'?'서버에 저장했어요.':previous);},[accountMode,syncStatus]);
+  const route=`${view}:${scope}:${section}:${mode}`;
+  const navigate=(next:Destination)=>{collectionOffer.dismiss();setSaveMoment(null);setMapFocus('');navDirection.current=destinations.findIndex(([id])=>id===next)>destinations.findIndex(([id])=>id===view)?1:-1;savedScroll.current.set(route,pageScrollPosition().top);setView(next);setDistrict(null);setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(`${next}:${scope}:${section}:${mode}`)||0,behavior:'instant'})));};
+  const changeScope=(next:string)=>{collectionOffer.dismiss();setSaveMoment(null);setMapFocus('');savedScroll.current.set(route,pageScrollPosition().top);if(next!=='mine')setLastCircle(next);setScope(next);setDistrict(null);setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setSelecting(false);setPicked([]);setPanel(null);requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
+  useEffect(()=>{setComposeKept(false);setComposing(false);},[identity?.id,accountMode]);
+  const startCompose=useCallback(()=>{collectionOffer.dismiss();setSaveMoment(null);setInitialWork(undefined);setComposing(true);},[collectionOffer.dismiss]);
+  useEffect(()=>{const distance=swipeEntry.current||16,slide=swipeEntry.current>0;swipeEntry.current=0;if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const elements=Array.from(mainRoot.current?.querySelectorAll<HTMLElement>('[data-page-swipe-surface]')||[]).filter(element=>element.getClientRects().length>0),animations=elements.map(element=>element.animate([{opacity:slide?1:.6,transform:`translateX(${navDirection.current*distance}px)`},{opacity:1,transform:'translateX(0)'}],{duration:slide?240:220,easing:'cubic-bezier(.2,.75,.2,1)'}));return()=>animations.forEach(animation=>animation.cancel());},[view]);
+  const cardNavigation=useCardHistory({id:selectedId,canLeave:()=>{
+    const top=Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]')).at(-1);
+    if(top&&!top.classList.contains('un-detail-dialog')){top.querySelector<HTMLButtonElement>(':scope > .quick-dialog-header > button')?.click();return false;}
+    return !cardDraft||confirm('적용하지 않은 디자인 변경을 닫을까요?');
+  },onChange:id=>{setSelectedId(id);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setPanel(null);setWork(undefined);if(!id){setEditing(null);requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));}}});
+  const notifications=useNotifications({userId:identity?.id||'',ready:ready&&!needsNickname&&accountMode==='cloud',logs:state?.logs||[],refresh:async()=>{await ensureFullRecords(true);},onNotice:setToast,onOpen:target=>{
+    const log=state?.logs.find(item=>item.id===target.logId),group=state?.circles.find(item=>item.id===target.scope&&item.members.includes('me'));
+    const personal=target.kind==='log'&&target.scope==='mine'&&log?.authorId==='me';
+    if(!log||!personal&&(!group||!audienceIds(log).includes(group.id)))return false;
+    if((composing||editing||cardDraft)&&!confirm('작성 중인 내용을 닫고 알림의 기록으로 이동할까요?'))return true;
+    setComposing(false);setEditing(null);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setPanel(null);setDistrict(null);setSection('all');setCategory('all');setQuery('');setMode('cards');setScope(personal?'mine':group!.id);
+    if(target.kind==='map'){setSelectedId('');setMapFocus(log.id);setView('map');}else{setMapFocus('');setView('logs');cardNavigation.open(log.id);}
+    requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));return true;
+  }});
+  const wantsFullRecords=view!=='logs'||mode==='calendar'||section==='taste'||section==='collections'||selecting||!!district||panel==='backup'||notifications.prefs.nearby;
+  useEffect(()=>{if(!ready||!session||needsNickname||accountMode!=='cloud')return;if(wantsFullRecords)void ensureFullRecords();else enablePagedRecords();},[ready,session,needsNickname,accountMode,wantsFullRecords,syncStatus,ensureFullRecords,enablePagedRecords]);
+  const waitingForRecords=accountMode==='cloud'&&wantsFullRecords&&state?.recordsComplete!==true;
+  const pagedFeed=view==='logs'&&mode!=='calendar'&&(section==='all'||section==='saved')&&!selecting&&!district;
+  const pagination=useFeedPagination({owner:identity?.id||accountMode,enabled:ready&&scopeReady&&!!session&&!needsNickname&&pagedFeed&&(!wantsFullRecords||state?.recordsComplete===true),remote:accountMode==='cloud'&&state?.recordsComplete!==true,query:{scope,category,query,sort,photosOnly,saved:section==='saved'},load:loadFeedPage});
+  useNewFeedCards(ready&&session&&!needsNickname?(identity?.id||accountMode):'',pagedFeed&&!pagination.loading&&!pagination.initial&&section==='all'&&sort==='recent'&&!query&&category==='all'&&!photosOnly,state?.logs||[],mainRoot,`${scope}:${mode}`);
+  const groupIntroPending=Boolean(ready&&session&&accountMode==='cloud'&&!needsNickname&&state?.groupIntroSeen!==true&&circles.length===0);
+  const groupIntroOpen=groupIntroPending&&!panel&&!selectedId&&!composing&&!editing&&!work&&!photoOpen&&!designOpen&&!collection&&!pwa.guideOpen&&backupProgress===null;
+  const notificationGuide=useNotificationOnboarding({userId:ready&&accountMode==='cloud'?identity?.id||'':'',ios:pwa.ready&&pwa.platform==='ios',standalone:pwa.isStandalone,loaded:notifications.loaded,available:notifications.health.available,pushReady:notifications.health.pushReady,permission:notifications.permission,connected:notifications.connected},Boolean(collectionOffer.log||groupIntroPending||needsNickname||guideActive||panel||selectedId||composing||editing||work||photoOpen||designOpen||collection||pwa.guideOpen||backupProgress!==null));
+  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!groupIntroOpen&&!selecting&&!collection&&backupProgress===null);
+  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
+  const enter=(name:string)=>enterDemo(name);
+  if(!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><TicgleWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
+  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
+  if(needsNickname)return <NicknameSetup busy={nicknameBusy} onSave={saveNickname} onLogout={()=>void logout()} initialName={actor.name!==identity?.email?.split('@')[0]&&actor.name!=='나'?actor.name:''}/>;
+  const readable=state.logs.filter(l=>l.authorId==='me'||audienceIds(l).some(id=>circles.some(c=>c.id===id)));
+  const scoped=readable.filter(l=>inScope(l,scope,actor.id));
+  const logs=(section==='saved'?scoped.filter(l=>l.bookmarks.includes(actor.id)):scoped).filter(l=>(!district||district.ids.includes(l.id))&&(category==='all'||l.category===category)&&(!photosOnly||!!l.image)&&(!query||`${l.title} ${l.body} ${l.locationLabel||''} ${l.place?.name||''}`.toLowerCase().includes(query.trim().toLowerCase()))).sort((a,b)=>sort==='recent'?b.createdAt-a.createdAt||b.id.localeCompare(a.id):a.createdAt-b.createdAt||a.id.localeCompare(b.id));
+  const feedLogs=pagedFeed?logs.slice(0,pagination.count):logs;
+  const feedHasMore=pagedFeed&&(accountMode!=='cloud'||state.recordsComplete?logs.length>pagination.count:pagination.hasMore);
+  const selected=readable.find(l=>l.id===selectedId),selectedAuthor=state.people.find(p=>p.id===selected?.authorId),mine=selected?.authorId===actor.id;
+  const mapLogs=scoped.filter(l=>!!l.place),style=selected?(cardDraft||styleOf(selected)):null;
+  const notify=(text:string)=>setToast(text);
+  const openLog=(log:LabLog)=>{collectionOffer.dismiss();setSaveMoment(null);savedScroll.current.set(route,pageScrollPosition().top);cardNavigation.open(log.id);};
+  const closeLog=cardNavigation.back;
+  const save=(draft:LabLog)=>{if(saveLock.current)return false;saveLock.current=true;const log=draft as UnifiedLog,ids=[...new Set(audienceIds(log))].filter(id=>circles.some(c=>c.id===id));const existing=state.logs.find(l=>l.id===log.id);if(existing&&addsGroupShare(audienceIds(existing),ids)&&!canAddGroupShare(existing)){saveLock.current=false;throw Error(SHARE_WINDOW_MESSAGE);}const result=commit(s=>({...s,logs:existing?s.logs.map(l=>l.id===log.id?{...l,...log,circleIds:ids,circleId:ids[0]||null,revision:(l.revision||0)+1,updatedAt:Date.now()}:l):[{...log,circleIds:ids,circleId:ids[0]||null,card:defaultStyle(s,log.category)},...s.logs],intents:log.work?(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===log.work!.id)):s.intents}));saveLock.current=false;if(result){setToast(accountMode==='cloud'?'서버에 저장하고 있어요.':existing?'수정한 내용을 예시에 저장했어요.':'예시에 저장했어요.');if(!existing){setPendingMoment(log.id);changeScope('mine');setView('logs');setMosaicFocus('');collectionOffer.request(log.id);}}return result;};
+  const toggle=(id:string,key:'likes'|'bookmarks')=>commit(s=>({...s,logs:s.logs.map(l=>l.id===id?{...l,[key]:l[key].includes(actor.id)?l[key].filter(v=>v!==actor.id):[...l[key],actor.id]}:l)}));
+  const applyStyle=()=>{if(!selected||!cardDraft)return;if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,card:{...cardDraft},updatedAt:Date.now(),revision:(l.revision||0)+1}:l)}))){setCardDraft(null);setDesignOpen(false);notify('이 티끌의 디자인을 적용했어요.');}};
+  const intend=(id:string)=>{try{commit(s=>toggleIntent(s,actor.id,id) as typeof s);}catch(e){notify(e instanceof Error?e.message:'작품을 담지 못했어요.');}};
+  const record=(work:Work)=>{setWork(undefined);setInitialWork(work);setComposing(true);};
+  const renderCard=(log:UnifiedLog)=>{
+    const person=state.people.find(p=>p.id===log.authorId)||actor;
+    return (
+      <motion.article
+        layout={!reduced}
+        initial={reduced?false:{opacity:0,y:10,scale:0.985}}
+        animate={reduced?undefined:{opacity:1,y:0,scale:1}}
+        whileTap={reduced?undefined:{scale:0.98}}
+        whileHover={reduced?undefined:{scale:1.01}}
+        transition={INTERACTION_SPRING}
+        className={`lab-log-poster un-log ${picked.includes(log.id)?'is-picked':''}`}
+        data-log-id={log.id}
+        key={log.id}
+      >
+        <div className="lab-poster-art">
+          <div className="un-feed-art" aria-hidden="true" inert><EditorialCard log={log} author={person.name} interactive={false} compactPreview/></div>
+          <button className="un-feed-card-open" onClick={()=>selecting?setPicked(p=>p.includes(log.id)?p.filter(id=>id!==log.id):[...p,log.id]):openLog(log)} aria-label={`${displayTitle(log)} 상세 보기`}><span className="un-feed-name">{person.name}</span></button>
+          {selecting&&<button className="un-pick-card" aria-label={`${displayTitle(log)} 선택`} aria-pressed={picked.includes(log.id)} onClick={()=>setPicked(p=>p.includes(log.id)?p.filter(id=>id!==log.id):[...p,log.id])}><span>{picked.includes(log.id)&&<Check size={17}/>}</span></button>}
+        </div>
+      </motion.article>
+    );
+  };
+  const addCollection=()=>{if(!collectionName.trim()||!picked.length)return;if(commit(s=>({...s,collections:[{id:crypto.randomUUID(),name:collectionName.trim(),logIds:[...picked],createdAt:Date.now()},...s.collections]}))){setPanel(null);setSelecting(false);setPicked([]);setCollectionName('');setSection('collections');notify('티끌 묶음을 만들었어요.');}};
+  const backup=async()=>{if(backupProgress!==null)return;setPanel(null);setBackupProgress(0);try{const [{backupOwn},complete]=await Promise.all([import('../backup'),accountMode==='cloud'?ensureFullRecords():Promise.resolve(state)]);if(!complete||accountMode==='cloud'&&!complete.recordsComplete)throw Error('INCOMPLETE_BACKUP');const missing=await backupOwn(complete,actor.id,setBackupProgress);notify(missing?`백업을 저장했어요. 사진 ${missing}개의 누락 목록을 확인해주세요.`:'내 기록 백업을 저장했어요.');}catch{notify('백업을 준비하지 못했어요. 다시 시도해주세요.');}finally{setBackupProgress(null);}};
+  const showCircle=()=>{if(scope==='mine'&&circles.some(c=>c.id===lastCircle))changeScope(lastCircle);else setPanel('scope');};
+  const filterCount=Number(category!=='all')+Number(photosOnly)+Number(sort!=='recent');
+  const resetSearch=()=>{setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);};
+  const showDong=(dong:DongCount)=>{setView('logs');setQuery('');setCategory('all');setSort('recent');setPhotosOnly(false);setSection('all');setMode('cards');setDistrict({name:dong.feature.properties.name,ids:dong.logIds});requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));};
+
+  return (
+    <div className={`lab-app un-app tactile-app ${view==='map'?'un-map-active':''}`} data-page={view} data-page-swipe={pageSwipeEnabled}>
+      <UnifiedChrome>
+        <TactileHeader scope={scope} circles={circles} onScope={changeScope} onHome={()=>navigate('logs')} onSettings={()=>setPanel('settings')} onGroups={()=>setPanel('scope')} pwa={pwa}/>
+        <TactileNavigation active={view} onChange={navigate} onCompose={startCompose}/>
+      </UnifiedChrome>
+      <main ref={mainRoot} className="lab-main un-main" data-app-scroll>
+        {view==='logs'&&(
+          <div data-page-swipe-surface>
+            <TactileFeedToolbar
+              query={query}
+              onQueryChange={value=>{setQuery(value);if(section==='collections'||section==='taste')setSection('all');}}
+              category={category}
+              onCategoryChange={value=>{setCategory(value);if(section==='collections'||section==='taste')setSection('all');}}
+              sort={sort}
+              onSortChange={value=>{setSort(value);if(section==='collections'||section==='taste')setSection('all');}}
+              photosOnly={photosOnly}
+              onPhotosOnlyChange={value=>{setPhotosOnly(value);if(section==='collections'||section==='taste')setSection('all');}}
+              mode={mode}
+              onModeChange={value=>{setMode(value);setSection('all');}}
+              allowCalendar={scope==='mine'}
+              libraryActive={section!=='all'||selecting}
+              library={close=>(
+                <LayoutGroup id="tactile-library-menu">
+                  <div className="flc-menu-heading">{scope!=='mine'?<span>{activeCircle?.name}</span>:'내 티끌'} · {logs.length}개의 기록</div>
+                  {(query||filterCount>0)&&(
+                    <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{resetSearch();close();}}>
+                      검색·필터 초기화<X size={14}/>
+                    </motion.button>
+                  )}
+                  {scope==='mine'&&(
+                    <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{setSelecting(v=>!v);setMode('cards');setSection('all');setPicked([]);close();}}>
+                      {selecting?'티끌 선택 취소':'티끌 선택'}<CheckSquare size={14}/>
+                    </motion.button>
+                  )}
+                  {([['all','전체 기록'],['saved','담아둔 기록'],...(scope==='mine'?[['collections','티끌 묶음'] as const]:[]),['taste','취향 선반']] as const).map(([id,label])=>(
+                    <motion.button
+                      type="button"
+                      key={id}
+                      aria-pressed={section===id}
+                      whileTap={reduced?undefined:{scale:0.98}}
+                      whileHover={reduced?undefined:{scale:1.01}}
+                      transition={INTERACTION_SPRING}
+                      onClick={()=>{setSection(id);setMode('cards');close();}}
+                    >
+                      {label}
+                      {section===id&&<Check size={14}/>}
+                    </motion.button>
+                  ))}
+                </LayoutGroup>
+              )}
+            />
+            <AnimatePresence initial={false}>
+              {district&&(
+                <motion.div key="district-heading" initial={reduced?false:{opacity:0,y:-6}} animate={reduced?undefined:{opacity:1,y:0}} exit={reduced?undefined:{opacity:0,y:-6}} transition={OVERLAY_SPRING} className="un-section-heading">
+                  <h1>{district.name}</h1>
+                  <motion.button type="button" whileTap={reduced?undefined:{scale:0.95}} transition={INTERACTION_SPRING} aria-label="동네 필터 해제" onClick={()=>setDistrict(null)}>
+                    <X size={16}/>
+                  </motion.button>
+                </motion.div>
+              )}
+              {section!=='all'&&(
+                <motion.div key={`section-${section}`} initial={reduced?false:{opacity:0,y:-6}} animate={reduced?undefined:{opacity:1,y:0}} exit={reduced?undefined:{opacity:0,y:-6}} transition={OVERLAY_SPRING} className="un-section-heading">
+                  <motion.button type="button" whileTap={reduced?undefined:{scale:0.95}} transition={INTERACTION_SPRING} onClick={()=>setSection('all')} aria-label="전체 기록으로">
+                    <ArrowLeft size={18}/>
+                  </motion.button>
+                  <h1>{section==='saved'?'담아둔 기록':section==='collections'?'티끌 묶음':'취향 선반'}</h1>
+                </motion.div>
+              )}
+              {selecting&&(
+                <motion.div key="selection-bar" initial={reduced?false:{opacity:0,y:-8}} animate={reduced?undefined:{opacity:1,y:0}} exit={reduced?undefined:{opacity:0,y:-8}} transition={OVERLAY_SPRING} className="un-selection-bar">
+                  <span>{picked.length}개 선택</span>
+                  <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} disabled={!picked.length} onClick={()=>setPanel('collection')}>
+                    <FolderPlus size={16}/>묶음 만들기
+                  </motion.button>
+                  <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{setSelecting(false);setPicked([]);}}>
+                    취소
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {waitingForRecords?(
+              <RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>
+            ):mode==='calendar'?(
+              <LogCalendar allowPageSwipe items={logs.filter(l=>l.authorId===actor.id).map(l=>archive(l,actor.name))} view={calendar} onView={setCalendar} onOpen={item=>{const log=own.find(l=>l.id===item.id);if(log)openLog(log);}}/>
+            ):section==='taste'?(
+              <TasteShelf actor={actor} logs={scoped} people={state.people} intents={state.intents||[]} onWork={setWork} onRecord={record} onToggleIntent={intend} onRemoveIntent={id=>commit(s=>({...s,intents:(s.intents||[]).filter(i=>!(i.actorId===actor.id&&i.work.id===id))}))}/>
+            ):section==='collections'?(
+              <div className="un-collections">
+                {state.collections.map(c=>(
+                  <motion.button
+                    type="button"
+                    className="un-collection-tile"
+                    key={c.id}
+                    whileTap={reduced?undefined:{scale:0.98}}
+                    whileHover={reduced?undefined:{scale:1.01}}
+                    transition={INTERACTION_SPRING}
+                    onClick={()=>setCollection(c)}
+                  >
+                    <div className="un-collection-photos">
+                      {c.logIds.slice(0,3).map(id=>{const l=own.find(l=>l.id===id);return l?.image?<img src={l.image} key={id} alt=""/>:<span key={id}><BookOpen size={22}/></span>;})}
+                    </div>
+                    <strong>{c.name}</strong>
+                    <span>{c.logIds.filter(id=>own.some(l=>l.id===id)).length}개의 기록<ArrowUpRight size={15}/></span>
+                  </motion.button>
+                ))}
+                {!state.collections.length&&(
+                  <div className="lab-empty">
+                    <FolderOpen/>
+                    <h3>함께 묶고 싶은 순간</h3>
+                    <p>내 티끌에서 여러 장을 선택해 티끌 묶음을 만들어보세요.</p>
+                    <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{setSection('all');setSelecting(true);}}>
+                      티끌 선택하기
+                    </motion.button>
+                  </div>
+                )}
+              </div>
+            ):mode==='list'?(
+              <div className="un-log-list">
+                {feedLogs.map(l=>(
+                  <motion.button
+                    type="button"
+                    key={l.id}
+                    data-log-id={l.id}
+                    whileTap={reduced?undefined:{scale:0.98}}
+                    whileHover={reduced?undefined:{scale:1.005}}
+                    transition={INTERACTION_SPRING}
+                    onClick={()=>openLog(l)}
+                  >
+                    {l.image?<img src={l.image} alt=""/>:<span className="un-list-text-icon"><BookOpen size={22}/></span>}
+                    <span>
+                      <strong>{displayTitle(l)}</strong>
+                      <small>{l.locationLabel||l.place?.name||CATEGORY_LABEL[l.category]} · {new Date(l.createdAt).toLocaleDateString('ko-KR')}</small>
+                      <p>{l.body}</p>
+                    </span>
+                    <ArrowUpRight size={16}/>
+                  </motion.button>
+                ))}
+              </div>
+            ):(
+              <div className="lab-feed lab-poster-grid un-grid" aria-busy={pagedFeed&&pagination.loading}>
+                {feedLogs.map(renderCard)}
+              </div>
+            )}
+            {pagedFeed&&pagination.loading&&(
+              <>
+                {(!feedLogs.length||!pagination.initial)&&<FeedSkeleton/>}
+                <div className="un-feed-pagination" role="status" aria-live="polite">
+                  <LoaderCircle size={16} className="lab-spin" aria-hidden="true"/>
+                  {pagination.initial?'티끌을 불러오고 있어요':'다음 티끌 4장을 불러오고 있어요'}
+                </div>
+              </>
+            )}
+            {pagedFeed&&!pagination.loading&&(pagination.error||feedHasMore)&&(
+              <div className="un-feed-pagination" ref={pagination.sentinel}>
+                {pagination.error&&<span role="alert">{pagination.error}</span>}
+                <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={pagination.more}>
+                  {pagination.error?'다시 불러오기':'티끌 4장 더 보기'}
+                </motion.button>
+              </div>
+            )}
+            {!waitingForRecords&&!pagination.loading&&!pagination.error&&mode!=='calendar'&&section!=='taste'&&section!=='collections'&&!logs.length&&(
+              <div className="lab-empty">
+                <BookOpen/>
+                <h3>{query||filterCount?'조건에 맞는 기록이 없어요':'오늘의 첫 장을 남겨볼까요?'}</h3>
+                <p>{query||filterCount?'검색어를 바꾸거나 필터를 초기화해보세요.':scope==='mine'?'사진 한 장, 짧은 한마디도 좋아요.':'이 모임에 선택해 남긴 기록이 여기에 모여요.'}</p>
+                <motion.button type="button" whileTap={reduced?undefined:{scale:0.98}} whileHover={reduced?undefined:{scale:1.01}} transition={INTERACTION_SPRING} onClick={query||filterCount?resetSearch:startCompose}>
+                  {query||filterCount?'검색·필터 초기화':'티끌 남기기'}
+                </motion.button>
+              </div>
+            )}
+          </div>
+        )}
+        {view==='map'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MapExplorer logs={mapLogs} people={state.people} dark={dark} scopeKey={`unified:${scope}`} focusedLog={mapFocus} discoveryLog={scope==='mine'?discoveryLog:undefined} onDiscoveryConsumed={clearDiscovery} onSelect={openLog} onDistrictSelect={showDong}/>)}
+        {view==='mosaic'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MosaicBoard key={scope} state={state} logs={scoped} scope={scope} actor={actor} circle={activeCircle} focusLogId={mosaicFocus} commit={commit} onOpen={openLog}/>)}
+        <div hidden={view!=='studio'}>{waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<UnifiedStudio state={state} commit={commit} notify={notify}/>}</div>
+      </main>
+      <GroupEntrySheet open={panel==='scope'} onClose={()=>setPanel(null)} enabled={accountMode==='cloud'} pending={syncStatus!=='idle'} join={joinCode} onJoined={id=>{changeScope(id);notify('모임에 참여했어요.');}} onCreate={(name,capacity)=>{const id=crypto.randomUUID();if(commit(s=>({...s,circles:[...s.circles,{id,name,description:'',members:[actor.id],ownerId:actor.id,capacity}]}))){changeScope(id);if(accountMode==='cloud')setPanel('members');notify(accountMode==='cloud'?'모임을 저장하고 있어요.':'모임을 만들었어요.');return true;}return false;}}/>
+      <AccessibleDialog open={panel==='groups'} title="모임 관리" onClose={()=>setPanel(null)} panelClassName="lab-dialog un-group-management">
+        <div className="un-scope-list">
+          {circles.map(c=>(
+            <motion.button type="button" key={c.id} whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{setScope(c.id);setPanel('members');}}>
+              <Users size={18}/>
+              <span>{c.name}<small>{c.members.length}명 · 초대 코드와 모임원 관리</small></span>
+              <ArrowUpRight size={17}/>
+            </motion.button>
+          ))}
+        </div>
+        {!circles.length&&<p className="un-subtle">아직 참여한 모임이 없어요.</p>}
+        <motion.button type="button" className="un-primary un-full" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>setPanel('scope')}>
+          모임 참여 · 만들기
+        </motion.button>
+      </AccessibleDialog>
+      <SettingsSheet onChangePassword={changePassword} onNickname={saveNickname} nicknameBusy={nicknameBusy} open={panel==='settings'} onClose={()=>setPanel(null)} actor={actor} email={identity?.email} cloud={accountMode==='cloud'} notifications={notifications} theme={theme} onTheme={chooseTheme} onInstall={()=>{setPanel(null);pwa.openGuide();}} onAction={action=>{if(action==='studio'){setPanel(null);navigate('studio');}else if(action==='calendar'){setPanel(null);changeScope('mine');setView('logs');setMode('calendar');}else if(action==='guide'){setPanel(null);setGuideReplay(v=>v+1);}else if(action==='logout'){void logout();setPanel(null);}else setPanel(action);}}/>
+
+      <AccessibleDialog open={panel==='collection'} title="티끌 묶음" onClose={()=>setPanel(null)} panelClassName="lab-dialog">
+        <p className="un-subtle">선택한 {picked.length}개의 내 기록을 묶어요. 모임 공개 범위는 바뀌지 않아요.</p>
+        <label className="un-form-label">묶음 이름<input autoFocus maxLength={40} value={collectionName} onChange={e=>setCollectionName(e.target.value)} placeholder="함께 기억할 이름"/></label>
+        <motion.button type="button" className="un-primary un-full" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} disabled={!collectionName.trim()||!picked.length} onClick={addCollection}>
+          묶음 만들기
+        </motion.button>
+      </AccessibleDialog>
+      <AccessibleDialog open={!!collection} title={collection?.name||'티끌 묶음'} onClose={()=>setCollection(null)} panelClassName="lab-dialog un-collection-dialog">
+        <div className="lab-feed lab-poster-grid un-grid">{collection?.logIds.map(id=>own.find(l=>l.id===id)).filter((l):l is UnifiedLog=>!!l).map(renderCard)}</div>
+      </AccessibleDialog>
+      <AccessibleDialog open={!!selected&&!!selectedAuthor} title="티끌 카드" hideTitle closeLabel="뒤로가기" closeIcon={<ArrowLeft size={21} strokeWidth={1.8}/>} onClose={closeLog} panelClassName="lab-dialog un-detail-dialog">
+        {selected&&selectedAuthor&&style&&(
+          <CardViewer
+            key={selected.id}
+            onBack={closeLog}
+            log={selected}
+            author={selectedAuthor.name}
+            authorColor={selectedAuthor.color}
+            authorInitial={selectedAuthor.initial}
+            appearance={style}
+            root={cardRoot}
+            onShareToGroups={mine?()=>setPanel('audience'):undefined}
+            actions={
+              <>
+                <motion.button
+                  type="button"
+                  className="un-viewer-icon-action"
+                  aria-label={selected.likes.includes(actor.id)?'공감 취소':'공감'}
+                  title={selected.likes.includes(actor.id)?'공감 취소':'공감'}
+                  aria-pressed={selected.likes.includes(actor.id)}
+                  whileTap={reduced?undefined:{scale:0.92}}
+                  transition={INTERACTION_SPRING}
+                  onClick={()=>toggle(selected.id,'likes')}
+                >
+                  <Heart size={19} fill={selected.likes.includes(actor.id)?'currentColor':'none'}/>
+                  {selected.likes.length>0&&<span>{selected.likes.length}</span>}
+                </motion.button>
+                <BookmarkToggle className="un-viewer-icon-action" iconOnly active={selected.bookmarks.includes(actor.id)} onClick={()=>toggle(selected.id,'bookmarks')}>담아두기</BookmarkToggle>
+              </>
+            }
+            options={mine||selected.work?close=>(
+              <>
+                {mine&&(
+                  <>
+                    <button onClick={()=>{close();setEditing(selected);}}><Pencil size={17}/>내용 수정</button>
+                    <button onClick={()=>{close();setDesignOpen(true);}}><Palette size={17}/>카드 꾸미기</button>
+                    {selected.image&&<button onClick={()=>{close();setPhotoOpen(true);}}><ImageIcon size={17}/>사진 조정</button>}
+                    <button onClick={()=>{close();setPanel('preset');}}><Palette size={17}/>프리셋 선택</button>
+                    <button onClick={()=>{close();setPanel('audience');}}><Users size={17}/>공유 대상 관리</button>
+                    {cardDraft&&<button onClick={()=>{close();applyStyle();}}><Check size={17}/>변경한 디자인 적용</button>}
+                    <button onClick={()=>{close();setPresetName('');setPanel('save-preset');}}><Plus size={17}/>이 디자인을 프리셋으로 저장</button>
+                  </>
+                )}
+                {selected.work&&(
+                  <>
+                    <button onClick={()=>{close();intend(selected.id);}}><Bookmark size={17}/>나도 보기</button>
+                    <button onClick={()=>{close();record(selected.work!);}}><Pencil size={17}/>감상 남기기</button>
+                  </>
+                )}
+              </>
+            ):undefined}
+            place={(selected.place||selected.locationLabel)?<div className="un-detail-place"><MapPinIcon/><span>{selected.locationLabel||selected.place?.name}<small>{selected.place?.area}</small></span></div>:undefined}
+          >
+            <section className="un-comments" aria-label="댓글">
+              <h3 className={selected.comments.length?'':'sr-only'}>한마디 <span>{selected.comments.length}</span></h3>
+              {selected.comments.length>0&&<div className="un-comment-list">{selected.comments.map(c=><p key={c.id}><strong>{state.people.find(p=>p.id===c.authorId)?.name||'사용자'}</strong><span>{c.body}</span></p>)}</div>}
+              <form onSubmit={e=>{e.preventDefault();if(!comment.trim())return;if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,comments:[...l.comments,{id:crypto.randomUUID(),authorId:actor.id,body:comment.trim()}]}:l)})))setComment('');}}>
+                <input aria-label="댓글 내용" maxLength={200} placeholder="한마디 남기기" value={comment} onChange={e=>setComment(e.target.value)}/>
+                <motion.button type="submit" aria-label="댓글 남기기" whileTap={reduced?undefined:{scale:0.95}} transition={INTERACTION_SPRING} disabled={!comment.trim()}><ArrowUpRight size={18}/></motion.button>
+              </form>
+            </section>
+          </CardViewer>
+        )}
+      </AccessibleDialog>
+      {designOpen&&selected&&style&&mine&&<CardStyleEditor log={selected} author={selectedAuthor?.name||actor.name} value={style} presets={state.presets} onChange={setCardDraft} onApply={applyStyle} onClose={()=>{setCardDraft(null);setDesignOpen(false);}}/>}
+      <AccessibleDialog open={panel==='preset'} title="카드 프리셋" onClose={()=>setPanel(null)} panelClassName="lab-dialog">
+        <div className="un-preset-options">
+          {state.presets.map(p=>(
+            <motion.button type="button" key={p.id} whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} onClick={()=>{setCardDraft({...p.style});setPanel(null);}}>
+              <span className="un-preset-swatch" style={{background:`linear-gradient(125deg,${p.style.bg} 50%,${p.style.accent} 50%)`}}/>
+              <span>{p.name}<small>{p.style.front} · {p.style.back} · {p.style.ratio}</small></span>
+              <ArrowUpRight size={16}/>
+            </motion.button>
+          ))}
+        </div>
+      </AccessibleDialog>
+      <AccessibleDialog open={panel==='save-preset'} title="프리셋으로 저장" onClose={()=>setPanel(null)} panelClassName="lab-dialog">
+        <label className="un-form-label">프리셋 이름<input maxLength={40} value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="내가 다시 쓰고 싶은 디자인"/></label>
+        <motion.button type="button" className="un-primary un-full" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} disabled={!presetName.trim()||state.presets.length>=20} onClick={()=>{if(!style)return;if(commit(s=>({...s,presets:[...s.presets,{id:crypto.randomUUID(),name:presetName.trim(),style:{...style},defaults:[]}]}))){setPanel(null);notify('스튜디오에 프리셋을 저장했어요.');}}}>
+          프리셋 저장
+        </motion.button>
+      </AccessibleDialog>
+      {panel==='audience'&&selected&&mine&&<ShareToGroupsSheet key={selected.id} log={selected} circles={circles} onClose={()=>setPanel(null)} onSave={async ids=>{await shareToGroups(selected.id,ids);notify(accountMode==='cloud'?'공유 대상을 저장했어요.':'공유 대상을 변경했어요.');}}/>}
+      <AccessibleDialog open={panel==='members'} title={activeCircle?.name||'모임 관리'} onClose={()=>setPanel(null)} panelClassName="lab-dialog">{activeCircle&&<CloudMembers key={activeCircle.id} circle={activeCircle} people={state.people} enabled={accountMode==='cloud'} pending={syncStatus!=='idle'} inviteCode={inviteCode} onRemove={removeMember}/>}</AccessibleDialog>
+      <AccessibleDialog open={panel==='backup'} title="내 기록 백업" onClose={()=>setPanel(null)} panelClassName="lab-dialog">
+        <div className="un-backup-summary">
+          <Download size={28}/>
+          <h3>{waitingForRecords?'전체 기록 확인 중…':`내 기록 ${own.length}개`}</h3>
+          <p>내용·카드 설정·사진·프리셋·티끌 묶음을<br/>JSON / CSV / 사진 파일로 묶어 저장해요.</p>
+        </div>
+        <motion.button type="button" className="un-primary un-full" whileTap={reduced?undefined:{scale:0.98}} transition={INTERACTION_SPRING} disabled={waitingForRecords} onClick={()=>void backup()}>
+          ZIP 파일로 저장
+        </motion.button>
+      </AccessibleDialog>
+      {photoOpen&&selected&&style&&<PhotoEditor log={selected} style={style} author={actor.name} onClose={()=>setPhotoOpen(false)} onApply={photo=>{if(commit(s=>({...s,logs:s.logs.map(l=>l.id===selected.id?{...l,photo}:l)}))){setPhotoOpen(false);notify('사진 조정을 적용했어요.');}}}/>}
+      {(composing||composeKept)&&<CameraComposer paused={!composing} onPause={()=>{setComposeKept(true);setComposing(false);setToast("작성 중인 티끌을 잠시 보관했어요. + 버튼으로 이어 쓰세요.");}} storageMode={accountMode==='cloud'?'cloud':'demo'} initialWork={initialWork} nearbyLogs={scoped} actor={actor} circles={circles} audience={null} dark={dark} onSave={save} onClose={()=>{setComposing(false);setComposeKept(false);}}/>}
+      {editing&&<CameraComposer key={editing.id} storageMode={accountMode==='cloud'?'cloud':'demo'} actor={actor} circles={circles} audience={editing.circleId} nearbyLogs={scoped} dark={dark} editing={editing} onSave={save} onClose={()=>setEditing(null)}/>}
+      {work&&<WorkDetail work={work} logs={readable} actor={actor} people={state.people} intents={state.intents||[]} onClose={()=>setWork(undefined)} onLog={openLog} onRecord={()=>record(work)} onToggleIntent={intend}/>}
+      <FirstUseGuide context={groupIntroPending||panel||photoOpen||designOpen||work||editing||notificationGuide.open?null:composing?'compose':selected?mine?'own-detail':'detail':view==='studio'?'studio':view==='map'?'map':view==='mosaic'?'mosaic':'today'} replay={guideReplay} owned={!!mine} shared={!!selected&&audienceIds(selected).length>0} onActiveChange={setGuideActive}/>
+      <GroupWelcome open={groupIntroOpen} pending={syncStatus!=='idle'} join={joinCode} onLater={()=>{commit(s=>({...s,groupIntroSeen:true}));}} onJoined={id=>{commit(s=>({...s,groupIntroSeen:true}));changeScope(id);setView('logs');notify('모임에 참여했어요. 함께 남긴 티끌을 확인해보세요.');}}/>
+      <NotificationOnboarding open={notificationGuide.open} onLater={notificationGuide.dismiss} onConfigure={()=>{notificationGuide.dismiss();setPanel('settings');requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById('notification-heading');heading?.scrollIntoView({block:'start',behavior:'instant'});heading?.focus({preventScroll:true});}));}}/>
+      <AlphaSupport open={panel==='alpha'} onClose={()=>setPanel(null)} view={view} mode={accountMode==='cloud'?'cloud':'demo'} sync={syncStatus}/>
+      {backupProgress!==null&&<div className="un-backup-overlay" role="dialog" aria-modal="true" aria-label="백업 저장 중"><div><Download size={26}/><strong aria-live="polite">{backupProgress}%</strong><progress value={backupProgress} max={100}/><span>내 기록을 파일로 묶고 있어요</span></div></div>}
+      {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}
+      {(error||syncStatus==='failed')&&<SyncNotice message={error} failed={syncStatus==='failed'} busy={syncStatus==='saving'} onDismiss={clearError} onRetry={()=>void retry()} onRecover={()=>void discardPending()}/>}
+      {saveMoment&&view==='logs'&&!panel&&!selectedId&&!composing&&!editing&&<SaveMoment key={saveMoment.id} log={saveMoment} author={actor.name} onDone={()=>setSaveMoment(null)}/>}
+      {collectionOffer.log&&!saveMoment&&view==='logs'&&!panel&&!selectedId&&!composing&&!editing&&!work&&!collection&&!photoOpen&&!designOpen&&!guideActive&&!groupIntroOpen&&!notificationGuide.open&&!pwa.guideOpen&&backupProgress===null&&!toast&&syncStatus==='idle'&&<CollectionPlacementOffer key={collectionOffer.log.id} log={collectionOffer.log} owner={collectionOwner} onDismiss={collectionOffer.dismiss} onPlace={()=>{const id=collectionOffer.log?.id;if(!id)return;changeScope('mine');setMosaicFocus(id);setView('mosaic');setToast('');}}/>}
+      <AnimatePresence>
+        {toast&&(
+          <motion.div
+            key={toast}
+            initial={reduced?false:{opacity:0,y:16,scale:0.95}}
+            animate={reduced?undefined:{opacity:1,y:0,scale:1}}
+            exit={reduced?undefined:{opacity:0,y:10,scale:0.96}}
+            transition={OVERLAY_SPRING}
+            className="lab-toast un-toast"
+            role="status"
+          >
+            <Check size={16}/>
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function MapPinIcon(){
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/>
+      <circle cx="12" cy="10" r="2.5"/>
+    </svg>
+  );
+}

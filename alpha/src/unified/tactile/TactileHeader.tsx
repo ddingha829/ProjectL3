@@ -1,0 +1,133 @@
+'use client';
+import {useCallback,useState} from 'react';
+import {Check,ChevronDown,KeyRound,Lock,Settings,Users} from 'lucide-react';
+import {LayoutGroup,motion} from 'motion/react';
+import {useMotionPreference} from '@/lib/useMotionPreference';
+import type {Circle} from '@/social/model';
+import type {PwaState} from '@/components/PwaInstallControl';
+import HeaderInstallControl from '../HeaderInstallControl';
+import TicgleWordmark from '@/components/TicgleBrand';
+import TactilePopover,{INTERACTION_SPRING} from './TactilePopover';
+import '../UnifiedHeader.css';
+
+export default function TactileHeader({
+  scope,
+  circles,
+  onScope,
+  onHome,
+  onSettings,
+  onGroups,
+  pwa,
+}:{
+  scope:string;
+  circles:Circle[];
+  onScope:(id:string)=>void;
+  onHome:()=>void;
+  onSettings:()=>void;
+  onGroups:()=>void;
+  pwa:PwaState;
+}){
+  const [scopeOpen,setScopeOpen]=useState(false);
+  const reduced=useMotionPreference();
+  const scopeChanged=useCallback((value:boolean)=>setScopeOpen(value),[]);
+  const selectedCircle=circles.find(c=>c.id===scope),ScopeIcon=selectedCircle?Users:Lock;
+
+  return (
+    <header className="un-header un-header-v2 un-header-centered" data-install-visible={pwa.ready&&!pwa.isStandalone}>
+      <motion.button
+        type="button"
+        className="un-brand"
+        aria-label="티끌 피드 화면"
+        whileTap={reduced?undefined:{scale:0.98}}
+        whileHover={reduced?undefined:{scale:1.01}}
+        transition={INTERACTION_SPRING}
+        onClick={onHome}
+      >
+        <TicgleWordmark/>
+      </motion.button>
+      <TactilePopover
+        label="티끌 범위 선택"
+        open={scopeOpen}
+        onOpenChange={scopeChanged}
+        className={`un-scope-picker ${selectedCircle?'has-group':''}`}
+        trigger={
+          <>
+            <ScopeIcon size={14} className="un-scope-type" aria-hidden="true"/>
+            <span className="un-scope-name">{selectedCircle?.name||'내 티끌'}</span>
+            <motion.span
+              className="un-scope-chevron"
+              aria-hidden="true"
+              style={{display:'inline-flex'}}
+              animate={reduced?undefined:{rotate:scopeOpen?180:0}}
+              transition={INTERACTION_SPRING}
+            >
+              <ChevronDown size={12}/>
+            </motion.span>
+          </>
+        }
+      >
+        {close=>(
+          <LayoutGroup id="tactile-scope-options">
+            <motion.button
+              type="button"
+              className="un-scope-option"
+              aria-pressed={scope==='mine'}
+              whileTap={reduced?undefined:{scale:0.98}}
+              whileHover={reduced?undefined:{scale:1.01}}
+              transition={INTERACTION_SPRING}
+              onClick={()=>{onScope('mine');close();}}
+            >
+              {scope==='mine'&&<motion.span layoutId="tactile-scope-active" className="tactile-scope-active-bg" style={{position:'absolute',inset:0,pointerEvents:'none'}} transition={INTERACTION_SPRING} aria-hidden="true"/>}
+              <Lock size={15} aria-hidden="true"/>
+              <span className="un-scope-option-name">내 티끌</span>
+              <span className="un-scope-check" aria-hidden="true">{scope==='mine'&&<Check size={14}/>}</span>
+            </motion.button>
+            {circles.map(c=>(
+              <motion.button
+                type="button"
+                className="un-scope-option"
+                key={c.id}
+                aria-pressed={scope===c.id}
+                whileTap={reduced?undefined:{scale:0.98}}
+                whileHover={reduced?undefined:{scale:1.01}}
+                transition={INTERACTION_SPRING}
+                onClick={()=>{onScope(c.id);close();}}
+              >
+                {scope===c.id&&<motion.span layoutId="tactile-scope-active" className="tactile-scope-active-bg" style={{position:'absolute',inset:0,pointerEvents:'none'}} transition={INTERACTION_SPRING} aria-hidden="true"/>}
+                <Users size={15} aria-hidden="true"/>
+                <span className="un-scope-option-name">{c.name}</span>
+                <small className="un-scope-member-count">{c.members.length}명</small>
+                <span className="un-scope-check" aria-hidden="true">{scope===c.id&&<Check size={14}/>}</span>
+              </motion.button>
+            ))}
+            <motion.button
+              type="button"
+              className="un-scope-manage"
+              whileTap={reduced?undefined:{scale:0.98}}
+              whileHover={reduced?undefined:{scale:1.01}}
+              transition={INTERACTION_SPRING}
+              onClick={()=>{close();onGroups();}}
+            >
+              <KeyRound size={15}/>
+              <span>코드로 참여 · 모임 만들기</span>
+            </motion.button>
+          </LayoutGroup>
+        )}
+      </TactilePopover>
+      <div className="un-header-actions">
+        <HeaderInstallControl pwa={pwa}/>
+        <motion.button
+          type="button"
+          className="un-header-action"
+          aria-label="설정 열기"
+          whileTap={reduced?undefined:{scale:0.95}}
+          whileHover={reduced?undefined:{scale:1.03}}
+          transition={INTERACTION_SPRING}
+          onClick={onSettings}
+        >
+          <Settings size={21} strokeWidth={1.65}/>
+        </motion.button>
+      </div>
+    </header>
+  );
+}
