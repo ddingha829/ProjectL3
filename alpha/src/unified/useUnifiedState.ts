@@ -28,7 +28,7 @@ export default function useUnifiedState(){
   try{if(!item.prepared){item.operations=await prepareCloudOperations(c,item.userId,item.operations);item.prepared=true;localStorage.setItem(pendingKey(item.userId),JSON.stringify(item));}
    const result=await c.rpc('l2u_apply',{p_operations:item.operations,p_operation_id:item.id});if(result.error)throw result.error;const next=(fullRecords.current||current.current?.recordsComplete)?await fetchCloudState(c):await fetchFeedState(c,item.userId,current.current?.logs.map(l=>l.id));if(!alive.current||epoch!==generation.current||request!==requestSequence.current)return false;
    localStorage.setItem(cacheKey(item.userId),JSON.stringify(next));localStorage.removeItem(pendingKey(item.userId));pending.current=null;show(next);setSyncStatus('idle');setError('');
-   if(item.operations.some(op=>op.kind==='log'&&Array.isArray(op.groups)&&op.groups.length))void c.auth.getSession().then(session=>{const token=session.data.session?.access_token;if(token)return fetch('/api/notifications/dispatch/',{method:'POST',headers:{Authorization:`Bearer ${token}`,'X-L2-Request':'1'},signal:AbortSignal.timeout(8000)});}).catch(()=>{});
+   if(item.operations.some(op=>op.kind==='comment'||op.kind==='log'&&Array.isArray(op.groups)&&op.groups.length))void c.auth.getSession().then(session=>{const token=session.data.session?.access_token;if(token)return fetch('/api/notifications/dispatch/',{method:'POST',headers:{Authorization:`Bearer ${token}`,'X-L2-Request':'1'},signal:AbortSignal.timeout(8000)});}).catch(()=>{});
    return true;
   }catch(e){if(alive.current&&epoch===generation.current){setSyncStatus('failed');setError(cloudError(e));}return false;}finally{sending.current=false;}
  },[show]);

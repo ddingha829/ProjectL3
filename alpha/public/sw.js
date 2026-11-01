@@ -13,7 +13,7 @@ self.addEventListener('fetch',event=>{
 function notificationAddress(value){
  try{const u=new URL(value,self.location.origin);if(u.origin!==self.location.origin||u.pathname!=='/')return '/';
   const id=/^[a-f0-9-]{36}$/i,scope=u.searchParams.get('scope'),log=u.searchParams.get('focus')||u.searchParams.get('log');
-  if(!id.test(scope||'')||!id.test(log||'')||!['map','logs'].includes(u.searchParams.get('view')))return '/';
+  if(!id.test(log||'')||!['map','logs'].includes(u.searchParams.get('view'))||!(id.test(scope||'')||scope==='mine'&&u.searchParams.get('view')==='logs'))return '/';
   return '/?view='+u.searchParams.get('view')+'&scope='+scope+(u.searchParams.get('view')==='map'?'&focus=':'&log=')+log;
  }catch{return '/';}
 }
@@ -37,7 +37,7 @@ self.addEventListener('push',event=>{
   const url=notificationAddress(payload.url);if(url==='/')return;
   await self.registration.showNotification(String(payload.title||'새로운 기록').slice(0,100),{
    body:String(payload.body||'모임의 새 티끌을 확인해보세요.').slice(0,160),icon:'/brand/ticgle-icon-192.png',badge:'/brand/ticgle-icon-192.png',
-   tag:'l2-log-'+String(payload.id||''),data:{url,ownerId:payload.ownerId,kind:'new-log'},
+   tag:'l2-'+(['comment','likes'].includes(payload.kind)?payload.kind:'log')+'-'+String(payload.id||''),data:{url,ownerId:payload.ownerId,kind:['comment','likes'].includes(payload.kind)?payload.kind:'new-log'},
   });
  })());
 });

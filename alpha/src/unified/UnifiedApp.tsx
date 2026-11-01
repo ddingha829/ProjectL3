@@ -105,9 +105,10 @@ export default function UnifiedApp(){
  },onChange:id=>{setSelectedId(id);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setPanel(null);setWork(undefined);if(!id){setEditing(null);requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));}}});
  const notifications=useNotifications({userId:identity?.id||'',ready:ready&&!needsNickname&&accountMode==='cloud',logs:state?.logs||[],refresh:async()=>{await ensureFullRecords(true);},onNotice:setToast,onOpen:target=>{
   const log=state?.logs.find(item=>item.id===target.logId),group=state?.circles.find(item=>item.id===target.scope&&item.members.includes('me'));
-  if(!log||!group||!audienceIds(log).includes(group.id))return false;
+  const personal=target.kind==='log'&&target.scope==='mine'&&log?.authorId==='me';
+  if(!log||!personal&&(!group||!audienceIds(log).includes(group.id)))return false;
   if((composing||editing||cardDraft)&&!confirm('작성 중인 내용을 닫고 알림의 기록으로 이동할까요?'))return true;
-  setComposing(false);setEditing(null);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setPanel(null);setDistrict(null);setSection('all');setCategory('all');setQuery('');setMode('cards');setScope(group.id);
+  setComposing(false);setEditing(null);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setPanel(null);setDistrict(null);setSection('all');setCategory('all');setQuery('');setMode('cards');setScope(personal?'mine':group!.id);
   if(target.kind==='map'){setSelectedId('');setMapFocus(log.id);setView('map');}else{setMapFocus('');setView('logs');cardNavigation.open(log.id);}
   requestAnimationFrame(()=>scrollPageTo({top:0,behavior:'instant'}));return true;
  }});

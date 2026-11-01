@@ -9,9 +9,9 @@ const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function notificationTarget(url:string):NotificationTarget|null{
  try{const parsed=new URL(url,'https://local.invalid');if(parsed.origin!=='https://local.invalid'||parsed.pathname!=='/')return null;
   const scope=parsed.searchParams.get('scope')||'',logId=parsed.searchParams.get('focus')||parsed.searchParams.get('log')||'';
-  if(!uuid.test(logId)||!uuid.test(scope))return null;
-  if(parsed.searchParams.get('view')==='map'&&parsed.searchParams.has('focus'))return {kind:'map',logId,scope};
-  if(parsed.searchParams.get('view')==='logs'&&parsed.searchParams.has('log'))return {kind:'log',logId,scope};
+  if(!uuid.test(logId))return null;
+  if(parsed.searchParams.get('view')==='map'&&uuid.test(scope)&&parsed.searchParams.has('focus'))return {kind:'map',logId,scope};
+  if(parsed.searchParams.get('view')==='logs'&&(scope==='mine'||uuid.test(scope))&&parsed.searchParams.has('log'))return {kind:'log',logId,scope};
  }catch{}return null;
 }
 export function distanceMeters(a:{lat:number;lng:number},b:{lat:number;lng:number}){

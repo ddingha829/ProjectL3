@@ -20,8 +20,11 @@ const id='12345678-1234-4234-8234-123456789012',group='87654321-1234-4234-8234-1
 assert.deepEqual(notificationTarget(`/?view=map&scope=${group}&focus=${id}`),{kind:'map',scope:group,logId:id});
 assert.equal(notificationTarget(`https://evil.invalid/?view=map&scope=${group}&focus=${id}`),null);
 assert.equal(notificationTarget('/?view=map&scope=mine&focus=not-a-uuid'),null);
+assert.deepEqual(notificationTarget(`/?view=logs&scope=mine&log=${id}`),{kind:'log',scope:'mine',logId:id});
+assert.equal(notificationTarget(`/?view=map&scope=mine&focus=${id}`),null);
+assert.equal(notificationTarget(`/?view=logs&scope=someone-else&log=${id}`),null);
 const sub={endpoint:'https://fcm.googleapis.com/fcm/send/fixture',keys:{p256dh:'A'.repeat(87),auth:'B'.repeat(22)}};
 assert.equal(validPushSubscription(sub),true);
 for(const endpoint of ['https://localhost/internal','http://fcm.googleapis.com/fcm/send/x','https://fcm.googleapis.com.evil.invalid/x','https://fcm.googleapis.com:444/x','https://user@fcm.googleapis.com/x'])assert.equal(validPushSubscription({...sub,endpoint}),false);
 assert.equal(validPushSubscription({...sub,keys:{p256dh:'bad',auth:'bad'}}),false);
-console.log('Notification rules: 19 nearby, cooldown, deep-link and endpoint assertions passed.');
+console.log('Notification rules: nearby, cooldown, group/personal deep-links and endpoint assertions passed.');

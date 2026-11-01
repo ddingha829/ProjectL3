@@ -20,4 +20,12 @@ await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:'another-acco
 await emit('notificationclick',{notification});assert.equal(focused,1,'old notification cannot open private content in another account');
 await emit('push',{data:{json:()=>payload}});assert.equal(shown.length,1,'stale push is suppressed after account switch');
 await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:null}});assert.equal(stored.get('owner'),null);
-console.log('Notification worker: owner isolation, safe links, map navigation and stale-push suppression passed.');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:user}});
+const ownUrl=`/?view=logs&scope=mine&log=${log}`;
+await emit('push',{data:{json:()=>({...payload,kind:'comment',url:ownUrl})}});assert.equal(shown.at(-1).data.url,ownUrl);assert.equal(shown.at(-1).data.kind,'comment');
+await emit('notificationclick',{notification:{close(){},data:{url:ownUrl,ownerId:user}}});assert.equal(messages.at(-1).url,ownUrl);
+await emit('push',{data:{json:()=>({...payload,kind:'likes',url:ownUrl})}});const tag=shown.at(-1).tag;
+await emit('push',{data:{json:()=>({...payload,kind:'likes',url:ownUrl})}});assert.equal(shown.at(-1).tag,tag,'a digest retry reuses its OS notification tag');
+const before=shown.length;await emit('push',{data:{json:()=>({...payload,url:`/?view=map&scope=mine&focus=${log}`})}});assert.equal(shown.length,before,'personal-scope URLs cannot be used as map targets');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:null}});await emit('push',{data:{json:()=>({...payload,kind:'likes',url:ownUrl})}});assert.equal(shown.length,before,'activity pushes remain account-isolated after logout');
+console.log('Notification worker: account isolation, group/map/personal navigation, activity kinds and retry tags passed.');

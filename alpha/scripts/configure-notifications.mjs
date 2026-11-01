@@ -18,7 +18,7 @@ if(process.argv.includes('--configure-server')){
  if(keys.some(key=>!env[key]))throw Error('Prepare local keys first.');
  if(new URL(env.SUPABASE_URL).hostname!=='tcsdhfkicbbxizurdfrd.supabase.co')throw Error('Unexpected backend target');
  const db=createClient(env.SUPABASE_URL,env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
- const health=await db.rpc('l2u_push_health');if(health.error||health.data?.version!==7)throw Error('Install notification migration 7 before activation.');
+ const health=await db.rpc('l2u_push_health');if(health.error||!(health.data?.version>=7))throw Error('Install notification migration 7 before activation.');
  const result=await db.rpc('l2u_push_configure',{p_url:'https://project-l3-nine.vercel.app/api/notifications/dispatch/',p_secret:env.WEB_PUSH_DISPATCH_SECRET});if(result.error)throw Error('Server notification configuration failed.');
  console.log(JSON.stringify({phase:'database-configured',webhook:(await db.rpc('l2u_push_health')).data?.webhook===true}));
 }
