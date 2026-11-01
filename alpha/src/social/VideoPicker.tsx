@@ -8,29 +8,33 @@ import './VideoPicker.css';
 import CameraSurface from './CameraSurface';
 export type VideoAttachment={video:VideoClip;image:string;imagePath:string};
 export default function VideoPicker({cloud,onDone,onClose,initialFile}:{initialFile?:File;cloud:boolean;onDone:(asset:VideoAttachment)=>void;onClose:()=>void}){
- const [file,setFile]=useState<File|undefined>(initialFile),[cameraClip,setCameraClip]=useState(Boolean(initialFile)),[captureOpen,setCaptureOpen]=useState(false),[url,setUrl]=useState(''),[duration,setDuration]=useState(0),[start,setStart]=useState(0),[playing,setPlaying]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState('');
+ const [file,setFile]=useState<File|undefined>(initialFile),[autoFile,setAutoFile]=useState<File|undefined>(initialFile),[cameraClip,setCameraClip]=useState(Boolean(initialFile)),[captureOpen,setCaptureOpen]=useState(false),[url,setUrl]=useState(''),[duration,setDuration]=useState(0),[start,setStart]=useState(0),[playing,setPlaying]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState('');
  const player=useRef<HTMLVideoElement>(null),album=useRef<HTMLInputElement>(null),alive=useRef(true),lock=useRef(false),cancel=useRef<AbortController|null>(null);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;cancel.current?.abort();};},[]);
- useEffect(()=>{if(!file){setUrl('');return;}const next=URL.createObjectURL(file);setUrl(next);return()=>URL.revokeObjectURL(next);},[file]);
- const choose=(input:HTMLInputElement)=>{const chosen=input.files?.[0];input.value='';if(!chosen)return;if(chosen.size>VIDEO_SOURCE_LIMIT){setError('50MB 이하의 영상을 선택해주세요.');return;}setError('');setCameraClip(false);setDuration(0);setStart(0);setPlaying(false);setFile(chosen);};
+ useEffect(()=>{if(!file||cameraClip){setUrl('');return;}const next=URL.createObjectURL(file);setUrl(next);return()=>URL.revokeObjectURL(next);},[file,cameraClip]);
+ const choose=(input:HTMLInputElement)=>{const chosen=input.files?.[0];input.value='';if(!chosen)return;if(chosen.size>VIDEO_SOURCE_LIMIT){setError('50MB 이하의 영상을 선택해주세요.');return;}setError('');setCameraClip(false);setAutoFile(undefined);setDuration(0);setStart(0);setPlaying(false);setFile(chosen);};
  const valid=duration>=2&&duration<=120;
  const preview=async()=>{const video=player.current;if(!video)return;if(playing){video.pause();setPlaying(false);return;}video.currentTime=start;try{await video.play();setPlaying(true);}catch{setError('미리보기를 시작하지 못했어요. 다시 눌러주세요.');}};
- const save=async()=>{
-  if(!file||!valid||lock.current)return;lock.current=true;player.current?.pause();setPlaying(false);setError('');setPhase('영상 업로드 중…');cancel.current=new AbortController();
+ const save=async(selected=file,recorded=cameraClip)=>{
+  if(!selected||(!recorded&&!valid)||lock.current)return;lock.current=true;player.current?.pause();setPlaying(false);setError('');setPhase('영상 업로드 중…');cancel.current=new AbortController();
   try{
    const client=await configureCloud(),session=await client?.auth.getSession(),token=session?.data.session?.access_token,owner=session?.data.session?.user.id;
    if(!client||!token||!owner)throw Error('실제 계정으로 로그인한 뒤 영상을 추가해주세요.');
    const call=async(body:unknown)=>{const response=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json','X-L2-Request':'1',Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:cancel.current!.signal});const result=await response.json();if(!response.ok)throw Error(result.error||'영상을 준비하지 못했어요.');return result;};
-   const target=await call({action:'prepare',size:file.size});if(!alive.current)return;
-   const uploaded=await client.storage.from('l2u-video-uploads').uploadToSignedUrl(target.path,target.token,file,{contentType:file.type||'application/octet-stream'});if(uploaded.error)throw Error('업로드하지 못했어요. 네트워크 연결을 확인해주세요.');
+   const target=await call({action:'prepare',size:selected.size});if(!alive.current)return;
+   const uploaded=await client.storage.from('l2u-video-uploads').uploadToSignedUrl(target.path,target.token,selected,{contentType:selected.type||'application/octet-stream'});if(uploaded.error)throw Error('업로드하지 못했어요. 네트워크 연결을 확인해주세요.');
    if(!alive.current)return;setPhase('정확히 2초로 다듬는 중…');
-   const result=await call({action:'encode',id:target.id,start,recorded:cameraClip});
+   const result=await call({action:'encode',id:target.id,start:recorded?0:start,recorded});
    const latest=await client.auth.getSession();if(latest.data.session?.user.id!==owner)throw Error('계정이 변경됐어요. 다시 선택해주세요.');
    if(!validVideo(result.video)||typeof result.imagePath!=='string'||typeof result.image!=='string')throw Error('영상 형식을 확인하지 못했어요.');
    if(alive.current)onDone(result);
   }catch(e){if(alive.current)setError(e instanceof Error?e.message:'영상을 준비하지 못했어요. 다시 시도해주세요.');}finally{lock.current=false;if(alive.current)setPhase('');}
  };
- if(captureOpen)return <AccessibleDialog open title="2초 영상 촬영" hideTitle closeLabel="영상 촬영 닫기" onClose={()=>setCaptureOpen(false)} panelClassName="lab-dialog lab-story-dialog un-story-v2 un-video-capture"><div className="lab-story-viewport"><CameraSurface active captureKind="video" onCapture={async()=>{}} onFallback={()=>{setCaptureOpen(false);setError('앨범에서 영상을 선택해주세요.');}} onVideo={next=>{setFile(next);setCameraClip(true);setStart(0);setDuration(0);setPlaying(false);setError('');setCaptureOpen(false);}}/><p className="un-video-capture-guide">무음으로 2초 촬영 후 자동으로 끝나요.</p></div></AccessibleDialog>;
+ // Defer one tick so a Strict Mode setup/cleanup cycle cannot upload twice.
+ // Camera captures are already bounded to two seconds; only album clips need trimming.
+ useEffect(()=>{if(!autoFile||!cloud)return;const timer=setTimeout(()=>{void save(autoFile,true);},0);return()=>clearTimeout(timer);},[autoFile,cloud]);
+ if(cameraClip&&file&&cloud&&!captureOpen)return <AccessibleDialog open title="영상 준비" closeLabel="영상 준비 취소" onClose={onClose} panelClassName="lab-dialog un-video-picker"><div className="un-video-auto" role={error?'alert':'status'}>{error?<><Film size={28}/><p>{error}</p><button type="button" className="un-primary un-full" disabled={!!phase} onClick={()=>void save(file,true)}>다시 시도</button></>:<><LoaderCircle className="lab-spin" size={28}/><strong>{phase||'영상을 준비하고 있어요'}</strong><p>준비가 끝나면 바로 작성 화면으로 이어져요.</p></>}</div></AccessibleDialog>;
+ if(captureOpen)return <AccessibleDialog open title="2초 영상 촬영" hideTitle closeLabel="영상 촬영 닫기" onClose={()=>setCaptureOpen(false)} panelClassName="lab-dialog lab-story-dialog un-story-v2 un-video-capture"><div className="lab-story-viewport"><CameraSurface active captureKind="video" onCapture={async()=>{}} onFallback={()=>{setCaptureOpen(false);setError('앨범에서 영상을 선택해주세요.');}} onVideo={next=>{setFile(next);setAutoFile(next);setCameraClip(true);setStart(0);setDuration(0);setPlaying(false);setError('');setCaptureOpen(false);}}/><p className="un-video-capture-guide">무음으로 2초 촬영 후 자동으로 끝나요.</p></div></AccessibleDialog>;
  return <AccessibleDialog open title="움직이는 2초" closeLabel="영상 선택 닫기" onClose={onClose} scrollBody panelClassName="lab-dialog un-video-picker">
   <p className="un-video-lead">사진처럼 가볍게, 잠깐 움직이는 티끌.<br/><strong>무음 · 정확히 2초 · 480p</strong>로 남겨요.</p>
   {!cloud?<p className="un-video-login" role="status">영상은 실제 계정으로 로그인하면 이용할 수 있어요. 예시 계정에서는 사진으로 둘러봐주세요.</p>:<>

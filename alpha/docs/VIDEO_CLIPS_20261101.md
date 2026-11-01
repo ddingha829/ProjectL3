@@ -37,3 +37,8 @@
 - Closing the screen or backgrounding the app aborts recording and releases capture tracks, timers, animation frames and listeners. Camera preview pauses while video confirmation is open and resumes when it closes.
 - For automatically recorded clips only, the encoder permits up to 125ms of last-frame compensation for browser frame-tail variance, then trims to exactly 48 frames. Ordinary album clips keep strict short-segment rejection; seriously incomplete camera clips are rejected too.
 - Added six recorder lifecycle checks and an encoding regression for a 1.92s camera frame tail. Actual Chromium MediaRecorder output from a synthetic camera was also captured through the UI and normalized to exactly 2.00s, 480 × 768, silent. No real camera permission or production upload was used for that check.
+
+## Direct camera attachment
+- A completed in-app recording now automatically uploads and prepares its two-second attachment, then opens the normal writing screen. There is no playback preview or “use this clip” confirmation for camera recordings.
+- Preparation exposes progress and cancellation; a failed preparation retains the recording and offers retry. Album clips still allow choosing a two-second segment.
+- Both entry paths (Photo camera → Video mode, and Video menu → Record) were exercised with a synthetic browser camera. Strict Mode verification sent one prepare request and one encode request per recording, with no confirmation click.

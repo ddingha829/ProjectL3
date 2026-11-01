@@ -14,3 +14,4 @@
 @keyframes un-camera-record-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(max-height:550px){.un-camera-kind{bottom:122px}.un-camera-kind button{min-width:84px}.un-camera-recording{top:68px}}
 @media(prefers-reduced-motion:reduce){.un-camera-recording>i{animation:none}}
+.un-video-auto{display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 8px;text-align:center}.un-video-auto>svg{color:var(--accent)}.un-video-auto strong{font-size:15px;font-weight:600}.un-video-auto p{font-size:12px;line-height:1.7;color:var(--muted);margin:0}.un-video-auto .un-primary{margin-top:8px}
