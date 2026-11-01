@@ -1,5 +1,5 @@
 import { blobToDataUrl, compressPhotoBlob } from './imageCompression';
-export async function compressUploadedImage(file: File, maxWidth = 1080, quality = .8): Promise<string> {
+export async function compressUploadedImage(file: File, maxWidth = 1080, quality = .9): Promise<string> {
   return blobToDataUrl(await compressPhotoBlob(file, maxWidth, quality));
 }
 export async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {

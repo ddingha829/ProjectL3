@@ -29,8 +29,11 @@ async function encodeWebp(canvas: HTMLCanvasElement, quality: number): Promise<B
   return new Blob([await codec.default(context.getImageData(0, 0, canvas.width, canvas.height), { quality: quality * 100 })], { type: 'image/webp' });
 }
 
-/** Never returns an uncompressed original on failure. Small files are not padded. */
-export async function compressPhotoBlob(file: Blob, maxWidth = PHOTO_MAX_WIDTH, quality = .8): Promise<Blob> {
+/** Never returns an uncompressed original on failure. Small files are not padded.
+ * Preserves full target resolution first by stepping down WebP quality (0.90 -> 0.84 -> 0.78)
+ * before reducing dimensions if the image still exceeds 300KB.
+ */
+export async function compressPhotoBlob(file: Blob, maxWidth = PHOTO_MAX_WIDTH, quality = .9): Promise<Blob> {
   if (!file.type.startsWith('image/')) throw new Error('사진 파일을 선택해 주세요.');
   if (file.size > 30 * 1024 * 1024) throw new Error('30MB 이하의 사진을 선택해 주세요.');
   const url = URL.createObjectURL(file);
@@ -39,15 +42,42 @@ export async function compressPhotoBlob(file: Blob, maxWidth = PHOTO_MAX_WIDTH, 
     if (!image.naturalWidth || !image.naturalHeight) throw new Error('사진 크기를 확인하지 못했어요.');
     let scale = Math.min(1, maxWidth / image.naturalWidth, 2160 / image.naturalHeight);
     const canvas = document.createElement('canvas');
-    for (let attempt = 0; attempt < 9; attempt++) {
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const drawScaled = (currentScale: number) => {
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * currentScale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * currentScale));
       const context = canvas.getContext('2d');
       if (!context) throw new Error('사진을 준비하지 못했어요.');
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      const blob = await encodeWebp(canvas, quality);
+    };
+
+    // Step 1: Keep full target resolution (up to 1080x2160) and try high-to-balanced quality steps first.
+    drawScaled(scale);
+    const qualitySteps = Array.from(new Set([
+      quality,
+      Math.max(.78, Number((quality - .06).toFixed(2))),
+      Math.max(.78, Number((quality - .12).toFixed(2))),
+    ]));
+    let lastBlob: Blob | undefined;
+    for (const q of qualitySteps) {
+      const blob = await encodeWebp(canvas, q);
       if (blob.size <= PHOTO_MAX_BYTES) return blob;
-      scale *= Math.min(.9, Math.sqrt(PHOTO_MAX_BYTES / blob.size) * .94);
+      lastBlob = blob;
+    }
+
+    // Step 2: Only if 1080p at floor quality still exceeds 300KB, progressively scale down dimensions.
+    const fallbackQuality = qualitySteps[qualitySteps.length - 1] ?? .78;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      if (lastBlob) {
+        scale *= Math.min(.9, Math.sqrt(PHOTO_MAX_BYTES / lastBlob.size) * .94);
+      } else {
+        scale *= .88;
+      }
+      drawScaled(scale);
+      const blob = await encodeWebp(canvas, fallbackQuality);
+      if (blob.size <= PHOTO_MAX_BYTES) return blob;
+      lastBlob = blob;
     }
     throw new Error('사진을 300KB 이하로 줄이지 못했어요. 다른 사진을 선택해 주세요.');
   } catch (error) {
@@ -94,6 +124,8 @@ export async function compressCardBlob(source: Blob): Promise<Blob> {
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
       const context = canvas.getContext('2d'); if (!context) throw new Error('카드 이미지를 준비하지 못했어요.');
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       if (attempt === 0) {
         const lossless = await canvasBlob(canvas, 'image/png', 1);
