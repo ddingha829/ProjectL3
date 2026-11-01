@@ -29,6 +29,7 @@ html[data-unified-shell=true] .un-header.un-header-v2.un-header-centered .un-sco
  box-shadow:var(--un-surface-shadow);border-color:var(--un-surface-edge);backdrop-filter:none;-webkit-backdrop-filter:none;
 }
 html[data-unified-shell=true] .un-scope-option{position:relative;isolation:isolate;overflow:hidden}
+html[data-unified-shell=true] .un-scope-option[aria-pressed=true] .un-scope-member-count{color:var(--ui-accent-ink)}
 .un-surface-scope-active-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:12px;background:var(--ui-soft);box-shadow:var(--un-surface-highlight)}
 
 html[data-unified-shell=true] .un-app .flc-shell.un-log-controls.un-feed-toolbar{
