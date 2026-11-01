@@ -27,7 +27,7 @@ const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 const CITY_VIEW_ZOOM=11;
 // Korean Peninsula overview scale for the fast zoom-in entrance animation.
 const KOREA_OVERVIEW_CENTER:[number,number]=[36.35,127.85];
-const KOREA_OVERVIEW_ZOOM=6.5;
+const KOREA_OVERVIEW_ZOOM=5.5;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
@@ -137,7 +137,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
      :[37.55,126.99];
    const destZoom=focusedLog?14.25:CITY_VIEW_ZOOM;
    programmaticFly.current=true;
-   map.current.flyTo(destCenter,destZoom,{animate:true,duration:0.92,easeLinearity:0.16});
+   map.current.flyTo(destCenter,destZoom,{animate:true,duration:0.95,easeLinearity:0.16});
   },90);
   return()=>clearTimeout(timer);
  },[ready,revealed,compact,onPick,focusedLog,currentPoint]);
@@ -160,7 +160,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!ready||!m||!L||!currentPoint)return;
   // Use a DOM divIcon marker in markerPane instead of an SVG circleMarker in overlayPane
-  // so Leaflet's zoom-anim CSS scale (e.g. 22.6x during flyTo 6.5 -> 11) never magnifies the dot.
+  // so Leaflet's zoom-anim CSS scale (e.g. during flyTo 5.5 -> 11) never magnifies the dot.
   const dot=document.createElement('span');
   dot.className='scratch-current-location-dot scratch-current-location';
   dot.setAttribute('role','img');
