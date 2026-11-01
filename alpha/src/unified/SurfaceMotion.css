@@ -74,26 +74,46 @@ html[data-unified-shell=true] .un-navigation :is(.lab-nav-rail>button,.un-dock-a
 }
 html[data-unified-shell=true] .un-navigation>.un-dock-add{transition:none;box-shadow:0 2px 5px color-mix(in srgb,var(--accent) 18%,transparent),0 8px 18px -6px color-mix(in srgb,var(--accent) 24%,transparent),inset 0 1px 0 #ffffff5c}
 
-/* Rubber-band elastic bottom entrance for the '+' creation choice sheet (.un-entry-dialog) */
+/* Center the '+' creation choice sheet above the bottom dock on mobile and use a single smooth spring curve */
 @keyframes unEntryBackdropFade{
  from{opacity:0}
  to{opacity:1}
 }
-@keyframes unEntrySheetElastic{
- 0%{opacity:0;transform:translate3d(0,84px,0) scale(.91,1.06)}
- 58%{opacity:1;transform:translate3d(0,-9px,0) scale(1.018,.984)}
- 80%{transform:translate3d(0,3px,0) scale(.996,1.004)}
- 100%{opacity:1;transform:translate3d(0,0,0) scale(1,1)}
+@keyframes unEntrySheetSmooth{
+ from{opacity:0;transform:translate3d(0,22px,0) scale(.95)}
+ to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes unDockAddElastic{
+ 0%{transform:scale(1) rotate(0deg)}
+ 28%{transform:scale(.85) rotate(-22deg)}
+ 66%{transform:scale(1.1) rotate(51deg)}
+ 100%{transform:scale(1) rotate(45deg)}
 }
 html[data-unified-shell=true] .quick-dialog-backdrop:has(>.un-entry-dialog){
- animation:unEntryBackdropFade .2s cubic-bezier(.22,1,.36,1) both;
+ align-items:center!important;
+ padding:20px 16px max(104px,calc(env(safe-area-inset-bottom,0px) + 92px))!important;
+ background:#0f0e0c6b!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+ animation:unEntryBackdropFade .18s ease-out both;
 }
 html[data-unified-shell=true] .quick-dialog-panel.un-entry-dialog{
- transform-origin:50% 100%;
+ transform-origin:50% 85%;
  will-change:transform,opacity;
- animation:unEntrySheetElastic .46s cubic-bezier(.22,1.28,.36,1) both;
+ animation:unEntrySheetSmooth .28s cubic-bezier(.22,1.16,.36,1) both;
+}
+html[data-unified-shell=true] body:has(.un-entry-dialog) .un-navigation>.un-dock-add{
+ animation:unDockAddElastic .38s cubic-bezier(.22,1.18,.36,1) both;
 }
 html[data-unified-shell=true] .un-entry-options>button:active{transform:none}
+
+/* Fixed screen-pixel current location dot in markerPane so flyTo zoom-anim never magnifies it */
+.scratch-current-location-marker{background:none!important;border:0!important}
+.scratch-current-location-dot{
+ display:block;width:14px;height:14px;border-radius:50%;
+ background:#ff4500;border:2px solid #fff;
+ box-shadow:0 0 0 3px #ff450029,0 2px 5px #00000038;
+}
 
 /* Preserve the cards' original shape (including transparent ticket punches). */
 html[data-unified-shell=true] .un-log .lab-poster-art{outline-offset:3px}
@@ -172,7 +192,7 @@ html[data-unified-shell=true] .un-toast-anchor .un-toast{background:var(--surfac
 
 @media(prefers-reduced-motion:reduce){
  html[data-unified-shell=true] :is(.un-navigation button,.un-scope-picker button,.flc-menu[data-motion-popover],.un-detail-card-tilt,.mosaic-drag-ghost,.mosaic-slot.is-over){transition:none}
- html[data-unified-shell=true] :is(.quick-dialog-backdrop:has(>.un-entry-dialog),.quick-dialog-panel.un-entry-dialog){animation:none}
+ html[data-unified-shell=true] :is(.quick-dialog-backdrop:has(>.un-entry-dialog),.quick-dialog-panel.un-entry-dialog,body:has(.un-entry-dialog) .un-navigation>.un-dock-add){animation:none}
  .un-card-specular{display:none}
 }
 @media(prefers-reduced-transparency:reduce){

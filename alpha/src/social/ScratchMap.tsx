@@ -159,8 +159,17 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  useEffect(()=>{if(!focusedLog){notificationFocusRef.current='';return;}const m=map.current,place=logs.find(log=>log.id===focusedLog)?.place;if(!ready||!m||!place)return;const key=`${focusedLog}:${place.lat}:${place.lng}`;if(notificationFocusRef.current===key)return;notificationFocusRef.current=key;introFlown.current=true;programmaticFly.current=true;m.flyTo([place.lat,place.lng],Math.max(14.25,m.getZoom()),{animate:!matchMedia('(prefers-reduced-motion:reduce)').matches,duration:.65});},[focusedLog,ready,logs]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!ready||!m||!L||!currentPoint)return;
-  const point=L.circleMarker([currentPoint.lat,currentPoint.lng],{radius:7,color:'#fff',weight:2,fillColor:'#ff4500',fillOpacity:1,className:'scratch-current-location',interactive:false}).addTo(m);
-  point.getElement()?.setAttribute('role','img');point.getElement()?.setAttribute('aria-label','내 현재 위치');
+  // Use a DOM divIcon marker in markerPane instead of an SVG circleMarker in overlayPane
+  // so Leaflet's zoom-anim CSS scale (e.g. 22.6x during flyTo 6.5 -> 11) never magnifies the dot.
+  const dot=document.createElement('span');
+  dot.className='scratch-current-location-dot scratch-current-location';
+  dot.setAttribute('role','img');
+  dot.setAttribute('aria-label','내 현재 위치');
+  const point=L.marker([currentPoint.lat,currentPoint.lng],{
+   icon:L.divIcon({className:'scratch-current-location-marker',html:dot,iconSize:[16,16],iconAnchor:[8,8]}),
+   interactive:false,
+   keyboard:false,
+  }).addTo(m);
   return()=>{point.remove();};
  },[currentPoint,ready]);
  useEffect(()=>{
@@ -194,13 +203,8 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   const dong=coverage.dongs.find(region=>region.count===1&&region.logIds.includes(discoveryLog)),log=current.current.logs.find(row=>row.id===discoveryLog);
   if(!dong||!log?.place){discoveryCallback.current?.();return;}
   setDiscoveryName(dong.feature.properties.label);autoLocated.current=true;introFlown.current=true;locationRequest.current++;setLocating(false);locateIcon.current?.stopAnimation();
+  m.setView([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:false});
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!reduced){
-   programmaticFly.current=true;
-   m.flyTo([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:true,duration:0.9,easeLinearity:0.18});
-  }else{
-   m.setView([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:false});
-  }
   const glow=reduced?null:L.geoJSON(dong.feature as unknown as FeatureCollection,{pane:'scratch-boundaries',interactive:false,style:{className:'scratch-discovery-area',color:'#ef632e',fillColor:'#ef632e',weight:1,opacity:0,fillOpacity:0}}).addTo(m);
   const ring=reduced?null:L.circleMarker([log.place.lat,log.place.lng],{pane:'scratch-boundaries',interactive:false,className:'scratch-discovery-point',color:'#ef632e',fillColor:'#ef632e',radius:10,weight:2,opacity:0,fillOpacity:0}).addTo(m);
   const timer=setTimeout(()=>{setDiscoveryName('');discoveryCallback.current?.();},4000);
