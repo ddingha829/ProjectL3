@@ -61,9 +61,39 @@ html[data-unified-shell=true] .un-navigation .lab-nav-rail{
  box-shadow:var(--un-surface-dock);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
 }
 html[data-unified-shell=true] .un-navigation .lab-nav-rail>button{isolation:isolate;transition:color .15s}
+html[data-unified-shell=true] .un-navigation .lab-nav-rail>button[aria-current=page],
+html[data-unified-shell=true] .un-navigation .lab-nav-rail>button[aria-current=page] :is(svg,span){
+ color:var(--accent)!important;
+}
 html[data-unified-shell=true] .un-navigation :is(.lab-nav-rail>button,.un-dock-add):active{transform:none}
-.un-surface-nav-active-pill{position:absolute;inset:2px 4px;z-index:-1;pointer-events:none;border-radius:999px;background:var(--surface);border:1px solid var(--un-surface-edge);box-shadow:var(--un-surface-shadow)}
+.un-surface-nav-active-pill{
+ position:absolute;inset:2px 4px;z-index:-1;pointer-events:none;border-radius:999px;
+ background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+ border:1px solid color-mix(in srgb,var(--accent) 28%,var(--un-surface-edge));
+ box-shadow:var(--un-surface-shadow);
+}
 html[data-unified-shell=true] .un-navigation>.un-dock-add{transition:none;box-shadow:0 2px 5px color-mix(in srgb,var(--accent) 18%,transparent),0 8px 18px -6px color-mix(in srgb,var(--accent) 24%,transparent),inset 0 1px 0 #ffffff5c}
+
+/* Rubber-band elastic bottom entrance for the '+' creation choice sheet (.un-entry-dialog) */
+@keyframes unEntryBackdropFade{
+ from{opacity:0}
+ to{opacity:1}
+}
+@keyframes unEntrySheetElastic{
+ 0%{opacity:0;transform:translate3d(0,84px,0) scale(.91,1.06)}
+ 58%{opacity:1;transform:translate3d(0,-9px,0) scale(1.018,.984)}
+ 80%{transform:translate3d(0,3px,0) scale(.996,1.004)}
+ 100%{opacity:1;transform:translate3d(0,0,0) scale(1,1)}
+}
+html[data-unified-shell=true] .quick-dialog-backdrop:has(>.un-entry-dialog){
+ animation:unEntryBackdropFade .2s cubic-bezier(.22,1,.36,1) both;
+}
+html[data-unified-shell=true] .quick-dialog-panel.un-entry-dialog{
+ transform-origin:50% 100%;
+ will-change:transform,opacity;
+ animation:unEntrySheetElastic .46s cubic-bezier(.22,1.28,.36,1) both;
+}
+html[data-unified-shell=true] .un-entry-options>button:active{transform:none}
 
 /* Preserve the cards' original shape (including transparent ticket punches). */
 html[data-unified-shell=true] .un-log .lab-poster-art{outline-offset:3px}
@@ -142,6 +172,7 @@ html[data-unified-shell=true] .un-toast-anchor .un-toast{background:var(--surfac
 
 @media(prefers-reduced-motion:reduce){
  html[data-unified-shell=true] :is(.un-navigation button,.un-scope-picker button,.flc-menu[data-motion-popover],.un-detail-card-tilt,.mosaic-drag-ghost,.mosaic-slot.is-over){transition:none}
+ html[data-unified-shell=true] :is(.quick-dialog-backdrop:has(>.un-entry-dialog),.quick-dialog-panel.un-entry-dialog){animation:none}
  .un-card-specular{display:none}
 }
 @media(prefers-reduced-transparency:reduce){

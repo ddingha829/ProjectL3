@@ -1,8 +1,11 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {motion} from 'motion/react';
 import {ArrowLeft,ArrowUpRight,Camera,ImagePlus,Type,Clapperboard,BookOpen,ChevronUp,LoaderCircle} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import {compressPhotoBlob,blobToDataUrl} from '@/lib/imageCompression';
+import {useMotionPreference} from '@/lib/useMotionPreference';
+import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import type {Circle,LabLog,Person} from './model';
 import Composer from './Composer';
 import CameraSurface from './CameraSurface';
@@ -10,8 +13,11 @@ import WorkSearch from './WorkSearch';
 import type {Work} from './taste';
 import type {PhotoOrigin} from './LocationSuggestion';
 
+const ENTRY_OPTION_SPRING={type:'spring' as const,stiffness:440,damping:22,mass:0.68};
+
 type Props={paused?:boolean;onPause?:()=>void;editing?:LabLog;storageMode?:'cloud'|'demo';initialWork?:Work;nearbyLogs?:LabLog[];actor:Person;circles:Circle[];audience:string|null;dark:boolean;onSave:(log:LabLog)=>boolean;onClose:()=>void};
 export default function CameraComposer(p:Props){
+ const reduced=useMotionPreference();
  const [mode,setMode]=useState<'camera'|'work'|'text'|null>(p.editing?(p.editing.work?'work':p.editing.image?'camera':'text'):p.initialWork?'work':null),[workKind,setWorkKind]=useState<'movie'|'book'|null>(null),[image,setImage]=useState(p.editing?p.editing.image:p.initialWork?.image||''),[editor,setEditor]=useState(Boolean(p.editing||p.initialWork)),[busy,setBusy]=useState(false),[error,setError]=useState(''),[cameraAttempt,setCameraAttempt]=useState(0),[origin,setOrigin]=useState<PhotoOrigin>(p.editing?.work&&p.editing.image===p.editing.work.image||!p.editing&&p.initialWork?'work':p.editing?'album':undefined),[activeWork,setActiveWork]=useState(p.editing?.work||p.initialWork);
  const [audienceIds,setAudienceIds]=useState<string[]>(p.editing?.circleIds??(p.editing?.circleId?[p.editing.circleId]:[])),[workChosen,setWorkChosen]=useState(Boolean(p.editing||p.initialWork));
  const [contentDirty,setContentDirty]=useState(false),[discard,setDiscard]=useState(false);
@@ -22,9 +28,16 @@ export default function CameraComposer(p:Props){
  const prepare=async(photo:Blob,source:PhotoOrigin='camera')=>{if(busy)return;const token=++request.current;setBusy(true);setError('');try{const data=await blobToDataUrl(await compressPhotoBlob(photo));if(alive.current&&token===request.current){setImage(data);setOrigin(source);setEditor(true);}}catch(e){if(alive.current&&token===request.current)setError(e instanceof Error?e.message:'사진을 준비하지 못했어요.');}finally{if(alive.current&&token===request.current)setBusy(false);}};
  const choose=(input:HTMLInputElement)=>{const files=Array.from(input.files||[]);input.value='';if(files.length>1){setError('사진은 한 장만 선택해주세요.');return;}if(files[0])void prepare(files[0],input.hasAttribute('capture')?'camera':'album');};
  const pickWork=(work:Work)=>{setWorkChosen(true);setActiveWork(work);setImage(work.image);setOrigin('work');setEditor(true);};
- if(!mode)return <AccessibleDialog open title="어떻게 남길까요?" onClose={p.onClose} panelClassName="lab-dialog un-entry-dialog"><div className="un-entry-options"><button className="un-entry-camera" onClick={()=>setMode('camera')}><Camera size={28} strokeWidth={1.6}/><span><strong>촬영하기</strong><small>사진 한 장으로 남기는 지금</small></span><ArrowUpRight size={20}/></button><button onClick={()=>setMode('work')}><Clapperboard size={25} strokeWidth={1.6}/><span><strong>작품 등록하기</strong><small>영화·드라마·책으로 남기는 취향</small></span><ArrowUpRight size={18}/></button><button onClick={()=>{setMode('text');setEditor(true);}}><Type size={25} strokeWidth={1.6}/><span><strong>글만 쓰기</strong><small>생각을 가볍게 한 줄</small></span><ArrowUpRight size={18}/></button></div></AccessibleDialog>;
+ const optionItemMotion=(index:number)=>reduced?{transition:instantMotion}:{
+  initial:{y:24,opacity:0,scale:0.93},
+  animate:{y:0,opacity:1,scale:1},
+  whileTap:{scale:0.965},
+  whileHover:{scale:1.015},
+  transition:{...ENTRY_OPTION_SPRING,delay:index*0.045},
+ };
+ if(!mode)return <AccessibleDialog open title="어떻게 남길까요?" onClose={p.onClose} panelClassName="lab-dialog un-entry-dialog"><div className="un-entry-options"><motion.button {...optionItemMotion(0)} className="un-entry-camera" onClick={()=>setMode('camera')}><Camera size={28} strokeWidth={1.6}/><span><strong>촬영하기</strong><small>사진 한 장으로 남기는 지금</small></span><ArrowUpRight size={20}/></motion.button><motion.button {...optionItemMotion(1)} onClick={()=>setMode('work')}><Clapperboard size={25} strokeWidth={1.6}/><span><strong>작품 등록하기</strong><small>영화·드라마·책으로 남기는 취향</small></span><ArrowUpRight size={18}/></motion.button><motion.button {...optionItemMotion(2)} onClick={()=>{setMode('text');setEditor(true);}}><Type size={25} strokeWidth={1.6}/><span><strong>글만 쓰기</strong><small>생각을 가볍게 한 줄</small></span><ArrowUpRight size={18}/></motion.button></div></AccessibleDialog>;
  return <>
-  {mode==='work'&&!workChosen?<AccessibleDialog open title={workKind?'작품 찾기':'어떤 작품인가요?'} onClose={p.onClose} panelClassName="lab-dialog un-entry-dialog"><button className="un-entry-back" onClick={()=>workKind?setWorkKind(null):setMode(null)}><ArrowLeft size={16}/>뒤로</button>{workKind?<WorkSearch key={workKind} kind={workKind} onSelect={pickWork}/>:<div className="un-entry-options"><button onClick={()=>setWorkKind('movie')}><Clapperboard size={25}/><span><strong>영화·드라마</strong><small>마음에 남은 장면</small></span><ArrowUpRight size={18}/></button><button onClick={()=>setWorkKind('book')}><BookOpen size={25}/><span><strong>책</strong><small>오래 간직하고 싶은 문장</small></span><ArrowUpRight size={18}/></button></div>}</AccessibleDialog>:<AccessibleDialog open={!p.paused} title={p.editing?"티끌 수정":"오늘을 남겨요"} hideTitle onClose={dismiss} panelClassName={`lab-dialog lab-story-dialog un-story-v2${editor?' is-writing':''}${mode==='text'&&!image?' is-note':''}`}>
+  {mode==='work'&&!workChosen?<AccessibleDialog open title={workKind?'작품 찾기':'어떤 작품인가요?'} onClose={p.onClose} panelClassName="lab-dialog un-entry-dialog"><motion.button whileTap={reduced?undefined:{scale:0.96}} transition={reduced?instantMotion:INTERACTION_SPRING} className="un-entry-back" onClick={()=>workKind?setWorkKind(null):setMode(null)}><ArrowLeft size={16}/>뒤로</motion.button>{workKind?<WorkSearch key={workKind} kind={workKind} onSelect={pickWork}/>:<div className="un-entry-options"><motion.button {...optionItemMotion(0)} onClick={()=>setWorkKind('movie')}><Clapperboard size={25}/><span><strong>영화·드라마</strong><small>마음에 남은 장면</small></span><ArrowUpRight size={18}/></motion.button><motion.button {...optionItemMotion(1)} onClick={()=>setWorkKind('book')}><BookOpen size={25}/><span><strong>책</strong><small>오래 간직하고 싶은 문장</small></span><ArrowUpRight size={18}/></motion.button></div>}</AccessibleDialog>:<AccessibleDialog open={!p.paused} title={p.editing?"티끌 수정":"오늘을 남겨요"} hideTitle onClose={dismiss} panelClassName={`lab-dialog lab-story-dialog un-story-v2${editor?' is-writing':''}${mode==='text'&&!image?' is-note':''}`}>
    <div className="lab-story-stage">
     <div className="lab-story-viewport">
      {image?<><div className="lab-story-photo-backdrop" aria-hidden="true" style={{backgroundImage:`url(${JSON.stringify(image)})`}}/><img className="lab-story-photo" src={image} alt="선택한 티끌 사진"/></>:mode==='camera'&&!p.editing?<CameraSurface key={cameraAttempt} active onCapture={photo=>prepare(photo,'camera')} onFallback={()=>nativeCamera.current?.click()}/>:<div className="un-note-backdrop" aria-hidden="true"><span>오늘의 한 페이지</span><i/></div>}

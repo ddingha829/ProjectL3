@@ -65,7 +65,7 @@ export default function UnifiedNavigation({
                   animate={reduced||!isActive?{scale:1,y:0}:{scale:[0.86,1.16,1],y:[0,-2.5,0]}}
                   transition={reduced?instantMotion:INTERACTION_SPRING}
                 >
-                  <Icon aria-hidden="true" size={22} strokeWidth={1.7}/>
+                  <Icon aria-hidden="true" size={22} strokeWidth={isActive?2.05:1.7}/>
                 </motion.span>
                 <span>{label}</span>
               </motion.button>

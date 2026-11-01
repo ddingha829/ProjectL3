@@ -25,6 +25,9 @@ const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 티끌';
 const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
+// Korean Peninsula overview scale for the fast zoom-in entrance animation.
+const KOREA_OVERVIEW_CENTER:[number,number]=[36.35,127.85];
+const KOREA_OVERVIEW_ZOOM=6.5;
 export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
@@ -35,7 +38,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const [replaying,setReplaying]=useState(false),[discoveryName,setDiscoveryName]=useState('');
  const discoveryCallback=useRef(onDiscoveryConsumed);discoveryCallback.current=onDiscoveryConsumed;
  const [tier,setTier]=useState<MapTier>('dong'),[regional,setRegional]=useState<Partial<Record<WideMapTier,DongCollection>>>({}),[regionError,setRegionError]=useState('');
- const userMoved=useRef(false),autoLocated=useRef(false);
+ const userMoved=useRef(false),autoLocated=useRef(false),introFlown=useRef(false),programmaticFly=useRef(false);
  const reduceMotion=useMotionPreference();
  const focusedRef=useRef(focused);focusedRef.current=focused;
  const notificationFocusRef=useRef('');
@@ -81,15 +84,32 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   revealRaf.current=requestAnimationFrame(frame);
  };
  useEffect(()=>{
-  let gone=false,resize:ResizeObserver|undefined;setReady(false);setFailed(false);
+  let gone=false,resize:ResizeObserver|undefined,cleanupHostInteraction:(()=>void)|undefined;setReady(false);setFailed(false);
   void import('leaflet').then(L=>{
    if(gone||!host.current)return;engine.current=L;
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
    const nearby=currentPoint&&!compact&&!current.current.onPick&&!focusedLog?currentPoint:null;
-   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM);
+   const targetCenter:[number,number]=nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99];
+   const targetZoom=compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM;
+   const playPeninsulaIntro=!compact&&!current.current.onPick&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
+   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(
+    playPeninsulaIntro?KOREA_OVERVIEW_CENTER:targetCenter,
+    playPeninsulaIntro?KOREA_OVERVIEW_ZOOM:targetZoom
+   );
    map.current=m;
    userMoved.current=false;
-   m.on('dragstart zoomstart',()=>{userMoved.current=true;});
+   programmaticFly.current=false;
+   introFlown.current=!playPeninsulaIntro;
+   const markUserGesture=()=>{userMoved.current=true;programmaticFly.current=false;};
+   const hostEl=host.current;
+   hostEl.addEventListener('pointerdown',markUserGesture,{passive:true});
+   hostEl.addEventListener('wheel',markUserGesture,{passive:true});
+   cleanupHostInteraction=()=>{
+    hostEl.removeEventListener('pointerdown',markUserGesture);
+    hostEl.removeEventListener('wheel',markUserGesture);
+   };
+   m.on('dragstart zoomstart',()=>{if(!programmaticFly.current)userMoved.current=true;});
+   m.on('moveend',()=>{programmaticFly.current=false;});
    const gray=m.createPane('scratch-base');gray.style.zIndex='200';gray.classList.add('scratch-base-pane');
    panes.current=[1,2,3,4].map(level=>{const pane=m.createPane(`scratch-color-${level}`);pane.style.zIndex=String(240+level);pane.style.pointerEvents='none';pane.style.clipPath='path("M 0 0")';pane.classList.add('scratch-color-pane');pane.dataset.level=String(level);return pane;});
    const boundaryPane=m.createPane('scratch-boundaries');boundaryPane.style.zIndex='350';
@@ -100,8 +120,27 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    m.on('click',event=>{const callback=current.current.onPick;if(callback)callback({id:`point-${event.latlng.lat.toFixed(5)}-${event.latlng.lng.toFixed(5)}`,name:'지도에서 고른 장소',area:'선택한 위치',lat:event.latlng.lat,lng:event.latlng.lng});});
    resize=new ResizeObserver(()=>{m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
   }).catch(()=>{if(!gone)setFailed(true);});
-  return()=>{gone=true;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
+  return()=>{gone=true;cleanupHostInteraction?.();cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
  },[compact,scopeKey]);
+ useEffect(()=>{
+  const m=map.current;
+  if(!ready||!revealed||!m||compact||onPick||introFlown.current)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){introFlown.current=true;return;}
+  const timer=setTimeout(()=>{
+   if(!map.current||userMoved.current||introFlown.current)return;
+   introFlown.current=true;
+   const focusPlace=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
+   const destCenter:[number,number]=currentPoint&&!focusedLog
+    ?[currentPoint.lat,currentPoint.lng]
+    :focusPlace
+     ?[focusPlace.lat,focusPlace.lng]
+     :[37.55,126.99];
+   const destZoom=focusedLog?14.25:CITY_VIEW_ZOOM;
+   programmaticFly.current=true;
+   map.current.flyTo(destCenter,destZoom,{animate:true,duration:0.92,easeLinearity:0.16});
+  },90);
+  return()=>clearTimeout(timer);
+ },[ready,revealed,compact,onPick,focusedLog,currentPoint]);
  useEffect(()=>{
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
   for(const log of located){
@@ -117,7 +156,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   }
  },[geometry,markerContent,ready,people]);
  useEffect(()=>{setFocused(focusedLog||'');},[focusedLog,scopeKey]);
- useEffect(()=>{if(!focusedLog){notificationFocusRef.current='';return;}const m=map.current,place=logs.find(log=>log.id===focusedLog)?.place;if(!ready||!m||!place)return;const key=`${focusedLog}:${place.lat}:${place.lng}`;if(notificationFocusRef.current===key)return;notificationFocusRef.current=key;m.flyTo([place.lat,place.lng],Math.max(14.25,m.getZoom()),{animate:!matchMedia('(prefers-reduced-motion:reduce)').matches,duration:.65});},[focusedLog,ready,logs]);
+ useEffect(()=>{if(!focusedLog){notificationFocusRef.current='';return;}const m=map.current,place=logs.find(log=>log.id===focusedLog)?.place;if(!ready||!m||!place)return;const key=`${focusedLog}:${place.lat}:${place.lng}`;if(notificationFocusRef.current===key)return;notificationFocusRef.current=key;introFlown.current=true;programmaticFly.current=true;m.flyTo([place.lat,place.lng],Math.max(14.25,m.getZoom()),{animate:!matchMedia('(prefers-reduced-motion:reduce)').matches,duration:.65});},[focusedLog,ready,logs]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!ready||!m||!L||!currentPoint)return;
   const point=L.circleMarker([currentPoint.lat,currentPoint.lng],{radius:7,color:'#fff',weight:2,fillColor:'#ff4500',fillOpacity:1,className:'scratch-current-location',interactive:false}).addTo(m);
@@ -154,9 +193,14 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   const m=map.current,L=engine.current;if(!discoveryLog||!ready||!revealed||!boundaries||!m||!L||onPick||compact)return;
   const dong=coverage.dongs.find(region=>region.count===1&&region.logIds.includes(discoveryLog)),log=current.current.logs.find(row=>row.id===discoveryLog);
   if(!dong||!log?.place){discoveryCallback.current?.();return;}
-  setDiscoveryName(dong.feature.properties.label);autoLocated.current=true;locationRequest.current++;setLocating(false);locateIcon.current?.stopAnimation();
-  m.setView([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:false});
+  setDiscoveryName(dong.feature.properties.label);autoLocated.current=true;introFlown.current=true;locationRequest.current++;setLocating(false);locateIcon.current?.stopAnimation();
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduced){
+   programmaticFly.current=true;
+   m.flyTo([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:true,duration:0.9,easeLinearity:0.18});
+  }else{
+   m.setView([log.place.lat,log.place.lng],Math.max(MAP_DONG_ZOOM,m.getZoom()),{animate:false});
+  }
   const glow=reduced?null:L.geoJSON(dong.feature as unknown as FeatureCollection,{pane:'scratch-boundaries',interactive:false,style:{className:'scratch-discovery-area',color:'#ef632e',fillColor:'#ef632e',weight:1,opacity:0,fillOpacity:0}}).addTo(m);
   const ring=reduced?null:L.circleMarker([log.place.lat,log.place.lng],{pane:'scratch-boundaries',interactive:false,className:'scratch-discovery-point',color:'#ef632e',fillColor:'#ef632e',radius:10,weight:2,opacity:0,fillOpacity:0}).addTo(m);
   const timer=setTimeout(()=>{setDiscoveryName('');discoveryCallback.current?.();},4000);
@@ -171,7 +215,18 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(request!==locationRequest.current)return;setLocating(false);
    const lat=position.coords.latitude,lng=position.coords.longitude;
    if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){locateIcon.current?.stopAnimation();setLocationError('현재 위치를 확인하지 못했어요. 다시 눌러주세요.');return;}
-   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;if(m&&(!automatic||!userMoved.current))m.setView([lat,lng],automatic?CITY_VIEW_ZOOM:m.getZoom(),{animate:!automatic&&!matchMedia('(prefers-reduced-motion: reduce)').matches});
+   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;
+   if(m&&(!automatic||!userMoved.current)){
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const targetZoom=automatic?CITY_VIEW_ZOOM:Math.max(m.getZoom(),CITY_VIEW_ZOOM);
+    if(!reduced){
+     introFlown.current=true;
+     programmaticFly.current=true;
+     m.flyTo([lat,lng],targetZoom,{animate:true,duration:0.88,easeLinearity:0.18});
+    }else{
+     m.setView([lat,lng],targetZoom,{animate:false});
+    }
+   }
   },error=>{
    if(request!==locationRequest.current)return;setLocating(false);locateIcon.current?.stopAnimation();
    setLocationError(error.code===1?'위치 권한을 허용하면 현재 위치를 볼 수 있어요.':'현재 위치를 확인하지 못했어요. 잠시 후 다시 눌러주세요.');
