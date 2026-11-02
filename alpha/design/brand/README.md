@@ -1,8 +1,8 @@
 # ticgle — approved direction A
 
 Rounded, gently italic lowercase wordmark; lowercase t and detached speck app
-symbol. Source artwork was generated from the approved A board. Sources stay
-outside public; run `node scripts/generate-ticgle-icons.mjs` for deployment sizes.
+symbol. Source artwork was generated from the approved A board. Generated references stay outside public. Clean SVG masters in public/brand
+retain the approved silhouettes without raster specks. Run `node scripts/generate-ticgle-icons.mjs` for deployment sizes.
 
 UI accent: #F4511E. Small accent text uses #B83A15 in light mode (5.75:1 on white)
 and #FF9673 in dark mode (9.40:1 on #08080A). Existing user-created card palettes
