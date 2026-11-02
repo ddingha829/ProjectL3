@@ -6,8 +6,8 @@ function fixture(reduced=false,off=false){let value,initialized=false,effect,cle
  globalThis.matchMedia=()=>media;globalThis.document={documentElement:{dataset:off?{motion:'off'}:{}}};globalThis.setTimeout=(fn,ms)=>{timers.set(++id,{fn,at:time+ms});return id;};globalThis.clearTimeout=id=>timers.delete(id);globalThis.__startup={state(initial){if(!initialized){value=initial;initialized=true;}return[value,v=>value=v];},effect(fn){if(!effect)effect=fn;}};
  const render=()=>useStartupAnimation();const current=render();cleanup=effect();return {current,render,media,cleanup,timers,tick(ms){time+=ms;for(const [i,t]of timers)if(t.at<=time){timers.delete(i);t.fn();}}};}
 try{
- let f=fixture();assert.equal(f.render().complete,false);checks++;f.tick(1500);assert.equal(f.render().complete,false);checks++;f.current.finish();assert.equal(f.render().complete,true);checks++;assert.equal(f.render().complete,true);checks++;f.cleanup();assert.equal(f.timers.size,0);checks++;
- f=fixture();f.tick(1700);assert.equal(f.render().complete,true);checks++;f.cleanup();
+ let f=fixture();assert.equal(f.render().complete,false);checks++;f.tick(2000);assert.equal(f.render().complete,false);checks++;f.current.finish();assert.equal(f.render().complete,true);checks++;assert.equal(f.render().complete,true);checks++;f.cleanup();assert.equal(f.timers.size,0);checks++;
+ f=fixture();f.tick(2200);assert.equal(f.render().complete,true);checks++;f.cleanup();
  f=fixture(true);assert.equal(f.render().complete,true);checks++;f.cleanup();
  f=fixture(false,true);assert.equal(f.render().complete,true);checks++;f.cleanup();
  f=fixture();f.media.matches=true;f.media.dispatchEvent(new Event('change'));assert.equal(f.render().complete,true);checks++;f.cleanup();

@@ -15,8 +15,8 @@ const strokes=[
 ];
 export default function LoadingWordmark({startup=false,onComplete}:{startup?:boolean;onComplete?:()=>void}={}){
  const id=useId().replace(/:/g,'');
- return <svg className="ticgle-wordmark ticgle-loading-wordmark" data-startup={startup||undefined} style={{'--pen-finish-delay':startup?'1.38s':'.68s'} as CSSProperties} onAnimationEnd={event=>{if(event.animationName==='ticgle-pen-finish')onComplete?.();}} viewBox="0 0 1935 813" width={460} height={193} role="img" aria-label="티끌 ticgle">
-  <defs>{strokes.map((pen,i)=><mask key={i} id={`${id}-pen-${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="1935" height="813"><g fill="none" stroke="white" strokeLinecap="round" strokeLinejoin="round">{pen.map((s,j)=><path key={j} className="ticgle-pen-stroke" d={s.d} strokeDasharray={s.length} strokeWidth={s.width} style={{'--pen-length':s.length,'--pen-delay':startup?'.5s':`${s.delay}s`,'--pen-duration':startup?'.88s':`${s.duration}s`} as CSSProperties}/>)}</g><rect className="ticgle-pen-finish" width="1935" height="813" fill="white"/></mask>)}</defs>
+ return <svg className="ticgle-wordmark ticgle-loading-wordmark" data-startup={startup||undefined} style={{'--pen-finish-delay':startup?'1.88s':'.68s'} as CSSProperties} onAnimationEnd={event=>{if(event.animationName==='ticgle-pen-finish')onComplete?.();}} viewBox="0 0 1935 813" width={460} height={193} role="img" aria-label="티끌 ticgle">
+  <defs>{strokes.map((pen,i)=><mask key={i} id={`${id}-pen-${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="1935" height="813"><g fill="none" stroke="white" strokeLinecap="round" strokeLinejoin="round">{pen.map((s,j)=><path key={j} className="ticgle-pen-stroke" d={s.d} strokeDasharray={s.length} strokeWidth={s.width} style={{'--pen-length':s.length,'--pen-delay':startup?'.5s':`${s.delay}s`,'--pen-duration':startup?'1.38s':`${s.duration}s`} as CSSProperties}/>)}</g><rect className="ticgle-pen-finish" width="1935" height="813" fill="white"/></mask>)}</defs>
   {loadingWordmarkPaths.map((d,i)=><path key={i} d={d} fill="#F4511E" fillRule="evenodd" mask={`url(#${id}-pen-${i})`} aria-hidden="true"/>)}
  </svg>;
 }
