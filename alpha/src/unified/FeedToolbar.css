@@ -42,3 +42,13 @@
 .un-feed-toolbar.is-search-open .flc-search-toggle:hover{background:transparent}
 
 .un-feed-toolbar.is-search-open .flc-search-field{padding-inline:6px 8px}
+/* Search anchors the bar; secondary tools retain their 44px touch targets. */
+.un-feed-toolbar .un-feed-search-slot{flex:1 1 110px;min-width:70px;width:auto}
+.un-feed-toolbar .flc-search-toggle{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:0 12px;color:var(--muted)}
+.un-feed-toolbar .un-feed-search-label{display:block;white-space:nowrap;font-size:12px;font-weight:500}
+.un-feed-toolbar .un-feed-toolbar-space{display:none}
+.un-feed-toolbar.is-search-open .flc-search-toggle{width:44px;padding:0;justify-content:center}.un-feed-toolbar.is-search-open .un-feed-search-label{display:none}
+.un-feed-toolbar.is-view-open .un-feed-search-slot{flex:1 1 44px;min-width:44px}.un-feed-toolbar.is-view-open .un-feed-search-label{display:none}.un-feed-toolbar.is-view-open .flc-search-toggle{padding:0;justify-content:center}
+.un-feed-filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 10px;min-width:0}
+.un-feed-filter-chips button{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:7px 11px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 15%,var(--line));border-radius:13px;color:var(--accent-ink);font-size:11px;overflow-wrap:anywhere;text-align:left;cursor:pointer}.un-feed-filter-chips svg{flex:none}.un-feed-filter-chips button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:360px){.un-feed-toolbar .un-feed-search-label{font-size:11px}.un-feed-toolbar .flc-search-toggle{gap:5px;padding-inline:8px}.un-feed-filter>.flc-tool-trigger{padding-inline:8px}}

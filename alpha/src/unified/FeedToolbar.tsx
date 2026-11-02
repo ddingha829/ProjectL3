@@ -106,7 +106,7 @@ export default function FeedToolbar({
             onMouseLeave={()=>search.current?.stopAnimation()}
           >
             <AnimatedSearch ref={search} size={19}/>
-            <span className="un-feed-search-label" aria-hidden="true">검색</span>
+            <span className="un-feed-search-label" aria-hidden="true">티끌 검색</span>
             {query&&!searchOpen&&<i aria-hidden="true"/>}
           </motion.button>
           <div id={id} className="flc-search-field" aria-hidden={!searchOpen} inert={!searchOpen}>
@@ -271,6 +271,12 @@ export default function FeedToolbar({
           {close=><>{library(close)}</>}
         </CompactPopover>
       </div>
+      {(query||filtered)&&<div className="un-feed-filter-chips" aria-label="적용한 검색 조건">
+        {query&&<button type="button" onClick={()=>onQueryChange('')} aria-label="검색어 조건 해제">검색: {query}<X size={12} aria-hidden="true"/></button>}
+        {category!=='all'&&<button type="button" onClick={()=>onCategoryChange('all')} aria-label="카테고리 조건 해제">{categories.find(([value])=>value===category)?.[1]||category}<X size={12} aria-hidden="true"/></button>}
+        {sort!=='recent'&&<button type="button" onClick={()=>onSortChange('recent')}>오래된순<X size={12} aria-hidden="true"/></button>}
+        {photosOnly&&<button type="button" onClick={()=>onPhotosOnlyChange(false)}>사진 있는 티끌<X size={12} aria-hidden="true"/></button>}
+      </div>}
     </>
   );
 }
