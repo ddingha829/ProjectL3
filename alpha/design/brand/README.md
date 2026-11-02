@@ -14,7 +14,7 @@ safe-area padding. Older assets remain for already-open clients. Installed iOS
 home-screen icons may retain the previous artwork until the OS refreshes them.
 
 Shared loading handwriting: `LoadingWordmark` groups the original SVG contours
-into six letters and reveals all letters simultaneously with pen masks over 1 second.
+into six letters and waits 0.2 seconds, then reveals all letters simultaneously over 0.6 seconds (0.8 seconds total).
 Used by startup, authentication transition, full-record loading (map/collection/studio),
 and the map tile entrance. Small inline/pagination loaders keep their compact indicators. CSS runs once,
 with no timers, fetches or delay to app readiness. Reduced motion reveals the full
