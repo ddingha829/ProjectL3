@@ -12,9 +12,9 @@ import './InteractionPolish.css';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import {cardView} from './cardView';
 import {countDongLogs,dongRings,loadDongBoundaries,type DongCollection,type DongCount} from './adminDong';
-import {createMapRevealMask} from './mapRevealMask';
+import {paddedMaskFrame,createMapRevealMask} from './mapRevealMask';
 import {simpleMapLayer} from './simpleMapLayer';
-import {loadMapRegions,mapTierForZoom,mapRevealStyle,MAP_DONG_ZOOM,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
+import {loadMapRegions,regionsInBounds,mapTierForZoom,mapRevealStyle,MAP_DONG_ZOOM,MAP_TIER_LABEL,regionalCoverage,type MapTier,type WideMapTier,type MapViewport} from './mapRegions';
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
@@ -34,6 +34,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const locationRequest=useRef(0),locateIcon=useRef<LocateFixedIconHandle>(null),replayIcon=useRef<RotateCcwIconHandle>(null);
  const [replaying,setReplaying]=useState(false),[discoveryName,setDiscoveryName]=useState('');
  const discoveryCallback=useRef(onDiscoveryConsumed);discoveryCallback.current=onDiscoveryConsumed;
+ const [paintBounds,setPaintBounds]=useState<[number,number,number,number]|null>(null);
  const [tier,setTier]=useState<MapTier>('dong'),[regional,setRegional]=useState<Partial<Record<WideMapTier,DongCollection>>>({}),[regionError,setRegionError]=useState('');
  const userMoved=useRef(false),autoLocated=useRef(false);
  const reduceMotion=useMotionPreference();
@@ -55,12 +56,21 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   return()=>{gone=true;};
  },[geometry,scopeKey,retry]);
  useEffect(()=>{if(boundaries)current.current.onCoverageChange?.(coverage.dongs);},[coverage,boundaries]);
+ useEffect(()=>{
+  if(!ready||!revealed||onPick||!located.length||regional.district)return;let gone=false;
+  const preload=()=>{void loadMapRegions('district').then(data=>{if(!gone)setRegional(previous=>previous.district?previous:{...previous,district:data});}).catch(()=>{/* Demand loading retains the normal retry/error UI. */});};
+  const idle=typeof window.requestIdleCallback==='function'?window.requestIdleCallback(preload,{timeout:1200}):null;
+  const timer=idle===null?setTimeout(preload,300):null;
+  return()=>{gone=true;if(idle!==null)window.cancelIdleCallback(idle);if(timer!==null)clearTimeout(timer);};
+ },[ready,revealed,onPick,regional.district,geometry]);
  const zooming=useRef(false),initialReveal=useRef(false);
+ const displayBounds=(m:Leaflet.Map):[number,number,number,number]=>{const origin=m.containerPointToLayerPoint([0,0]),size=m.getSize(),frame=paddedMaskFrame({x:origin.x,y:origin.y,width:size.x,height:size.y}),sw=m.layerPointToLatLng([frame.x,frame.y+frame.height]),ne=m.layerPointToLatLng([frame.x+frame.width,frame.y]);return [sw.lng,sw.lat,ne.lng,ne.lat];};
  const redraw=()=>{
   if(zooming.current)return;
   const m=map.current;if(!m)return;
+  const visibleRegions=regionsInBounds(current.current.dongs,displayBounds(m));
   for(const pane of panes.current){
-   const level=Number(pane.dataset.level),dongs=current.current.dongs.filter(d=>d.level===level);
+   const level=Number(pane.dataset.level),dongs=visibleRegions.filter(d=>d.level===level);
    if(!dongs.length){pane.style.opacity='0';pane.dataset.dongs='';continue;}
    const origin=m.containerPointToLayerPoint([0,0]),size=m.getSize(),projection=m.getPixelOrigin();
    const key=[m.getZoom(),projection.x,projection.y,...dongs.map(d=>d.feature.properties.code)].join(':');
@@ -104,7 +114,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    m.on('zoomanim',(event:Leaflet.ZoomAnimEvent)=>{const panePosition=m.containerPointToLayerPoint([0,0]).multiplyBy(-1),origin=m.project(event.center,event.zoom).subtract(m.getSize().divideBy(2)).add(panePosition).round();projectMasks(event.zoom,origin,true);});
    m.on('zoom',()=>{if(zooming.current)projectMasks(m.getZoom(),m.getPixelOrigin());});
    m.on('zoomend',()=>{zooming.current=false;for(const mask of revealMasks.current.values())mask.resume();update();});
-   const detailZoom=()=>{if(gone||map.current!==m||!host.current?.isConnected)return;const zoom=m.getZoom(),visible=zoom>=LOG_DETAIL_ZOOM,nextTier=current.current.onPick?'dong':mapTierForZoom(zoom);setTier(nextTier);setShowLogDetails(visible);if(host.current){host.current.dataset.logDetails=String(visible);host.current.dataset.zoom=String(zoom);host.current.dataset.regionTier=nextTier;}if(!visible)setFocused('');const bounds=m.getBounds(),center=m.getCenter();current.current.onViewportChange?.({zoom,bounds:[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()],center:[center.lat,center.lng]});};m.on('zoomend moveend resize',detailZoom);detailZoom();
+   const detailZoom=()=>{if(gone||map.current!==m||!host.current?.isConnected)return;const zoom=m.getZoom(),visible=zoom>=LOG_DETAIL_ZOOM,nextTier=current.current.onPick?'dong':mapTierForZoom(zoom);setTier(nextTier);setShowLogDetails(visible);setPaintBounds(displayBounds(m));if(host.current){host.current.dataset.logDetails=String(visible);host.current.dataset.zoom=String(zoom);host.current.dataset.regionTier=nextTier;}if(!visible)setFocused('');const bounds=m.getBounds(),center=m.getCenter();current.current.onViewportChange?.({zoom,bounds:[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()],center:[center.lat,center.lng]});};m.on('zoomend moveend resize',detailZoom);detailZoom();
    m.on('click',event=>{const callback=current.current.onPick;if(callback)callback({id:`point-${event.latlng.lat.toFixed(5)}-${event.latlng.lng.toFixed(5)}`,name:'지도에서 고른 장소',area:'선택한 위치',lat:event.latlng.lat,lng:event.latlng.lng});});
    resize=new ResizeObserver(()=>{m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
   }).catch(()=>{if(!gone)setFailed(true);});
@@ -146,11 +156,12 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
 
  useEffect(()=>{
   const m=map.current,L=engine.current,outline=outlines.current;if(!ready||!m||!L||!outline)return;
-  const activeLevels=new Set(activeCoverage.dongs.map(d=>d.level));
+  const displayRegions=paintBounds?regionsInBounds(activeCoverage.dongs,paintBounds):activeCoverage.dongs;
+  const activeLevels=new Set(displayRegions.map(d=>d.level));
   for(const [level,layer] of colorLayers.current)if(!activeLevels.has(level as DongCount['level'])){layer.remove();colorLayers.current.delete(level);}
   for(const level of activeLevels)if(!colorLayers.current.has(level))colorLayers.current.set(level,(onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:`scratch-color-${level}`}):simpleMapLayer(L,{pane:`scratch-color-${level}`})).addTo(m));
   outline.clearLayers();
-  for(const dong of activeCoverage.dongs){
+  for(const dong of displayRegions){
    const label=document.createElement('span');label.textContent=`${dong.feature.properties.label} · 티끌 ${dong.count}개`;
    const polygon=L.geoJSON({type:'FeatureCollection',features:[dong.feature]} as FeatureCollection,{pane:'scratch-boundaries',interactive:!onPick,style:{className:`scratch-dong-outline ${dong.feature.properties.code===highlightedDong?'is-recent':''}`,weight:.75,opacity:.15,fillOpacity:0,bubblingMouseEvents:false}}).addTo(outline);
    if(!onPick)polygon.eachLayer(shape=>{
@@ -163,7 +174,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    polygon.on('click',()=>current.current.onDistrictSelect?.(dong));
   }
   redraw();
- },[activeCoverage,ready,onPick,highlightedDong]);
+ },[activeCoverage,ready,onPick,highlightedDong,paintBounds]);
  useEffect(()=>{if(!ready||!revealed)return;if(!initialReveal.current){initialReveal.current=true;replay();}else{progress.current=1;redraw();}},[activeCoverage,ready,revealed]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!discoveryLog||!ready||!revealed||!boundaries||!m||!L||onPick||compact)return;

@@ -7,9 +7,9 @@ export type MapViewport={zoom:number;bounds:[number,number,number,number];center
 export const MAP_TIER_LABEL:Record<MapTier,string>={dong:'동네',district:'시·군·구'};
 const thresholds:Record<MapTier,readonly number[]>={dong:[1,2,3,4],district:[1,4,10,20]};
 const cache=new Map<WideMapTier,Promise<DongCollection>>();
-// Keep neighborhood coverage (and its log markers) until zooming out past 12.
+// Keep neighborhood coverage (and its log markers) until zooming out past 11.
 // Large districts should only replace it once there is enough city context.
-export const MAP_DONG_ZOOM=12;
+export const MAP_DONG_ZOOM=11;
 export const mapTierForZoom=(zoom:number):MapTier=>zoom>=MAP_DONG_ZOOM?'dong':'district';
 // Blend revealed map tiles into the dark canvas rather than exposing their full
 // daytime brightness. Density still increases saturation at each count level.
@@ -42,6 +42,12 @@ export function loadMapRegions(tier:WideMapTier):Promise<DongCollection>{
  let request=cache.get(tier);
  if(!request){request=fetch(`/maps/admin-regions/20261001/${tier}-display.json`).then(response=>{if(!response.ok)throw new Error('지역 경계를 불러오지 못했어요.');return response.json();}).catch(error=>{cache.delete(tier);throw error;});cache.set(tier,request);}
  return request;
+}
+/** Conservative culling of display geometry, including longitude wrapping. */
+export function regionsInBounds<T extends {feature:{bbox:readonly number[]}}>(regions:T[],bounds:readonly number[]):T[]{
+ const [west,south,east,north]=bounds,span=east-west;
+ const start=((west+180)%360+360)%360-180,end=start+span;
+ return regions.filter(({feature:{bbox:b}})=>b[1]<=north&&b[3]>=south&&(span>=360||[-360,0,360].some(shift=>b[0]+shift<=end&&b[2]+shift>=start)));
 }
 export function logsInViewport(logs:LabLog[],viewport:MapViewport):LabLog[]{
  const [west,south,east,north]=viewport.bounds;
