@@ -17,7 +17,10 @@ Shared loading handwriting: `LoadingWordmark` groups the original SVG contours
 into six letters and waits 0.2 seconds, then reveals all letters simultaneously over 0.6 seconds (0.8 seconds total).
 Used by startup, authentication transition, full-record loading (map/collection/studio),
 and the map tile entrance. Small inline/pagination loaders keep their compact indicators. CSS runs once,
-with no timers, fetches or delay to app readiness. Reduced motion reveals the full
+with no extra fetches. First startup alone uses a 0.5s lead-in and 1s reveal and waits
+for both data and its animation-end event before opening the app. A 1.7s fallback
+prevents a missed event from locking the entrance; later loaders are not gated.
+`node scripts/test-startup-animation.mjs` covers this gate and cleanup. Reduced motion reveals the full
 logo immediately. Unique mask IDs allow multiple instances. Regenerate contour
 data with `node scripts/generate-loading-wordmark.mjs` after changing the master;
 review the pen centerlines as well. Static snapshots during and after the reveal were

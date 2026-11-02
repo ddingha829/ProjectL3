@@ -44,6 +44,7 @@ import UnifiedNavigation from './UnifiedNavigation';
 import UnifiedChrome from './UnifiedChrome';
 import useAppViewport from './useAppViewport';
 import LoadingWordmark from '@/components/LoadingWordmark';
+import {useStartupAnimation} from './useStartupAnimation';
 import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
 import NicknameSetup from './NicknameForm';
 import PreviewLogin from './PreviewLogin';
@@ -71,7 +72,7 @@ const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||
 function Avatar({person}:{person:Person}){return <span className="un-avatar" style={{'--person':person.color} as CSSProperties}>{person.initial}</span>;}
 export default function UnifiedApp(){return <AuthMotionProvider><UnifiedAppContent/></AuthMotionProvider>;}
 function UnifiedAppContent(){
- const authMotion=useAuthMotion();
+ const authMotion=useAuthMotion(),startupAnimation=useStartupAnimation();
  const pwa=usePwaInstall(),reduced=useMotionPreference();
  const {state,commit,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[composeKept,setComposeKept]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
  const session=identity?.name||null;
@@ -141,7 +142,7 @@ function UnifiedAppContent(){
  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!groupIntroOpen&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
- if(!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><LoadingWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
+ if(!startupAnimation.complete||!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><LoadingWordmark startup={!startupAnimation.complete} onComplete={startupAnimation.finish}/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
  if(needsNickname)return <NicknameSetup busy={nicknameBusy} onSave={saveNickname} onLogout={()=>void logout()} initialName={actor.name!==identity?.email?.split('@')[0]&&actor.name!=='나'?actor.name:''}/>;
  const readable=state.logs.filter(l=>l.authorId==='me'||audienceIds(l).some(id=>circles.some(c=>c.id===id)));
