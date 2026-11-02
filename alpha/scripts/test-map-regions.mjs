@@ -7,13 +7,16 @@ await fs.mkdir('.test-data',{recursive:true});
 const outfile=path.resolve('.test-data/map-regions.mjs');
 await build({entryPoints:['src/social/mapRegions.ts'],outfile,bundle:true,platform:'node',format:'esm',logLevel:'silent'});
 const {mapTierForZoom,mapRevealStyle,mapRegionMask,regionStrength,regionalCoverage,logsInViewport}=await import(pathToFileURL(outfile));
-const read=async tier=>JSON.parse(await fs.readFile(`public/maps/admin-regions/20261001/${tier}.json`,'utf8'));
+const read=async tier=>JSON.parse(await fs.readFile(`public/maps/admin-regions/20261001/${tier}-display.json`,'utf8'));
 const [district,dong]=await Promise.all([read('district'),fs.readFile('public/maps/admin-dong/20261001/11710.json','utf8').then(JSON.parse)]);
 const log=(id,lat,lng)=>({id,place:{lat,lng},createdAt:1});
 const jamsil=log('jamsil',37.5133,127.1025),seongsu=log('seongsu',37.5445,127.0557),busan=log('busan',35.1588,129.1603),tokyo=log('tokyo',35.68,139.76);
+const requireSource=await fs.readFile('public/maps/admin-regions/20261001/district.json','utf8');
 const checks=[];
 const test=(name,run)=>{run();checks.push(name);};
 test('neighborhoods persist through zoom 12 and only wider views use districts',()=>assert.deepEqual([15,13,12.75,12.5,12.25,12,11.75,11.5,11,8,2].map(mapTierForZoom),['dong','dong','dong','dong','dong','dong','district','district','district','district','district']));
+test('display regions retain all identities and source bounds with fewer vertices',()=>{const source=JSON.parse(requireSource),byCode=new Map(source.features.map(f=>[f.properties.code,f]));assert.equal(district.features.length,byCode.size);const vertices=j=>j.features.reduce((n,f)=>n+JSON.stringify(f.geometry.coordinates).split('[').length,0);assert.ok(vertices(district)<vertices(source)*.6);for(const f of district.features){const old=byCode.get(f.properties.code);assert.deepEqual(f.properties,old.properties);assert.deepEqual(f.bbox,old.bbox);const rings=f.geometry.type==='Polygon'?f.geometry.coordinates:f.geometry.coordinates.flat();for(const ring of rings){assert.ok(ring.length>=4);assert.deepEqual(ring[0],ring.at(-1));}}});
+
 test('Jamsil resolves to its dong and Songpa',()=>{assert.match(regionalCoverage([jamsil],dong,'dong').dongs[0].feature.properties.name,/잠실/);assert.match(regionalCoverage([jamsil],district,'district').dongs[0].feature.properties.name,/송파구/);});
 test('nearby and distant districts never merge into a province or country',()=>assert.equal(regionalCoverage([jamsil,seongsu,busan],district,'district').dongs.length,3));
 test('overseas logs do not paint an entire country',()=>assert.equal(regionalCoverage([tokyo],district,'district').dongs.length,0));

@@ -55,7 +55,9 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   return()=>{gone=true;};
  },[geometry,scopeKey,retry]);
  useEffect(()=>{if(boundaries)current.current.onCoverageChange?.(coverage.dongs);},[coverage,boundaries]);
+ const zooming=useRef(false),initialReveal=useRef(false);
  const redraw=()=>{
+  if(zooming.current)return;
   const m=map.current;if(!m)return;
   for(const pane of panes.current){
    const level=Number(pane.dataset.level),dongs=current.current.dongs.filter(d=>d.level===level);
@@ -81,7 +83,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   revealRaf.current=requestAnimationFrame(frame);
  };
  useEffect(()=>{
-  let gone=false,resize:ResizeObserver|undefined;setReady(false);setFailed(false);
+  let gone=false,resize:ResizeObserver|undefined;initialReveal.current=false;setReady(false);setFailed(false);
   void import('leaflet').then(L=>{
    if(gone||!host.current)return;engine.current=L;
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
@@ -95,12 +97,18 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    const boundaryPane=m.createPane('scratch-boundaries');boundaryPane.style.zIndex='350';
    (current.current.onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}):simpleMapLayer(L,{pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'})).addTo(m).on('tileerror',()=>{if(!gone)setFailed(true);}).on('tileload',()=>{if(!gone){setFailed(false);markPainted();}});
    L.control.zoom({position:'bottomleft'}).addTo(m);markers.current=L.layerGroup().addTo(m);outlines.current=L.layerGroup().addTo(m);
-   const update=()=>{if(gone)return;cancelAnimationFrame(raf.current);raf.current=requestAnimationFrame(redraw);};m.on('move zoom viewreset resize',update);
+   const update=()=>{if(gone||zooming.current)return;cancelAnimationFrame(raf.current);raf.current=requestAnimationFrame(redraw);};m.on('move viewreset resize',update);
+   let zoomOrigin=m.getPixelOrigin(),sourceZoom=m.getZoom();
+   m.on('zoomstart',()=>{zooming.current=true;cancelAnimationFrame(raf.current);zoomOrigin=m.getPixelOrigin().clone();sourceZoom=m.getZoom();for(const mask of revealMasks.current.values())mask.freeze();});
+   const projectMasks=(zoom:number,origin:Leaflet.Point,animate=false)=>{const scale=m.getZoomScale(zoom,sourceZoom),offset=zoomOrigin.multiplyBy(scale).subtract(origin);for(const mask of revealMasks.current.values())mask.reproject(scale,offset.x,offset.y,animate);};
+   m.on('zoomanim',(event:Leaflet.ZoomAnimEvent)=>{const panePosition=m.containerPointToLayerPoint([0,0]).multiplyBy(-1),origin=m.project(event.center,event.zoom).subtract(m.getSize().divideBy(2)).add(panePosition).round();projectMasks(event.zoom,origin,true);});
+   m.on('zoom',()=>{if(zooming.current)projectMasks(m.getZoom(),m.getPixelOrigin());});
+   m.on('zoomend',()=>{zooming.current=false;for(const mask of revealMasks.current.values())mask.resume();update();});
    const detailZoom=()=>{if(gone||map.current!==m||!host.current?.isConnected)return;const zoom=m.getZoom(),visible=zoom>=LOG_DETAIL_ZOOM,nextTier=current.current.onPick?'dong':mapTierForZoom(zoom);setTier(nextTier);setShowLogDetails(visible);if(host.current){host.current.dataset.logDetails=String(visible);host.current.dataset.zoom=String(zoom);host.current.dataset.regionTier=nextTier;}if(!visible)setFocused('');const bounds=m.getBounds(),center=m.getCenter();current.current.onViewportChange?.({zoom,bounds:[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()],center:[center.lat,center.lng]});};m.on('zoomend moveend resize',detailZoom);detailZoom();
    m.on('click',event=>{const callback=current.current.onPick;if(callback)callback({id:`point-${event.latlng.lat.toFixed(5)}-${event.latlng.lng.toFixed(5)}`,name:'지도에서 고른 장소',area:'선택한 위치',lat:event.latlng.lat,lng:event.latlng.lng});});
    resize=new ResizeObserver(()=>{m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
   }).catch(()=>{if(!gone)setFailed(true);});
-  return()=>{gone=true;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
+  return()=>{gone=true;zooming.current=false;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
  },[compact,scopeKey]);
  useEffect(()=>{
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
@@ -156,7 +164,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   }
   redraw();
  },[activeCoverage,ready,onPick,highlightedDong]);
- useEffect(()=>{if(ready&&revealed)replay();},[activeCoverage,ready,revealed]);
+ useEffect(()=>{if(!ready||!revealed)return;if(!initialReveal.current){initialReveal.current=true;replay();}else{progress.current=1;redraw();}},[activeCoverage,ready,revealed]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!discoveryLog||!ready||!revealed||!boundaries||!m||!L||onPick||compact)return;
   const dong=coverage.dongs.find(region=>region.count===1&&region.logIds.includes(discoveryLog)),log=current.current.logs.find(row=>row.id===discoveryLog);

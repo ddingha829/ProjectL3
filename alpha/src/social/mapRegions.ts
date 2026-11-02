@@ -40,7 +40,7 @@ export function regionalCoverage(logs:LabLog[],collection:DongCollection,tier:Ma
 }
 export function loadMapRegions(tier:WideMapTier):Promise<DongCollection>{
  let request=cache.get(tier);
- if(!request){request=fetch(`/maps/admin-regions/20261001/${tier}.json`).then(response=>{if(!response.ok)throw new Error('지역 경계를 불러오지 못했어요.');return response.json();}).catch(error=>{cache.delete(tier);throw error;});cache.set(tier,request);}
+ if(!request){request=fetch(`/maps/admin-regions/20261001/${tier}-display.json`).then(response=>{if(!response.ok)throw new Error('지역 경계를 불러오지 못했어요.');return response.json();}).catch(error=>{cache.delete(tier);throw error;});cache.set(tier,request);}
  return request;
 }
 export function logsInViewport(logs:LabLog[],viewport:MapViewport):LabLog[]{

@@ -13,7 +13,14 @@ try{
  renderer.update('z11',{...view,x:400},path);assert.equal(images.length,2);assert.equal(window.style.maskImage,original);assert.equal(window.style.left,'-256px');renderer.update('z11',{...view,x:410},path);assert.equal(images.length,2);images[1].ready();assert.equal(window.dataset.maskCommits,'2');assert.equal(window.style.left,'144px');assert.equal(Number.parseFloat(window.style.left)+Number.parseFloat(tiles.style.left),0);
  const stable=window.style.maskImage;renderer.update('z12',{...view,x:400},path);const stale=images[2].onload;renderer.update('z13',{...view,x:400},path);stale();assert.equal(window.style.maskImage,stable);images[3].ready();assert.equal(window.dataset.maskCommits,'3');
  const newTiles=new Element();pane.append(newTiles);renderer.update('z13',{...view,x:400},path);assert.equal(newTiles.parent,window);assert.equal(newTiles.style.left,'-144px');
- renderer.update('z14',view,path);const late=images[4].onload;renderer.dispose();late();assert.equal(pane.children.length,0);
+ const beforeZoom=paths,beforeImages=images.length,frozenImage=window.style.maskImage;
+ renderer.freeze();
+ for(let frame=0;frame<60;frame++){renderer.reproject(.5,20,-10);renderer.update('zoom-frame-'+frame,view,path);}
+ assert.equal(paths,beforeZoom,'zoom frames never rebuild polygon geometry');assert.equal(images.length,beforeImages,'zoom frames never decode another mask');assert.equal(window.style.maskImage,frozenImage,'existing colour mask stays visible');
+ assert.equal(window.style.left,'92px');assert.equal(window.style.width,`${(view.width+512)*.5}px`);assert.equal(Number.parseFloat(window.style.left)+Number.parseFloat(tiles.style.left),0,'tile contents stay in layer coordinates');
+ renderer.resume();renderer.freeze();renderer.reproject(2,-40,20);assert.equal(window.style.left,'144px','another zoom starts from the last displayed frame');renderer.resume();renderer.update('z14',view,path);assert.equal(paths,beforeZoom+1);assert.equal(images.length,beforeImages+1);images.at(-1).ready();assert.equal(window.style.width,`${view.width+512}px`);
+ renderer.update('z15',view,path);const late=images.at(-1).onload;renderer.freeze();late();assert.equal(window.style.visibility,'visible','a cancelled decode cannot replace the visible frozen frame');renderer.resume();
+ renderer.update('z16',view,path);const afterFreeze=images.at(-1).onload;renderer.dispose();afterFreeze();assert.equal(pane.children.length,0);
  assert.ok(containsMaskViewport(paddedMaskFrame(view),{...view,x:-200,y:200}));assert.equal(containsMaskViewport(paddedMaskFrame(view),{...view,x:400}),false);
- console.log(JSON.stringify({status:'passed',checks:23,panFrames:100,maskDecodesDuringPan:0,verified:['predecode swap','pan alignment','pending reuse','stale decode ignored','late tiles aligned','unmount cleanup']}));
+ console.log(JSON.stringify({status:'passed',checks:34,zoomFrames:60,maskDecodesDuringZoom:0,panFrames:100,maskDecodesDuringPan:0,verified:['predecode swap','pan alignment','pending reuse','stale decode ignored','late tiles aligned','unmount cleanup']}));
 }finally{if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;if(oldImage===undefined)delete globalThis.Image;else globalThis.Image=oldImage;}
