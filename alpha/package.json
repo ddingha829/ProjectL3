@@ -15,7 +15,8 @@
     "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs",
     "test:viewport": "node scripts/test-app-viewport.mjs",
     "test:feed-toolbar": "node scripts/test-feed-toolbar-pinned.mjs",
-    "test:video": "node scripts/test-camera-video.mjs && node scripts/test-video-encoding.mjs && node scripts/test-video-schema.mjs"
+    "test:video": "node scripts/test-camera-video.mjs && node scripts/test-video-encoding.mjs && node scripts/test-video-schema.mjs",
+    "test:auth-motion": "node scripts/test-auth-motion.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

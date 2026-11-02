@@ -46,6 +46,7 @@ import TicgleWordmark from '@/components/TicgleBrand';
 import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
 import NicknameSetup from './NicknameForm';
 import PreviewLogin from './PreviewLogin';
+import {AuthMotionProvider,useAuthMotion} from './AuthMotion';
 import AlphaSupport from './AlphaSupport';
 import CloudMembers from './CloudMembers';
 import GroupWelcome from './GroupWelcome';
@@ -67,11 +68,14 @@ import './SurfaceMotion.css';
 type Panel='alpha'|'groups'|'scope'|'settings'|'collection'|'preset'|'save-preset'|'audience'|'members'|'backup'|null;
 const displayTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||'사진으로 남긴 순간';
 function Avatar({person}:{person:Person}){return <span className="un-avatar" style={{'--person':person.color} as CSSProperties}>{person.initial}</span>;}
-export default function UnifiedApp(){
+export default function UnifiedApp(){return <AuthMotionProvider><UnifiedAppContent/></AuthMotionProvider>;}
+function UnifiedAppContent(){
+ const authMotion=useAuthMotion();
  const pwa=usePwaInstall(),reduced=useMotionPreference();
  const {state,commit,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,clearError,ready,identity,mode:accountMode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,inviteCode,joinCode,join,removeMember}=useUnifiedState(),[view,setView]=useState<Destination>('logs'),[lastCircle,setLastCircle]=useState('daily'),[panel,setPanel]=useState<Panel>(null),[selectedId,setSelectedId]=useState(''),[composing,setComposing]=useState(false),[composeKept,setComposeKept]=useState(false),[editing,setEditing]=useState<UnifiedLog|null>(null),[work,setWork]=useState<Work>(),[initialWork,setInitialWork]=useState<Work>(),[photoOpen,setPhotoOpen]=useState(false),[toast,setToast]=useState('');
  const session=identity?.name||null;
  const {scope,setScope,scopeReady}=useRememberedScope(session?(accountMode==='cloud'&&identity?.id?`cloud:${identity.id}`:accountMode==='demo'?'demo':''):'',ready,state?.circles.filter(c=>c.members.includes('me')).map(c=>c.id)||[]);
+ useEffect(()=>authMotion?.setHostReady(Boolean(ready&&session&&scopeReady)),[ready,session,scopeReady,authMotion?.setHostReady]);
  const needsNickname=accountMode==='cloud'&&state?.nicknameConfigured!==true&&syncStatus==='idle';
  const [mode,setMode]=useState<'cards'|'list'|'calendar'>('cards'),[section,setSection]=useState<'all'|'saved'|'collections'|'taste'>('all'),[query,setQuery]=useState(''),[category,setCategory]=useState('all'),[selecting,setSelecting]=useState(false),[picked,setPicked]=useState<string[]>([]),[collectionName,setCollectionName]=useState(''),[collection,setCollection]=useState<Collection|null>(null),[cardDraft,setCardDraft]=useState<EditorialStyle|null>(null),[designOpen,setDesignOpen]=useState(false),[presetName,setPresetName]=useState(''),[comment,setComment]=useState(''),[backupProgress,setBackupProgress]=useState<number|null>(null),[guideReplay,setGuideReplay]=useState(0),[guideActive,setGuideActive]=useState(false),[district,setDistrict]=useState<{name:string;ids:string[]}|null>(null);
  const [sort,setSort]=useState<'recent'|'old'>('recent'),[photosOnly,setPhotosOnly]=useState(false);

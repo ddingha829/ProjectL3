@@ -1,5 +1,9 @@
 'use client';
 import {useRef,useState} from 'react';
+import {motion} from 'motion/react';
+import {useMotionPreference} from '@/lib/useMotionPreference';
+import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
+import {useAuthMotion} from './AuthMotion';
 import {normalizeNickname} from './nickname';
 import TicgleWordmark from '@/components/TicgleBrand';
 import './AuthScreen.css';
@@ -14,5 +18,6 @@ export function NicknameForm({initialName='',onSave,busy=false,first=false}:{ini
  </form>;
 }
 export default function NicknameSetup({onSave,onLogout,busy,initialName}:{onSave:(name:string)=>Promise<void>;onLogout:()=>void;busy:boolean;initialName?:string}){
- return <main className="un-login un-auth-screen"><section className="un-auth-panel"><TicgleWordmark/><h1 className="un-auth-heading">어떻게 불러드릴까요?</h1><NicknameForm first initialName={initialName} onSave={onSave} busy={busy}/><button className="un-nickname-logout" disabled={busy} onClick={onLogout}>다른 계정으로 로그인</button></section></main>;
+ const reduced=useMotionPreference(),authMotion=useAuthMotion();
+ return <main className="un-login un-auth-screen"><motion.section className="un-auth-panel" initial={reduced?false:{y:18,opacity:0}} animate={{y:authMotion?.active?18:0,opacity:authMotion?.active?0:1}} transition={reduced?instantMotion:INTERACTION_SPRING}><TicgleWordmark/><h1 className="un-auth-heading">어떻게 불러드릴까요?</h1><NicknameForm first initialName={initialName} onSave={onSave} busy={busy}/><button className="un-nickname-logout" disabled={busy} onClick={onLogout}>다른 계정으로 로그인</button></motion.section></main>;
 }
