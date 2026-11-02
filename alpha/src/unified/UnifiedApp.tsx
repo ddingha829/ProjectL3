@@ -114,7 +114,12 @@ function UnifiedAppContent(){
   if(top&&!top.classList.contains('un-detail-dialog')){top.querySelector<HTMLButtonElement>(':scope > .quick-dialog-header > button')?.click();return false;}
   return !cardDraft||confirm('적용하지 않은 디자인 변경을 닫을까요?');
  },onChange:id=>{setSelectedId(id);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setComment('');setPanel(null);setWork(undefined);if(!id){setEditing(null);requestAnimationFrame(()=>scrollPageTo({top:savedScroll.current.get(route)||0,behavior:'instant'}));}}});
- const notifications=useNotifications({userId:identity?.id||'',ready:ready&&!needsNickname&&accountMode==='cloud',logs:state?.logs||[],refresh:async()=>{await ensureFullRecords(true);},onNotice:setToast,onOpen:target=>{
+ const notifications=useNotifications({userId:identity?.id||'',ready:ready&&scopeReady&&!needsNickname&&accountMode==='cloud',logs:state?.logs||[],refresh:async()=>{await ensureFullRecords(true);},onNotice:setToast,onOpen:target=>{
+  if(target.kind==='compose'){
+   if(composing)return true;
+   if((editing||cardDraft)&&!confirm('편집 중인 내용을 닫고 새 티끌을 남길까요?'))return true;
+   setSelectedId('');setEditing(null);setCardDraft(null);setDesignOpen(false);setPhotoOpen(false);setPanel(null);setWork(undefined);startCompose();return true;
+  }
   const log=state?.logs.find(item=>item.id===target.logId),group=state?.circles.find(item=>item.id===target.scope&&item.members.includes('me'));
   const personal=target.kind==='log'&&target.scope==='mine'&&log?.authorId==='me';
   if(!log||!personal&&(!group||!audienceIds(log).includes(group.id)))return false;
@@ -205,7 +210,7 @@ function UnifiedAppContent(){
  {work&&<WorkDetail work={work} logs={readable} actor={actor} people={state.people} intents={state.intents||[]} onClose={()=>setWork(undefined)} onLog={openLog} onRecord={()=>record(work)} onToggleIntent={intend}/>}
  <FirstUseGuide context={groupIntroPending||panel||photoOpen||designOpen||work||editing||notificationGuide.open?null:composing?'compose':selected?mine?'own-detail':'detail':view==='studio'?'studio':view==='map'?'map':view==='mosaic'?'mosaic':'today'} replay={guideReplay} owned={!!mine} shared={!!selected&&audienceIds(selected).length>0} onActiveChange={setGuideActive}/>
  <GroupWelcome open={groupIntroOpen} pending={syncStatus!=='idle'} join={joinCode} onLater={()=>{commit(s=>({...s,groupIntroSeen:true}));}} onJoined={id=>{commit(s=>({...s,groupIntroSeen:true}));changeScope(id);setView('logs');notify('모임에 참여했어요. 함께 남긴 티끌을 확인해보세요.');}}/>
- <NotificationOnboarding open={notificationGuide.open} onLater={notificationGuide.dismiss} onConfigure={()=>{notificationGuide.dismiss();setPanel('settings');requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById('notification-heading');heading?.scrollIntoView({block:'start',behavior:'instant'});heading?.focus({preventScroll:true});}));}}/>
+ <NotificationOnboarding remindersReady={notifications.health.remindersReady} open={notificationGuide.open} onLater={notificationGuide.dismiss} onConfigure={()=>{notificationGuide.dismiss();setPanel('settings');requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById('notification-heading');heading?.scrollIntoView({block:'start',behavior:'instant'});heading?.focus({preventScroll:true});}));}}/>
  <AlphaSupport open={panel==='alpha'} onClose={()=>setPanel(null)} view={view} mode={accountMode==='cloud'?'cloud':'demo'} sync={syncStatus}/>
  {backupProgress!==null&&<div className="un-backup-overlay" role="dialog" aria-modal="true" aria-label="백업 저장 중"><div><Download aria-hidden="true" size={26}/><strong aria-live="polite">{backupProgress}%</strong><progress value={backupProgress} max={100}/><span>내 기록을 파일로 묶고 있어요</span></div></div>}
  {accountMode==='cloud'&&syncStatus==='saving'&&<div className="un-cloud-saving" role="status">서버에 저장 중<span/></div>}

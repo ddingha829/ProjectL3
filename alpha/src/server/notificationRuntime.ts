@@ -18,6 +18,6 @@ export async function notificationUser(request:Request){
 }
 export async function notificationHealth(){
  const env=settings(),keys=!!env.WEB_PUSH_PUBLIC_KEY&&!!env.WEB_PUSH_PRIVATE_KEY;
- try{const {data,error}=await notificationAdmin().rpc('l2u_push_health');return {available:!error&&data?.version>=7,publicKey:keys?env.WEB_PUSH_PUBLIC_KEY:null,pushReady:keys&&!error&&data?.webhook===true};}
+ try{const {data,error}=await notificationAdmin().rpc('l2u_push_health');return {available:!error&&data?.version>=7,publicKey:keys?env.WEB_PUSH_PUBLIC_KEY:null,pushReady:keys&&!error&&data?.webhook===true,remindersReady:!error&&data?.reminders===true};}
  catch{return {available:false,publicKey:null,pushReady:false};}
 }

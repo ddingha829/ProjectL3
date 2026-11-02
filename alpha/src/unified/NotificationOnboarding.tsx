@@ -3,11 +3,11 @@ import {ArrowUpRight,Bell,MapPin} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import './NotificationOnboarding.css';
 
-export default function NotificationOnboarding({open,onLater,onConfigure}:{open:boolean;onLater:()=>void;onConfigure:()=>void}){
+export default function NotificationOnboarding({open,onLater,onConfigure,remindersReady=false}:{remindersReady?:boolean;open:boolean;onLater:()=>void;onConfigure:()=>void}){
  return <AccessibleDialog open={open} onClose={onLater} title="알림을 켜둘까요?" closeLabel="나중에 알림 설정" scrollBody panelClassName="lab-dialog un-notification-onboarding">
   <p className="un-notification-intro">원하는 소식만 골라 받아보세요.</p>
   <div className="un-notification-features">
-   <div><span><Bell size={20} strokeWidth={1.6} aria-hidden="true"/></span><div><strong>모임 활동 소식</strong><p>새 티끌·내 카드의 댓글은 바로, 좋아요는 매시간 모아 알려요.</p></div></div>
+   <div><span><Bell size={20} strokeWidth={1.6} aria-hidden="true"/></span><div><strong>모임 활동 소식</strong><p>새 티끌·내 카드의 댓글은 바로, 좋아요는 매시간 모아 알려요.{remindersReady&&<> 매일 낮 12시·오후 3시·6시(한국 시간)에는 티끌 남기기도 권해드려요.</>}</p></div></div>
    <div><span><MapPin size={20} strokeWidth={1.6} aria-hidden="true"/></span><div><strong>내 주변의 기록</strong><p>앱을 볼 때, 약 100m 안의 기록을 알려요.</p></div></div>
   </div>
   <p className="un-notification-intro-note">근처 알림은 6시간에 한 번, 같은 장소는 다시 알리지 않아요.</p>

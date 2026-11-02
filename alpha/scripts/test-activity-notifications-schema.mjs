@@ -70,5 +70,40 @@ try{
  await admin();await db.exec("update l2u_private.push_jobs set finished_at=now()-interval '8 days' where kind<>'new-log';update l2u_private.like_events set batch_at=now()-interval '3 days';select l2u_private.prune_activity_notifications()");
  assert(await count('like_events')===0&&await count('push_jobs',"kind<>'new-log'")===0,'temporary activity data is pruned without deleting cards or comments');
  assert((await db.query('select count(*)::int n from public.l2u_comments')).rows[0].n>0,'notification cleanup leaves original comments intact');
+
+ // Scheduled prompts: all fixtures remain inside the isolated PGlite database.
+ await admin();
+ const slot=async at=>(await db.query('select l2u_private.reminder_slot($1::timestamptz) slot',[at])).rows[0].slot;
+ for(const h of ['03','06','09'])assert(await slot('2030-01-02T'+h+':00:00Z')!==null,'KST reminder slot '+h+' UTC');
+ for(const at of ['2030-01-02T02:59:59Z','2030-01-02T03:15:00Z','2030-01-02T15:00:00Z'])assert(await slot(at)===null,'outside slot is ignored '+at);
+ assert(await slot('2030-01-02T03:14:59Z')!==null,'scheduler tolerates a short delay without backfilling');
+ assert((await rpc('l2u_push_health')).reminders===false,'SQL installation alone does not advertise an active scheduler');
+ const enqueue=async at=>{await admin();return (await db.query('select l2u_private.queue_reminder_push($1::timestamptz) n',[at])).rows[0].n;};
+ await actor(3);await rpc('l2u_push_subscribe',[JSON.stringify(subscription(3))]);await rpc('l2u_notification_preferences',[true,false]);
+ await actor(0);await apply([{kind:'group',id:crypto.randomUUID(),name:'Second group',capacity:10,expected:0}]);
+ assert(await enqueue('2030-01-02T03:00:00Z')===2,'one job per opted-in device even with two groups; groupless member excluded');
+ assert(await enqueue('2030-01-02T03:05:00Z')===0,'repeated scheduler run cannot duplicate a slot');
+ assert(await enqueue('2030-01-02T06:00:00Z')===2&&await enqueue('2030-01-02T09:00:00Z')===2,'three distinct daytime prompts');
+ assert(await enqueue('2030-01-02T12:00:00Z')===0,'no nighttime prompt');
+ assert((await claim()).length===0,'future reminder cannot be sent early');
+ await admin();await db.exec("update l2u_private.push_jobs set batch_at=now()-interval '1 minute',available_at=now()-interval '1 minute' where kind='reminder' and batch_at='2030-01-02T03:00:00Z'");
+ assert((await claim(ids[1])).length===0,'user-triggered activity dispatch cannot send unrelated reminders');
+ jobs=await claim();assert(jobs.length===2&&jobs.every(j=>j.payload.kind==='reminder'&&j.payload.url==='/?compose=1'&&j.payload.title==='티끌 남겨볼까요?'&&j.payload.expiresAt>Date.now()),'scheduled prompts include compose target and bounded expiry');
+ assert((await claim()).length===0,'concurrent claim cannot resend a leased reminder');await finish(jobs);
+ await admin();await db.exec("update l2u_private.push_jobs set batch_at=now()-interval '31 minutes',available_at=now()-interval '31 minutes' where kind='reminder' and batch_at='2030-01-02T06:00:00Z'");
+ assert((await claim()).length===0,'stale prompt expires rather than arriving later');
+ await actor(0);await rpc('l2u_notification_preferences',[false,false]);
+ assert(await enqueue('2030-01-03T03:00:00Z')===0,'existing activity switch also disables scheduled prompts');
+ await actor(0);await rpc('l2u_notification_preferences',[true,false]);
+ assert(await enqueue('2030-01-03T03:00:00Z')===2,'reenabling applies to the next slot');
+ await admin();await db.query('update public.l2u_members set active=false where user_id=$1',[ids[0]]);
+ await db.exec("update l2u_private.push_jobs set batch_at=now()-interval '2 minutes',available_at=now()-interval '2 minutes' where kind='reminder' and batch_at='2030-01-03T03:00:00Z'");
+ assert((await claim()).length===0,'delivery rechecks that recipient still belongs to an active group');
+ await actor(0);blocked=false;try{await db.query('select l2u_private.queue_reminder_push()');}catch{blocked=true;}assert(blocked,'authenticated client cannot schedule prompts');
+ await admin();await db.exec("update l2u_private.push_jobs set finished_at=now()-interval '8 days' where kind='reminder';select l2u_private.prune_activity_notifications()");
+ assert(await count('push_jobs',"kind='reminder'")===0,'reminder history uses existing seven-day cleanup');
+ await admin();await db.exec("create schema cron;create table cron.job(jobname text,active boolean,schedule text);insert into cron.job values('l2u-writing-reminders',true,'0 3,6,9 * * *')");
+ assert((await rpc('l2u_push_health')).reminders===true,'health advertises reminders only with active matching schedule');
+ await db.exec("update cron.job set active=false");assert((await rpc('l2u_push_health')).reminders===false,'paused scheduler is not advertised');
  console.log(JSON.stringify({status:'passed',checks:checks.length,names:checks,liveRequests:0}));
 }catch(error){console.log(JSON.stringify({status:'failed',message:error.message,code:error.code,checks}));process.exitCode=1;}finally{await db.close();}

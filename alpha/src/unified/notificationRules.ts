@@ -4,10 +4,11 @@ export const NEARBY_RADIUS_METERS=100;
 export const NEARBY_COOLDOWN_MS=6*60*60*1000;
 export type NotificationPreferences={newLogs:boolean;nearby:boolean;lastNearbyAt:number|null;seenLogIds:string[]};
 export const EMPTY_NOTIFICATION_PREFERENCES:NotificationPreferences={newLogs:false,nearby:false,lastNearbyAt:null,seenLogIds:[]};
-export type NotificationTarget={kind:'map'|'log';logId:string;scope:string};
+export type NotificationTarget={kind:'map'|'log';logId:string;scope:string}|{kind:'compose'};
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function notificationTarget(url:string):NotificationTarget|null{
  try{const parsed=new URL(url,'https://local.invalid');if(parsed.origin!=='https://local.invalid'||parsed.pathname!=='/')return null;
+  if(parsed.search==='?compose=1')return {kind:'compose'};
   const scope=parsed.searchParams.get('scope')||'',logId=parsed.searchParams.get('focus')||parsed.searchParams.get('log')||'';
   if(!uuid.test(logId))return null;
   if(parsed.searchParams.get('view')==='map'&&uuid.test(scope)&&parsed.searchParams.has('focus'))return {kind:'map',logId,scope};

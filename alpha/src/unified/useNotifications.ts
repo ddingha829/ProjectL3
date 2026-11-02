@@ -5,7 +5,7 @@ import {EMPTY_NOTIFICATION_PREFERENCES,nearbyCandidate,notificationTarget,NEARBY
 import {notificationRequest,webPushApplicationKey} from './notificationClient';
 
 type Options={userId:string;ready:boolean;logs:LabLog[];refresh:()=>Promise<void>;onOpen:(target:NotificationTarget)=>boolean;onNotice:(text:string)=>void};
-type Health={available:boolean;pushReady:boolean;publicKey:string|null};
+type Health={available:boolean;pushReady:boolean;publicKey:string|null;remindersReady?:boolean};
 type Device={nearby:boolean;connected:boolean;lastNearbyAt?:number;seen?:string[]};
 const deviceKey=(id:string)=>'l2_notification_device_v1:'+id;
 function readDevice(id:string):Device{try{const d=JSON.parse(localStorage.getItem(deviceKey(id))||'{}');return {nearby:d.nearby===true,connected:d.connected===true,lastNearbyAt:typeof d.lastNearbyAt==='number'?d.lastNearbyAt:undefined,seen:Array.isArray(d.seen)?d.seen.filter((id:unknown)=>typeof id==='string'):[]};}catch{return {nearby:false,connected:false};}}
@@ -18,7 +18,7 @@ export default function useNotifications(options:Options){
  const load=useCallback(async()=>{
   const id=live.current.userId;if(!id||!live.current.ready)return;
   const result=await notificationRequest('settings');if(live.current.userId!==id)return;
-  setHealth({available:result.available===true,pushReady:result.pushReady===true,publicKey:result.publicKey||null});
+  setHealth({available:result.available===true,pushReady:result.pushReady===true,publicKey:result.publicKey||null,remindersReady:result.remindersReady===true});
   if(result.preferences)setPrefs(result.preferences);setLoaded(true);
  },[]);
  useEffect(()=>{let active=true;setLoaded(false);setPrefs(EMPTY_NOTIFICATION_PREFERENCES);setHealth({available:false,pushReady:false,publicKey:null});setMessage('');localBlocked.current.clear();nearbyAttemptAt.current=0;
@@ -31,14 +31,14 @@ export default function useNotifications(options:Options){
   void navigator.serviceWorker.getRegistration('/').then(reg=>{if(!active||!reg)return;registrationRef.current=reg;reg.active?.postMessage({type:'L2_NOTIFICATION_ACCOUNT',ownerId:owner});});
   return()=>{active=false;};
  },[owner]);
- const receive=useCallback(async(target:NotificationTarget)=>{try{await live.current.refresh();}finally{setPending(target);}},[]);
+ const receive=useCallback(async(target:NotificationTarget)=>{if(target.kind==='compose'){setPending(target);return;}try{await live.current.refresh();}finally{setPending(target);}},[]);
  useEffect(()=>{if(!owner||!('serviceWorker' in navigator))return;
   const message=(event:MessageEvent)=>{if(event.data?.type!=='L2_NOTIFICATION_OPEN'||event.data.ownerId!==live.current.userId)return;const target=notificationTarget(event.data.url);if(target)void receive(target);};
   navigator.serviceWorker.addEventListener('message',message);
   const target=notificationTarget('/'+location.search);if(target&&handledUrl.current!==location.search){handledUrl.current=location.search;void receive(target);}
   return()=>navigator.serviceWorker.removeEventListener('message',message);
  },[owner,receive]);
- useEffect(()=>{if(!pending||!owner)return;const opened=live.current.onOpen(pending);setPending(null);if(!opened)live.current.onNotice('공유가 해제됐거나 더 이상 볼 수 없는 기록이에요.');const url=new URL(location.href);url.searchParams.delete('focus');url.searchParams.delete('log');history.replaceState(history.state,'',url);},[pending,owner]);
+ useEffect(()=>{if(!pending||!owner)return;const opened=live.current.onOpen(pending);setPending(null);if(!opened)live.current.onNotice('공유가 해제됐거나 더 이상 볼 수 없는 기록이에요.');const url=new URL(location.href);url.searchParams.delete('focus');url.searchParams.delete('log');url.searchParams.delete('compose');history.replaceState(history.state,'',url);},[pending,owner]);
  const save=useCallback(async(next:Pick<NotificationPreferences,'newLogs'|'nearby'>)=>{
   if(requesting.current)return;requesting.current=true;setBusy(true);setMessage('');const id=live.current.userId;
   try{

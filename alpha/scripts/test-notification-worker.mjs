@@ -29,3 +29,17 @@ await emit('push',{data:{json:()=>({...payload,kind:'likes',url:ownUrl})}});asse
 const before=shown.length;await emit('push',{data:{json:()=>({...payload,url:`/?view=map&scope=mine&focus=${log}`})}});assert.equal(shown.length,before,'personal-scope URLs cannot be used as map targets');
 await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:null}});await emit('push',{data:{json:()=>({...payload,kind:'likes',url:ownUrl})}});assert.equal(shown.length,before,'activity pushes remain account-isolated after logout');
 console.log('Notification worker: account isolation, group/map/personal navigation, activity kinds and retry tags passed.');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:user}});
+const reminder={...payload,kind:'reminder',url:'/?compose=1',expiresAt:Date.now()+60000};
+await emit('push',{data:{json:()=>reminder}});
+assert.equal(shown.at(-1).data.url,'/?compose=1');assert.equal(shown.at(-1).data.kind,'reminder');
+const reminderCount=shown.length,reminderTag=shown.at(-1).tag;
+await emit('push',{data:{json:()=>({...reminder,expiresAt:Date.now()-1})}});
+await emit('push',{data:{json:()=>({...reminder,expiresAt:undefined})}});
+assert.equal(shown.length,reminderCount,'late or malformed reminders are never displayed');
+await emit('push',{data:{json:()=>reminder}});assert.equal(shown.at(-1).tag,reminderTag);
+await emit('notificationclick',{notification:{close(){},data:{url:'/?compose=1',ownerId:user}}});
+assert.equal(messages.at(-1).url,'/?compose=1','running app receives compose action');
+windows=[];await emit('notificationclick',{notification:{close(){},data:{url:'/?compose=1',ownerId:user}}});
+assert.equal(opened.at(-1),'/?compose=1','closed app launches with compose action');
+console.log('Reminder worker: expiry, stable retry tag and cold/warm compose navigation passed.');
