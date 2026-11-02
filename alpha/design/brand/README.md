@@ -14,11 +14,11 @@ safe-area padding. Older assets remain for already-open clients. Installed iOS
 home-screen icons may retain the previous artwork until the OS refreshes them.
 
 Loading-only handwriting: `LoadingWordmark` groups the original SVG contours
-into six letters and reveals them with pen masks over 1.48 seconds. CSS runs once,
+into six letters and reveals all letters simultaneously with pen masks over 0.6 seconds. CSS runs once,
 with no timers, fetches or delay to app readiness. Reduced motion reveals the full
 logo immediately. Unique mask IDs allow multiple instances. Regenerate contour
 data with `node scripts/generate-loading-wordmark.mjs` after changing the master;
-review the pen centerlines as well. Static snapshots at 0.2/0.65/1.6 seconds were
+review the pen centerlines as well. Static snapshots during and after the reveal were
 inspected; the final even-odd paths retain the original counters of g and e.
 
 Validation: source/output artwork inspected; image dimensions and alpha checked;
