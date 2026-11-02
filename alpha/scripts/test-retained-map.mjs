@@ -1,0 +1,11 @@
+import {build} from 'esbuild';import {pathToFileURL} from 'node:url';import path from 'node:path';import assert from 'node:assert/strict';
+await build({entryPoints:['src/unified/RetainedMapExplorer.tsx'],outfile:'.test-data/retained-map.mjs',bundle:true,platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'retention-harness',setup(b){b.onResolve({filter:/^react$|^react\/jsx-runtime$|^\.\/MapExplorer$|^\.\/FeedLoading$/},a=>({path:a.path,namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},({path:p})=>({contents:p==='react'?'export const useRef=v=>globalThis.__mapRef(v);':p==='react/jsx-runtime'?'export const Fragment="fragment";export const jsx=(type,props)=>({type,props});export const jsxs=jsx;':p==='./MapExplorer'?'export default "map-explorer";':'export const RecordLoading="record-loading";'}));}}]});
+const {default:Retained}=await import(pathToFileURL(path.resolve('.test-data/retained-map.mjs')));let ref;globalThis.__mapRef=v=>ref||(ref={current:v});
+const props={active:false,loading:false,busy:false,onRetry(){},logs:[{id:'original'}],scopeKey:'mine',dark:false};assert.equal(Retained(props),null);
+const shown=Retained({...props,active:true}),map=shown.props.children;assert.equal(map.type,'map-explorer');
+const hidden=Retained({...props,logs:[],scopeKey:'different'});assert.equal(hidden.props.hidden,true);assert.equal(hidden.props.inert,true);assert.deepEqual(hidden.props.children.props.logs,props.logs);assert.equal(hidden.props.children.props.active,false);
+const back=Retained({...props,active:true});assert.equal(back.type,shown.type);assert.equal(back.props.children.type,map.type);assert.equal(back.props.children.props.scopeKey,'mine');
+assert.equal(Retained({...props,active:true,loading:true}).props.children.type,'map-explorer');
+assert.equal(Retained({...props,active:true,loading:true,scopeKey:'another'}).type,'record-loading');
+ref=undefined;assert.equal(Retained(props),null);delete globalThis.__mapRef;
+console.log(JSON.stringify({status:'passed',checks:['no map before first visit','hidden map is inert','feed/scopes cannot overwrite hidden snapshot','same map subtree on return','same-scope refresh keeps cached map','new scope does not expose old snapshot','fresh account instance has no retained map'],liveRequests:0}));

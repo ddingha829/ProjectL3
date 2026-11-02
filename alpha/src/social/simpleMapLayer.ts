@@ -1,10 +1,11 @@
 import {VectorTile, type VectorTileFeature} from '@mapbox/vector-tile';
 import {PbfReader} from 'pbf';
+import {createMapTilePool} from './mapTilePool';
 import type * as Leaflet from 'leaflet';
 
 // Render only the map's visual hierarchy, not individual buildings or POIs.
 // Shared bounded cache deduplicates the base and four clipped colour layers.
-const tiles=new Map<string,Promise<HTMLCanvasElement>>();
+const tiles=createMapTilePool<HTMLCanvasElement>(canvas=>canvas.width*canvas.height*4);
 const VECTOR='https://vector.openstreetmap.org/shortbread_v1';
 const roads:Record<string,number>={motorway:3.6,trunk:3.1,primary:2.5,secondary:1.7,tertiary:1};
 function path(ctx:CanvasRenderingContext2D,feature:VectorTileFeature){
@@ -40,26 +41,42 @@ function paint(canvas:HTMLCanvasElement,tile:VectorTile,zoom:number,ratio:number
  };
  each('place_labels',f=>label(f));each('water_polygons_labels',f=>label(f,true));
 }
-async function render(coords:Leaflet.Coords,ratio:number){
- const key=`${coords.z}/${coords.x}/${coords.y}@${ratio}`;const prior=tiles.get(key);if(prior)return prior;
- const pending=(async()=>{
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=256*ratio;
-  try{
-   const response=await fetch(`${VECTOR}/${coords.z}/${coords.x}/${coords.y}.mvt`,{signal:AbortSignal.timeout(12000)});
-   if(!response.ok)throw new Error('Map tile unavailable');
-   paint(canvas,new VectorTile(new PbfReader(new Uint8Array(await response.arrayBuffer()))),coords.z,ratio);canvas.dataset.source='simplified-vector';
-  }catch{
-   // Preserve real geography if the vector service is temporarily unavailable.
-   await new Promise<void>((resolve,reject)=>{const image=new Image();image.crossOrigin='anonymous';image.onload=()=>{canvas.getContext('2d')!.drawImage(image,0,0,canvas.width,canvas.height);canvas.dataset.source='raster-fallback';resolve();};image.onerror=()=>reject(new Error('Map tile unavailable'));image.src=`https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;});
-  }
-  return canvas;
- })();tiles.set(key,pending);if(tiles.size>24)tiles.delete(tiles.keys().next().value!);
- try{return await pending;}catch(error){tiles.delete(key);throw error;}
+async function render(coords:Leaflet.Coords,ratio:number,signal:AbortSignal){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=256*ratio;
+ const request=new AbortController(),cancel=()=>request.abort();signal.addEventListener('abort',cancel,{once:true});
+ const timeout=setTimeout(cancel,12000);
+ try{
+  if(signal.aborted)throw new DOMException('Cancelled','AbortError');
+  const response=await fetch(`${VECTOR}/${coords.z}/${coords.x}/${coords.y}.mvt`,{signal:request.signal});
+  if(!response.ok)throw new Error('Map tile unavailable');
+  paint(canvas,new VectorTile(new PbfReader(new Uint8Array(await response.arrayBuffer()))),coords.z,ratio);canvas.dataset.source='simplified-vector';
+ }catch(error){
+  if(signal.aborted)throw error;
+  await new Promise<void>((resolve,reject)=>{
+   const image=new Image();image.crossOrigin='anonymous';const abort=()=>{clean();image.removeAttribute('src');reject(new DOMException('Cancelled','AbortError'));};
+   const clean=()=>{image.onload=null;image.onerror=null;signal.removeEventListener('abort',abort);};
+   image.onload=()=>{clean();canvas.getContext('2d')!.drawImage(image,0,0,canvas.width,canvas.height);canvas.dataset.source='raster-fallback';resolve();};
+   image.onerror=()=>{clean();reject(new Error('Map tile unavailable'));};signal.addEventListener('abort',abort,{once:true});
+   if(signal.aborted){abort();return;}image.src=`https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;
+  });
+ }finally{clearTimeout(timeout);signal.removeEventListener('abort',cancel);}
+ return canvas;
 }
 export function simpleMapLayer(L:typeof Leaflet,options:Leaflet.GridLayerOptions){
- const SimpleLayer=L.GridLayer.extend({createTile(coords:Leaflet.Coords,done:Leaflet.DoneCallback){
-  const ratio=2,canvas=document.createElement('canvas');canvas.width=canvas.height=256*ratio;
-  void render(coords,ratio).then(source=>{canvas.getContext('2d')!.drawImage(source,0,0);canvas.dataset.source=source.dataset.source;done(undefined,canvas);},error=>done(error,canvas));return canvas;
- }});
- return new (SimpleLayer as new(options:Leaflet.GridLayerOptions)=>Leaflet.GridLayer)({tileSize:256,maxNativeZoom:14,maxZoom:19,updateWhenIdle:true,keepBuffer:1,...options}) as Leaflet.GridLayer;
+ const leases=new Map<HTMLElement,()=>void>();
+ // GridLayer exposes this cancellation hook for tile implementations (as used
+ // by Leaflet's own TileLayer). Remove only unfinished obsolete zoom tiles.
+ type GridInternals={_tileZoom:number;_tiles:Record<string,{coords:Leaflet.Coords;loaded?:number;el:HTMLElement}>;_removeTile:(key:string)=>void};
+ const SimpleLayer=L.GridLayer.extend({
+  _abortLoading(this:GridInternals){for(const [key,tile]of Object.entries(this._tiles||{}))if(tile.coords.z!==this._tileZoom&&!tile.loaded)this._removeTile(key);},
+  createTile(coords:Leaflet.Coords,done:Leaflet.DoneCallback){
+   const ratio=2,canvas=document.createElement('canvas');canvas.width=canvas.height=256*ratio;
+   const lease=tiles.acquire(`${coords.z}/${coords.x}/${coords.y}@${ratio}`,coords.z,signal=>render(coords,ratio,signal));let cancelled=false;
+   leases.set(canvas,()=>{cancelled=true;lease.release();});
+   void lease.promise.then(source=>{if(cancelled)return;canvas.getContext('2d')!.drawImage(source,0,0);canvas.dataset.source=source.dataset.source;done(undefined,canvas);},error=>{if(!cancelled)done(error,canvas);});return canvas;
+  },
+ });
+ const layer=new (SimpleLayer as new(options:Leaflet.GridLayerOptions)=>Leaflet.GridLayer)({tileSize:256,maxNativeZoom:14,maxZoom:19,updateWhenIdle:true,keepBuffer:1,...options,updateWhenZooming:false});
+ layer.on('tileunload',(event:Leaflet.TileEvent)=>{leases.get(event.tile)?.();leases.delete(event.tile);});
+ layer.on('remove',()=>{for(const release of leases.values())release();leases.clear();});return layer;
 }

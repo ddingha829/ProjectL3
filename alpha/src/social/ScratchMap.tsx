@@ -18,14 +18,14 @@ import {loadMapRegions,regionsInBounds,mapTierForZoom,mapRevealStyle,MAP_DONG_ZO
 import 'leaflet/dist/leaflet.css';
 import '@/components/LogbookMap.css';
 
-type Props={pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string;discoveryLog?:string;onDiscoveryConsumed?:()=>void};
+type Props={active?:boolean;pageSwipeEdges?:boolean;logs:LabLog[];people:Person[];dark:boolean;onSelect?:(log:LabLog)=>void;onPick?:(place:Place)=>void;onDistrictSelect?:(dong:DongCount)=>void;onCoverageChange?:(dongs:DongCount[])=>void;onViewportChange?:(viewport:MapViewport)=>void;compact?:boolean;scopeKey:string;highlightedDong?:string;focusedLog?:string;discoveryLog?:string;onDiscoveryConsumed?:()=>void};
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTIONS={maxZoom:19,updateWhenIdle:true,keepBuffer:1};
 const mapTitle=(log:LabLog)=>log.title.trim()||log.place?.name||'장소 티끌';
 const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
-export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
+export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
@@ -48,7 +48,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  const markerContent=JSON.stringify(located.map(l=>[l.id,l.title,l.body,l.authorId,l.place!.name]));
  const coverage=useMemo(()=>boundaries?countDongLogs(logs,boundaries):{dongs:[],unmatched:0},[geometry,boundaries]);
  const activeCoverage=useMemo(()=>tier==='dong'||onPick?coverage:regional[tier]?regionalCoverage(logs,regional[tier]!,tier,coverage.dongs):{dongs:[],unmatched:0},[tier,onPick,coverage,regional,geometry]);
- const current=useRef({logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs});current.current={logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs};
+ const current=useRef({active,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs});current.current={active,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs};
  useEffect(()=>{if(tier==='dong'||onPick||regional[tier])return;let gone=false;setRegionError('');void loadMapRegions(tier).then(data=>{if(!gone)setRegional(previous=>({...previous,[tier]:data}));}).catch(()=>{if(!gone)setRegionError('지역 경계를 불러오지 못했어요.');});return()=>{gone=true;};},[tier,onPick,regional,retry]);
  useEffect(()=>{
   let gone=false;setBoundaries(null);setBoundaryError(false);
@@ -57,16 +57,16 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  },[geometry,scopeKey,retry]);
  useEffect(()=>{if(boundaries)current.current.onCoverageChange?.(coverage.dongs);},[coverage,boundaries]);
  useEffect(()=>{
-  if(!ready||!revealed||onPick||!located.length||regional.district)return;let gone=false;
+  if(!active||!ready||!revealed||onPick||!located.length||regional.district)return;let gone=false;
   const preload=()=>{void loadMapRegions('district').then(data=>{if(!gone)setRegional(previous=>previous.district?previous:{...previous,district:data});}).catch(()=>{/* Demand loading retains the normal retry/error UI. */});};
   const idle=typeof window.requestIdleCallback==='function'?window.requestIdleCallback(preload,{timeout:1200}):null;
   const timer=idle===null?setTimeout(preload,300):null;
   return()=>{gone=true;if(idle!==null)window.cancelIdleCallback(idle);if(timer!==null)clearTimeout(timer);};
- },[ready,revealed,onPick,regional.district,geometry]);
+ },[active,ready,revealed,onPick,regional.district,geometry]);
  const zooming=useRef(false),initialReveal=useRef(false);
  const displayBounds=(m:Leaflet.Map):[number,number,number,number]=>{const origin=m.containerPointToLayerPoint([0,0]),size=m.getSize(),frame=paddedMaskFrame({x:origin.x,y:origin.y,width:size.x,height:size.y}),sw=m.layerPointToLatLng([frame.x,frame.y+frame.height]),ne=m.layerPointToLatLng([frame.x+frame.width,frame.y]);return [sw.lng,sw.lat,ne.lng,ne.lat];};
  const redraw=()=>{
-  if(zooming.current)return;
+  if(zooming.current||!current.current.active)return;
   const m=map.current;if(!m)return;
   const visibleRegions=regionsInBounds(current.current.dongs,displayBounds(m));
   for(const pane of panes.current){
@@ -98,7 +98,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(gone||!host.current)return;engine.current=L;
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
    const nearby=currentPoint&&!compact&&!current.current.onPick&&!focusedLog?currentPoint:null;
-   const m=L.map(host.current,{dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM);
+   const m=L.map(host.current,{trackResize:false,dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM);
    map.current=m;
    userMoved.current=false;
    m.on('dragstart zoomstart',()=>{userMoved.current=true;});
@@ -107,7 +107,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    const boundaryPane=m.createPane('scratch-boundaries');boundaryPane.style.zIndex='350';
    (current.current.onPick?L.tileLayer(TILE_URL,{...TILE_OPTIONS,pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}):simpleMapLayer(L,{pane:'scratch-base',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'})).addTo(m).on('tileerror',()=>{if(!gone)setFailed(true);}).on('tileload',()=>{if(!gone){setFailed(false);markPainted();}});
    L.control.zoom({position:'bottomleft'}).addTo(m);markers.current=L.layerGroup().addTo(m);outlines.current=L.layerGroup().addTo(m);
-   const update=()=>{if(gone||zooming.current)return;cancelAnimationFrame(raf.current);raf.current=requestAnimationFrame(redraw);};m.on('move viewreset resize',update);
+   const update=()=>{if(gone||zooming.current||!current.current.active)return;cancelAnimationFrame(raf.current);raf.current=requestAnimationFrame(redraw);};m.on('move viewreset resize',update);
    let zoomOrigin=m.getPixelOrigin(),sourceZoom=m.getZoom();
    m.on('zoomstart',()=>{zooming.current=true;cancelAnimationFrame(raf.current);zoomOrigin=m.getPixelOrigin().clone();sourceZoom=m.getZoom();for(const mask of revealMasks.current.values())mask.freeze();});
    const projectMasks=(zoom:number,origin:Leaflet.Point,animate=false)=>{const scale=m.getZoomScale(zoom,sourceZoom),offset=zoomOrigin.multiplyBy(scale).subtract(origin);for(const mask of revealMasks.current.values())mask.reproject(scale,offset.x,offset.y,animate);};
@@ -116,7 +116,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    m.on('zoomend',()=>{zooming.current=false;for(const mask of revealMasks.current.values())mask.resume();update();});
    const detailZoom=()=>{if(gone||map.current!==m||!host.current?.isConnected)return;const zoom=m.getZoom(),visible=zoom>=LOG_DETAIL_ZOOM,nextTier=current.current.onPick?'dong':mapTierForZoom(zoom);setTier(nextTier);setShowLogDetails(visible);setPaintBounds(displayBounds(m));if(host.current){host.current.dataset.logDetails=String(visible);host.current.dataset.zoom=String(zoom);host.current.dataset.regionTier=nextTier;}if(!visible)setFocused('');const bounds=m.getBounds(),center=m.getCenter();current.current.onViewportChange?.({zoom,bounds:[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()],center:[center.lat,center.lng]});};m.on('zoomend moveend resize',detailZoom);detailZoom();
    m.on('click',event=>{const callback=current.current.onPick;if(callback)callback({id:`point-${event.latlng.lat.toFixed(5)}-${event.latlng.lng.toFixed(5)}`,name:'지도에서 고른 장소',area:'선택한 위치',lat:event.latlng.lat,lng:event.latlng.lng});});
-   resize=new ResizeObserver(()=>{m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
+   resize=new ResizeObserver(()=>{if(!host.current?.getClientRects().length)return;m.invalidateSize({pan:false});update();});resize.observe(host.current);setReady(true);update();
   }).catch(()=>{if(!gone)setFailed(true);});
   return()=>{gone=true;zooming.current=false;cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);resize?.disconnect();for(const mask of revealMasks.current.values())mask.dispose();revealMasks.current.clear();map.current?.remove();map.current=null;engine.current=null;markers.current=null;outlines.current=null;panes.current=[];colorLayers.current.clear();};
  },[compact,scopeKey]);
@@ -155,7 +155,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
  },[focused,geometry,markerContent,ready,people]);
 
  useEffect(()=>{
-  const m=map.current,L=engine.current,outline=outlines.current;if(!ready||!m||!L||!outline)return;
+  const m=map.current,L=engine.current,outline=outlines.current;if(!active||!ready||!m||!L||!outline)return;
   const displayRegions=paintBounds?regionsInBounds(activeCoverage.dongs,paintBounds):activeCoverage.dongs;
   const activeLevels=new Set(displayRegions.map(d=>d.level));
   for(const [level,layer] of colorLayers.current)if(!activeLevels.has(level as DongCount['level'])){layer.remove();colorLayers.current.delete(level);}
@@ -174,7 +174,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    polygon.on('click',()=>current.current.onDistrictSelect?.(dong));
   }
   redraw();
- },[activeCoverage,ready,onPick,highlightedDong,paintBounds]);
+ },[active,activeCoverage,ready,onPick,highlightedDong,paintBounds]);
  useEffect(()=>{if(!ready||!revealed)return;if(!initialReveal.current){initialReveal.current=true;replay();}else{progress.current=1;redraw();}},[activeCoverage,ready,revealed]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!discoveryLog||!ready||!revealed||!boundaries||!m||!L||onPick||compact)return;
@@ -197,13 +197,13 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
    if(request!==locationRequest.current)return;setLocating(false);
    const lat=position.coords.latitude,lng=position.coords.longitude;
    if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){locateIcon.current?.stopAnimation();setLocationError('현재 위치를 확인하지 못했어요. 다시 눌러주세요.');return;}
-   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;if(m&&(!automatic||!userMoved.current))m.setView([lat,lng],automatic?CITY_VIEW_ZOOM:m.getZoom(),{animate:!automatic&&!matchMedia('(prefers-reduced-motion: reduce)').matches});
+   locateIcon.current?.startAnimation();setCurrentPoint({lat,lng});const m=map.current;if(m&&current.current.active&&(!automatic||!userMoved.current))m.setView([lat,lng],automatic?CITY_VIEW_ZOOM:m.getZoom(),{animate:!automatic&&!matchMedia('(prefers-reduced-motion: reduce)').matches});
   },error=>{
    if(request!==locationRequest.current)return;setLocating(false);locateIcon.current?.stopAnimation();
    setLocationError(error.code===1?'위치 권한을 허용하면 현재 위치를 볼 수 있어요.':'현재 위치를 확인하지 못했어요. 잠시 후 다시 눌러주세요.');
   },{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
  };
- useEffect(()=>{if(!ready||onPick||compact||focusedLog||discoveryLog||autoLocated.current)return;autoLocated.current=true;locate(true);},[ready,onPick,compact,focusedLog]);
+ useEffect(()=>{if(!active||!ready||onPick||compact||focusedLog||discoveryLog||autoLocated.current)return;autoLocated.current=true;locate(true);},[active,ready,onPick,compact,focusedLog]);
  const selected=located.find(log=>log.id===focused),selectedPerson=selected?people.find(person=>person.id===selected.authorId):undefined;
  const appearance=selected?cardView(selected):null;
  useEffect(()=>{
@@ -212,6 +212,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   position();m.on('move zoom viewreset resize',position);
   return()=>{m.off('move zoom viewreset resize',position);};
  },[focused,geometry,ready]);
+ useEffect(()=>{const m=map.current;if(!ready||!m)return;if(!active){m.stop();cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);progress.current=1;return;}const frame=requestAnimationFrame(()=>{if(!host.current?.getClientRects().length)return;m.invalidateSize({pan:false});m.fire('moveend');redraw();});return()=>cancelAnimationFrame(frame);},[active,ready]);
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
  return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe={pageSwipeEdges?undefined:true} data-page-swipe-map={pageSwipeEdges||undefined} data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
   <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 티끌 지도'}/>

@@ -5,7 +5,7 @@ import {AnimatePresence,motion} from 'motion/react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import SurfaceToast from './SurfaceToast';
-import MapExplorer from './MapExplorer';
+import RetainedMapExplorer from './RetainedMapExplorer';
 import {Film,LoaderCircle,Plus,Settings2,ChevronDown,Check,Lock,Users,X,CalendarDays,Bookmark,FolderOpen,BookOpen,CheckSquare,ArrowUpRight,Palette,Image as ImageIcon,Pencil,Heart,Share2,LogOut,Download,HelpCircle,Sun,Moon,Monitor,FolderPlus,ArrowLeft} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import LogCalendar from '@/components/LogCalendar';
@@ -180,7 +180,7 @@ function UnifiedAppContent(){
  {pagedFeed&&(pagination.loading||pagination.error||feedHasMore)&&<div className="un-feed-pagination" ref={pagination.sentinel}>{pagination.loading?<span className="un-feed-loading-status" role="status" aria-live="polite"><LoaderCircle size={16} className="lab-spin" aria-hidden="true"/>{pagination.initial?'티끌을 불러오고 있어요':'다음 티끌 4장을 불러오고 있어요'}</span>:pagination.error?<><span role="alert">{pagination.error}</span><motion.button whileTap={reduced?undefined:{scale:.98}} transition={reduced?instantMotion:INTERACTION_SPRING} onClick={pagination.more}>다시 불러오기</motion.button></>:<span aria-hidden="true"/>}</div>}
  {!waitingForRecords&&!pagination.loading&&!pagination.error&&mode!=='calendar'&&section!=='taste'&&section!=='collections'&&!logs.length&&<BrandEmpty title={query||filterCount?'조건에 맞는 티끌이 없어요':'첫 티끌을 남겨보세요'} description={query||filterCount?'검색어를 바꾸거나 선택한 필터를 해제해보세요.':scope==='mine'?'사진 한 장, 짧은 한마디. 작은 순간부터 모아봐요.':'함께 나누고 싶은 순간을 남겨보세요.'} action={query||filterCount?'검색·필터 초기화':'티끌 남기기'} onAction={query||filterCount?resetSearch:startCompose}/>}
  </div>}
- {view==='map'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MapExplorer logs={mapLogs} people={state.people} dark={dark} scopeKey={`unified:${scope}`} focusedLog={mapFocus} discoveryLog={scope==='mine'?discoveryLog:undefined} onDiscoveryConsumed={clearDiscovery} onCompose={startCompose} onSelect={openLog} onDistrictSelect={showDong}/>)}
+ <RetainedMapExplorer key={accountMode+':'+(identity?.id||'demo')} active={view==='map'} loading={waitingForRecords} busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()} logs={mapLogs} people={state.people} dark={dark} scopeKey={`unified:${scope}`} focusedLog={mapFocus} discoveryLog={scope==='mine'?discoveryLog:undefined} onDiscoveryConsumed={clearDiscovery} onCompose={startCompose} onSelect={openLog} onDistrictSelect={showDong}/>
  {view==='mosaic'&&(waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<MosaicBoard key={scope} state={state} logs={scoped} scope={scope} actor={actor} circle={activeCircle} focusLogId={mosaicFocus} onCompose={()=>{setInitialWork(undefined);setComposing(true);}} commit={commit} onOpen={openLog}/>)}
  <div hidden={view!=='studio'}>{waitingForRecords?<RecordLoading busy={recordsBusy||syncStatus==='saving'||!error} onRetry={()=>void ensureFullRecords()}/>:<UnifiedStudio state={state} commit={commit} notify={notify}/>}</div>
  </main>
