@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {MapPin} from 'lucide-react';
+import LoadingWordmark from './LoadingWordmark';
 import './MapEntrance.css';
 
 /** Reveal on the first painted tile, with a brief minimum beat so the progress bar completes smoothly. */
@@ -39,7 +39,7 @@ export function useMapEntrance(ready:boolean,failed:boolean,identity:string|numb
 
 export default function MapEntrance({revealed}:{revealed:boolean}){
  return <div className="map-entrance" aria-hidden={revealed} data-revealed={revealed}>
-  <div className="map-entrance-mark" aria-hidden="true"><MapPin size={23} strokeWidth={1.3}/><i/></div>
+  {!revealed&&<LoadingWordmark/>}
   {!revealed&&<span role="status" className="map-entrance-label">지도를 펼치고 있어요</span>}
   <div className="map-entrance-progress" aria-hidden="true">
    <span className="map-entrance-progress-fill"/>

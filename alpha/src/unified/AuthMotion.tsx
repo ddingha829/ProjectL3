@@ -5,7 +5,7 @@ import {AnimatePresence,motion} from 'motion/react';
 import {Check,LoaderCircle} from 'lucide-react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
-import TicgleWordmark from '@/components/TicgleBrand';
+import LoadingWordmark from '@/components/LoadingWordmark';
 import './AuthMotion.css';
 import {isolateDialog} from '@/lib/dialogIsolation';
 
@@ -30,7 +30,7 @@ export function AuthMotionProvider({children}:{children:ReactNode}){
  useEffect(()=>{if(!complete)return;if(reduced){setFlight(null);return;}const timer=setTimeout(()=>setFlight(null),280);return()=>clearTimeout(timer);},[complete,reduced]);
  const value=useMemo(()=>({active:!!flight,begin,approve,fail,setHostReady}),[!!flight,begin,approve,fail]);
  return <Context.Provider value={value}>{children}{typeof document!=='undefined'&&createPortal(<AnimatePresence>{flight&&<motion.div key="auth-flight" ref={overlay} className="un-auth-flight-overlay" role="status" aria-live="polite" aria-label={complete?flight.signup?'회원가입 완료':'로그인 완료':flight.signup?'회원가입 처리 중':'로그인 처리 중'} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={reduced?instantMotion:{duration:.2}}>
-  <motion.div className="un-auth-flight-brand" initial={reduced?false:{y:10,opacity:0}} animate={{y:0,opacity:1}} transition={reduced?instantMotion:INTERACTION_SPRING}><TicgleWordmark/></motion.div>
+  <motion.div className="un-auth-flight-brand" initial={reduced?false:{y:10,opacity:0}} animate={{y:0,opacity:1}} transition={reduced?instantMotion:INTERACTION_SPRING}><LoadingWordmark/></motion.div>
   <motion.div className="un-auth-flight-card" initial={reduced?false:{...flight.origin,borderRadius:14,opacity:.75}} animate={{...flight.target,height:104,borderRadius:24,opacity:1}} exit={reduced?{opacity:0}:{y:-14,opacity:0,scale:.98}} transition={reduced?instantMotion:INTERACTION_SPRING}>
    <motion.span className={`un-auth-flight-icon${complete?' is-complete':''}`} animate={reduced?{}:{scale:complete?[.88,1.08,1]:1}} transition={reduced?instantMotion:INTERACTION_SPRING}>{complete?<Check size={24} strokeWidth={2.3}/>:<LoaderCircle size={23} className="lab-spin"/>}</motion.span>
    <span className="un-auth-flight-copy"><strong>{complete?flight.signup?'티끌에 오신 걸 환영해요':'내 티끌이 준비됐어요':flight.approved?flight.signup?'계정이 만들어졌어요':'로그인했어요':flight.signup?'계정을 만들고 있어요':'로그인하고 있어요'}</strong><span>{complete?flight.signup?'닉네임을 정하고 시작해요.':'이어서 기록을 만나보세요.':slow?'연결이 늦어지고 있어요. 처리 중이에요.':flight.approved?'내 티끌을 불러오고 있어요.':'잠시만 기다려주세요.'}</span></span>
