@@ -1,0 +1,6 @@
+.ticgle-loading-wordmark{overflow:visible}
+.ticgle-pen-stroke{stroke-dashoffset:var(--pen-length);animation:ticgle-pen-write var(--pen-duration) cubic-bezier(.3,.05,.3,1) var(--pen-delay) forwards}
+.ticgle-pen-finish{opacity:0;animation:ticgle-pen-finish .12s linear 1.36s forwards}
+@keyframes ticgle-pen-write{to{stroke-dashoffset:0}}
+@keyframes ticgle-pen-finish{to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.ticgle-pen-stroke{animation:none;stroke-dashoffset:0}.ticgle-pen-finish{animation:none;opacity:1}}

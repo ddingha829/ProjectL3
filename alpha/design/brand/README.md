@@ -13,6 +13,14 @@ icon, manifest, push icon and Open Graph artwork. The maskable icon has addition
 safe-area padding. Older assets remain for already-open clients. Installed iOS
 home-screen icons may retain the previous artwork until the OS refreshes them.
 
+Loading-only handwriting: `LoadingWordmark` groups the original SVG contours
+into six letters and reveals them with pen masks over 1.48 seconds. CSS runs once,
+with no timers, fetches or delay to app readiness. Reduced motion reveals the full
+logo immediately. Unique mask IDs allow multiple instances. Regenerate contour
+data with `node scripts/generate-loading-wordmark.mjs` after changing the master;
+review the pen centerlines as well. Static snapshots at 0.2/0.65/1.6 seconds were
+inspected; the final even-odd paths retain the original counters of g and e.
+
 Validation: source/output artwork inspected; image dimensions and alpha checked;
 typecheck, surface interactions and production build passed. Full browser/PWA
 visual execution remains unavailable while local browser use is disabled.

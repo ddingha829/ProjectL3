@@ -43,7 +43,7 @@ import SettingsSheet from './SettingsSheet';
 import UnifiedNavigation from './UnifiedNavigation';
 import UnifiedChrome from './UnifiedChrome';
 import useAppViewport from './useAppViewport';
-import TicgleWordmark from '@/components/TicgleBrand';
+import LoadingWordmark from '@/components/LoadingWordmark';
 import {pageScrollPosition,scrollPageTo} from '@/lib/pageScroll';
 import NicknameSetup from './NicknameForm';
 import PreviewLogin from './PreviewLogin';
@@ -141,7 +141,7 @@ function UnifiedAppContent(){
  const pageSwipeEnabled=Boolean(session&&!needsNickname&&!panel&&!selectedId&&!composing&&!editing&&!work&&!guideActive&&!notificationGuide.open&&!groupIntroOpen&&!selecting&&!collection&&backupProgress===null);
  usePageSwipe(pageSwipeEnabled,(direction,offset)=>{const next=swipeDestination(view,direction);if(next==='compose')startCompose();else if(next){swipeEntry.current=Math.max(60,innerWidth-Math.abs(offset));navigate(next);}},{root:mainRoot,canSwipe:direction=>swipeDestination(view,direction)!==null});
  const enter=(name:string)=>enterDemo(name);
- if(!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><TicgleWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
+ if(!ready||!state||!actor||!scopeReady)return <div className="lab-boot"><LoadingWordmark/>{error?<p role="alert">{error}</p>:<span className="un-boot-status" role="status"><LoaderCircle size={18} className="lab-spin" aria-hidden="true"/><span>티끌을 불러오고 있어요</span></span>}</div>;
  if(!session)return <PreviewLogin onEnter={enter} enabled={cloudEnabled} onAuthenticate={authenticate} onResetPassword={resetPassword}/>;
  if(needsNickname)return <NicknameSetup busy={nicknameBusy} onSave={saveNickname} onLogout={()=>void logout()} initialName={actor.name!==identity?.email?.split('@')[0]&&actor.name!=='나'?actor.name:''}/>;
  const readable=state.logs.filter(l=>l.authorId==='me'||audienceIds(l).some(id=>circles.some(c=>c.id===id)));
