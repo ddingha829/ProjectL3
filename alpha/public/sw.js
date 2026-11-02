@@ -38,7 +38,7 @@ self.addEventListener('push',event=>{
   if(payload.kind==='reminder'&&(!Number.isFinite(payload.expiresAt)||payload.expiresAt<=Date.now()))return;
   const url=notificationAddress(payload.url);if(url==='/')return;
   await self.registration.showNotification(String(payload.title||'새로운 기록').slice(0,100),{
-   body:String(payload.body||'모임의 새 티끌을 확인해보세요.').slice(0,160),icon:'/brand/ticgle-icon-192.png',badge:'/brand/ticgle-icon-192.png',
+   body:String(payload.body||'모임의 새 티끌을 확인해보세요.').slice(0,160),icon:'/brand/ticgle-icon-a-192.png',badge:'/brand/ticgle-icon-a-192.png',
    tag:'l2-'+(['comment','likes','reminder'].includes(payload.kind)?payload.kind:'log')+'-'+String(payload.id||''),data:{url,ownerId:payload.ownerId,kind:['comment','likes','reminder'].includes(payload.kind)?payload.kind:'new-log'},
   });
  })());

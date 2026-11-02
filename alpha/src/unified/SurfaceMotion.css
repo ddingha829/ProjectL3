@@ -63,7 +63,7 @@ html[data-unified-shell=true] .un-navigation .lab-nav-rail{
 html[data-unified-shell=true] .un-navigation .lab-nav-rail>button{isolation:isolate;transition:color .15s}
 html[data-unified-shell=true] .un-navigation .lab-nav-rail>button[aria-current=page],
 html[data-unified-shell=true] .un-navigation .lab-nav-rail>button[aria-current=page] :is(svg,span){
- color:var(--accent)!important;
+ color:var(--accent-ink)!important;
 }
 html[data-unified-shell=true] .un-navigation :is(.lab-nav-rail>button,.un-dock-add):active{transform:none}
 .un-surface-nav-active-pill{
@@ -97,8 +97,8 @@ html[data-unified-shell=true] .un-entry-options>button:active{transform:none}
 .scratch-current-location-marker{background:none!important;border:0!important}
 .scratch-current-location-dot{
  display:block;width:14px;height:14px;border-radius:50%;
- background:#ff4500;border:2px solid #fff;
- box-shadow:0 0 0 3px #ff450029,0 2px 5px #00000038;
+ background:var(--accent);border:2px solid #fff;
+ box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 5px #00000038;
 }
 
 /* Preserve the cards' original shape (including transparent ticket punches). */

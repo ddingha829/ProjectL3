@@ -2,7 +2,7 @@
   --map-base:#131315; --map-ink:#fff; --map-muted:#aaa; --map-detail:#a5a39f;
   --map-panel:#141416da; --map-control:#111d; --map-line:#ffffff20;
   --map-pin:#f5f4f0; --map-pin-ink:#0b0b0d; --map-pin-shadow:#0005;
-  --map-accent:#ff4500; --map-route:#ff743d; --map-glow:#ff672c;
+  --map-accent:var(--accent); --map-route:#F67A50; --map-glow:#F4511E;
   --map-head:#fff5e9; --map-play-ink:#ffd1bb; --map-error:#ff9b83;
   --map-filter:grayscale(1) invert(1) contrast(.88) brightness(.85); --map-tile-opacity:.65;
   position:relative;height:clamp(290px,48dvh,460px);border:1px solid var(--line);border-radius:26px;

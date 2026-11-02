@@ -106,7 +106,7 @@ export default function ScratchMap({logs,people,dark,onSelect,onPick,onDistrictS
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
   for(const log of located){
    const p=log.place!,person=people.find(u=>u.id===log.authorId),button=document.createElement('button');
-   button.type='button';button.className='scratch-place-pin scratch-user-dot';button.dataset.logId=log.id;button.style.setProperty('--person',person?.color||'#ff4500');
+   button.type='button';button.className='scratch-place-pin scratch-user-dot';button.dataset.logId=log.id;button.style.setProperty('--person',person?.color||'#F4511E');
    button.setAttribute('aria-label',`${person?.name||'나'} · ${p.name} 위치 정보 보기`);button.setAttribute('aria-expanded','false');
    const dot=document.createElement('span');dot.className='scratch-dot-core';dot.setAttribute('aria-hidden','true');
    const title=document.createElement('span');title.className='scratch-map-title';title.textContent=mapTitle(log);title.setAttribute('aria-hidden','true');

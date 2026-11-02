@@ -26,6 +26,6 @@
 .scratch-map-tools button[data-location-state=found]{color:var(--map-accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--map-accent) 40%,transparent)}
 .scratch-map-tools button[data-replaying=true]{color:var(--map-accent)}
 .scratch-map-tools button>div{display:inline-flex;align-items:center;justify-content:center}
-@keyframes lab-location-wait{0%,100%{box-shadow:0 0 0 0 #ff450000}50%{box-shadow:0 0 0 4px #ff45001a}}
+@keyframes lab-location-wait{0%,100%{box-shadow:0 0 0 0 #f4511e00}50%{box-shadow:0 0 0 4px #f4511e1a}}
 @media(prefers-reduced-motion:reduce){.scratch-map-tools button[data-location-state=locating]{animation:none}}
 @media(prefers-reduced-motion:reduce){.lab-sliding-indicator.is-set,.lab-sliding-segments>button{transition:none}.lab-bloom-toggle[data-bloom=true]>.lab-bloom-fill{animation:none}.lab-focused-photo[data-photo-ready=true]>.lab-photo-corner{animation:none;opacity:.7}}
