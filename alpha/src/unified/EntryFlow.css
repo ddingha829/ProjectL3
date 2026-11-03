@@ -47,6 +47,19 @@
 .un-compose-navigation{position:relative;display:flex;align-items:center;min-height:44px}
 .un-compose-navigation .un-sheet-grab{min-height:44px}
 .un-compose-back{position:absolute;left:0;top:0;display:flex;align-items:center;gap:5px;min-width:72px;min-height:44px;color:#fff;font-size:13px;border-radius:10px;z-index:1}
+
+.un-composer-typing-done{display:none}
+.un-story-editor-v2 .lab-story-body-field .lab-body-input:focus-visible{outline:none;box-shadow:0 2px 0 #ffffff70}
+/* Keep only the editable text and an explicit way to dismiss the keyboard. */
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus){height:calc(var(--lab-vvh,100dvh) - 8px)!important;min-height:0;max-height:calc(var(--lab-vvh,100dvh) - 8px)!important;padding:0 18px 12px!important;overflow:hidden!important}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus)>.quick-dialog-header{display:none!important}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) :is(.un-compose-bottom,.lab-work-attached,.lab-work-summary-status,.lab-story-photo-chip){display:none!important}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) .voice-log-input:not([data-active=true]){display:none!important}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) .un-composer-typing-done{display:flex;align-items:center;justify-content:center;gap:5px;align-self:flex-end;flex:none;min-height:44px;margin:4px 0 12px;padding:0 10px;border:0;border-radius:12px;background:none;color:var(--fg);font-size:12px}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) .lab-story-writing.lab-write-surface{flex:1;min-height:0;overflow-y:auto;gap:12px}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) .lab-story-body-field{display:flex;flex-direction:column;flex:1;min-height:80px}
+html[data-lab-keyboard=open] .un-story-editor-v2:has(:is(.lab-story-body-field textarea,.lab-story-edit-title):focus) .lab-body-input{flex:1;height:100%!important;min-height:80px;max-height:none}
+html[data-lab-keyboard=open] .lab-story-dialog.is-writing .lab-story-stage{visibility:hidden;pointer-events:none}
 .un-compose-back:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 .un-story-editor-v2 .lab-body-input{color:#faf9f6}
 .un-story-editor-v2 .lab-body-input::placeholder{color:#c6c3c9;opacity:1}
