@@ -46,7 +46,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
  const changeExpanded=(value:boolean)=>{if(!value&&tools.current?.contains(document.activeElement))document.getElementById(toolsId+'-toggle')?.focus({preventScroll:true});setExpanded(value);};
  const damp=(over:number)=>Math.sign(over)*Math.pow(Math.abs(over),0.72)*0.36;
 
- return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/672,'--viewer-peek-content':place?'136px':'112px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
+ return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/672,'--viewer-peek-content':place?'164px':'124px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
   <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY,lastY:event.clientY,lastT:performance.now()};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;resetTilt();if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;resetTilt();}}>
    <motion.div
     className="un-detail-card-tilt"
