@@ -28,7 +28,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const needed=Boolean(log.image&&(s.finish==='film'||s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
- const rating=log.rating?<span className="ec-rating" aria-label={`별점 ${log.rating}점`}><Star size={15} fill="#F5C842" stroke="#A7750C" strokeWidth={1} aria-hidden="true"/>{log.rating}</span>:null;
+ const rating=log.rating?<span className="ec-rating" style={{color:'#F5C842'}} aria-label={`별점 ${log.rating}점`}><Star size={15} fill="#F5C842" stroke="#A7750C" strokeWidth={1} aria-hidden="true"/>{log.rating}</span>:null;
  const category=<span className="ec-category"><Icon size={13}/>{labels[log.category]}</span>;
  const photoBadges=<div className="ec-photo-badges"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div>;
  const settings=log.photo;
@@ -52,8 +52,8 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
   <header className="ec-back-header"><div>{!(['review','day','broadside'] as string[]).includes(s.back)&&category}<h2>{title}</h2>{place&&s.back!=='broadside'&&<p>{place}</p>}</div>
    {s.back==='postcard'?<div className="ec-stamp">{rating||<Icon className="ec-stamp-symbol" size={29} strokeWidth={1.2} aria-hidden="true"/>}</div>:s.back==='vinyl'?<div className="ec-disc" aria-hidden="true"><i/></div>:!(['review','day','broadside'] as string[]).includes(s.back)&&rating}
   </header>
-  {s.back==='broadside'&&<div className="ec-news-meta"><div><b>DATE</b><span>{date}</span></div>{place&&<div><b>PLACE</b><span>{place}</span></div>}{log.rating&&<div><b>RATING</b><span><span className="ec-rating-gold" aria-hidden="true">★</span> {log.rating} / 5.0</span></div>}</div>}
-  {s.back==='passport'&&<div className="ec-passport-grid"><div><b>LOCATION</b><span>{place||'—'}</span></div><div><b>DATE</b><span>{date}</span></div><div><b>RATING</b><span>{log.rating||'—'}</span></div></div>}
+  {s.back==='broadside'&&<div className="ec-news-meta"><div><b>DATE</b><span>{date}</span></div>{place&&<div><b>PLACE</b><span>{place}</span></div>}{log.rating&&<div><b>RATING</b><span className="ec-rating-score"><span className="ec-rating-gold" aria-hidden="true">★</span> {log.rating} / 5.0</span></div>}</div>}
+  {s.back==='passport'&&<div className="ec-passport-grid"><div><b>LOCATION</b><span>{place||'—'}</span></div><div><b>DATE</b><span>{date}</span></div><div><b>RATING</b><span className={log.rating?'ec-rating-score':undefined}>{log.rating||'—'}</span></div></div>}
   {s.back==='library'&&<div className="ec-library-grid"><span>TITLE</span><b>{title}</b><span>AUTHOR</span><b>{log.work?.creator||author}</b><span>DATE</span><b>{date}</b></div>}
   <div className="ec-back-scroll" data-ec-scroll role="region" aria-label="전체 리뷰" tabIndex={0}><div className="ec-scroll-inner">
    {log.body&&<blockquote className="ec-quote ec-flow-block" data-ec-quote>{log.body}</blockquote>}

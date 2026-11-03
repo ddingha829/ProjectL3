@@ -171,3 +171,5 @@
 html:not(.light) .ec-face>.ec-surface-edge{display:block}
 @media print{.ec-face>.ec-surface-edge{display:none!important}}
 .ec-news-meta .ec-rating-gold{display:inline;color:#F5C842;text-shadow:0 0 1px #A7750C}
+
+.ec-rating,.ec-news-meta .ec-rating-score,.ec-passport-grid .ec-rating-score{color:#F5C842;text-shadow:0 1px 1px #4a320a66}
