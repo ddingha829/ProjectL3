@@ -6,14 +6,17 @@ import {build} from 'esbuild';
 await fs.mkdir('.test-data',{recursive:true});
 const outfile=path.resolve('.test-data/composer-location.mjs');
 await build({stdin:{contents:"export {default as ComposerLocation} from './src/social/ComposerLocation';",resolveDir:process.cwd(),loader:'tsx'},outfile,bundle:true,platform:'node',format:'esm',logLevel:'silent',jsx:'automatic',external:['lucide-react','react-dom'],plugins:[{name:'location-hook-harness',setup(builder){
+ builder.onResolve({filter:/AccessibleDialog$/},()=>({path:'dialog',namespace:'harness'}));
+ builder.onLoad({filter:/dialog/,namespace:'harness'},()=>({contents:'export default "dialog";'}));
  builder.onResolve({filter:/^react$/},()=>({path:'hooks',namespace:'harness'}));
  builder.onResolve({filter:/^react\/jsx-runtime$/},()=>({path:'jsx',namespace:'harness'}));
  builder.onLoad({filter:/hooks/,namespace:'harness'},()=>({contents:'export const useState=(...args)=>globalThis.__locationHooks.state(...args);export const useEffect=(...args)=>globalThis.__locationHooks.effect(...args);export const useRef=(...args)=>globalThis.__locationHooks.ref(...args);export const useCallback=(...args)=>globalThis.__locationHooks.callback(...args);export const useId=()=>"id";'}));
  builder.onLoad({filter:/jsx/,namespace:'harness'},()=>({contents:'export const Fragment="fragment";export const jsx=(type,props)=>({type,props});export const jsxs=jsx;'}));
 }}]});
 const {ComposerLocation}=await import(pathToFileURL(outfile));
-const original=Object.fromEntries(['navigator','fetch','__locationHooks'].map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+const original=Object.fromEntries(['navigator','fetch','localStorage','__locationHooks'].map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
 const checks=[];
+const tipStorage=new Map();Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:k=>tipStorage.get(k)||null,setItem:(k,v)=>tipStorage.set(k,v)}});
 function walk(node,predicate){if(!node||typeof node!=='object')return; if(predicate(node))return node;for(const child of [node.props?.children].flat(Infinity)){const found=walk(child,predicate);if(found)return found;}}
 function text(node){if(typeof node==='string')return node;if(!node||typeof node!=='object')return '';return [node.props?.children].flat(Infinity).map(text).join('');}
 async function run(name,check,initial={}){
@@ -28,7 +31,7 @@ async function run(name,check,initial={}){
  };
  const render=(update={})=>{props={...props,...update};cursor=0;pending=[];tree=ComposerLocation(props);for(const effect of pending){effect.cleanup?.();effect.cleanup=effect.effect();}return tree;};
  const button=label=>walk(tree,node=>node.type==='button'&&(node.props['aria-label']===label||text(node)===label));
- const context={requests,changes,render,button,strictReplay(){const effects=slots.filter(slot=>slot?.effect);effects.forEach(effect=>effect.cleanup?.());effects.forEach(effect=>{effect.cleanup=effect.effect();});}};
+ const context={requests,changes,render,button,read:()=>tree,strictReplay(){const effects=slots.filter(slot=>slot?.effect);effects.forEach(effect=>effect.cleanup?.());effects.forEach(effect=>{effect.cleanup=effect.effect();});}};
  try{render();await check(context);checks.push(name);}finally{slots.filter(slot=>slot?.effect).forEach(effect=>effect.cleanup?.());}
 }
 try{
@@ -43,5 +46,9 @@ try{
  await run('switching to a work cancels GPS and switching back retries',({requests,render})=>{render({work:true});assert.equal(requests.length,1);render({work:false});assert.equal(requests.length,2);});
  await run('editing does not request GPS automatically',({requests,render})=>{assert.equal(requests.length,0);render();assert.equal(requests.length,0);},{automatic:false});
  await run('work entry never asks for GPS',({requests,render})=>{assert.equal(requests.length,0);render();assert.equal(requests.length,0);},{work:true});
+ tipStorage.clear();let named='';
+ await run('GPS alias guide appears once and typing dismisses it without changing coordinates',({button,render,read,changes})=>{button('현재 위치 및 근처 장소').props.onClick();render();render();assert.match(text(read()),/주소 대신/);const input=walk(read(),n=>n.type==='input'&&n.props.id==='un-location-label');input.props.onChange({target:{value:'우리집'}});render();assert.doesNotMatch(text(read()),/주소 대신/);walk(read(),n=>n.type==='form').props.onSubmit({preventDefault(){}});assert.equal(named,'우리집');assert.equal(changes.length,0);},{value:{id:'gps:37.5:127',name:'서울 도로명 주소',lat:37.5,lng:127},onLabelChange:v=>named=v});
+ await run('guide is not repeated in another composer on the same device',({button,render,read})=>{button('현재 위치 및 근처 장소').props.onClick();render();render();assert.doesNotMatch(text(read()),/주소 대신/);},{value:{id:'gps:37.5:127',name:'서울 주소',lat:37.5,lng:127},onLabelChange(){}});
+ tipStorage.clear();await run('named places are not prompted to rename an address',({button,render,read})=>{button('현재 위치 및 근처 장소').props.onClick();render();render();assert.doesNotMatch(text(read()),/주소 대신/);},{value:{id:'google:place',name:'카페',lat:37.5,lng:127},onLabelChange(){}});
 }finally{for(const [key,descriptor] of Object.entries(original)){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}}
 console.log(JSON.stringify({status:'passed',checks}));

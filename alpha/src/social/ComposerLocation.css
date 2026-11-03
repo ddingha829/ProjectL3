@@ -4,3 +4,4 @@
 .un-location-permission-help li+li{margin-top:6px}
 .un-location-permission-help>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .un-nearby-dialog .un-nearby-bottom{flex-wrap:wrap}
+.un-place-name-tip{display:block;padding:8px 10px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));color:var(--fg);font-size:12px;line-height:1.6;word-break:keep-all}
