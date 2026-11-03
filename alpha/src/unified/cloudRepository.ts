@@ -91,7 +91,7 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
 /** The profile and first-login marker are one existing database transaction.
  * Never dismiss onboarding before the server acknowledges both writes. */
 export async function persistNickname(client:SupabaseClient,before:UnifiedState,value:string):Promise<UnifiedState>{
- const name=normalizeNickname(value),next:UnifiedState={...before,nicknameConfigured:true,people:before.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)};
+ const name=normalizeNickname(value,before.nicknameConfigured?before.people.find(p=>p.id==='me')?.name:undefined),next:UnifiedState={...before,nicknameConfigured:true,people:before.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)};
  const operations=cloudOperations(before,next);
  if(operations.length){const result=await client.rpc('l2u_apply',{p_operations:operations,p_operation_id:crypto.randomUUID()});if(result.error)throw result.error;}
  return {...next,serverPreferencesRevision:(before.serverPreferencesRevision||0)+(operations.some(op=>op.kind==='preferences')?1:0)};

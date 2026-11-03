@@ -5,6 +5,12 @@ const {normalizeNickname,nicknameInitial,persistNickname,emptyCloudState,cloudOp
 assert.equal(normalizeNickname('  티끌 친구  '),'티끌 친구');
 assert.equal(normalizeNickname('\u1100\u1161'),'가');
 for(const invalid of ['  ','a'.repeat(31),'이름\n사이'])assert.throws(()=>normalizeNickname(invalid));
+assert.equal(normalizeNickname('가나다라마바'),'가나다라마바');
+assert.throws(()=>normalizeNickname('가나다라마바사'),/6자/);
+assert.equal(normalizeNickname('🌿'.repeat(6)),'🌿'.repeat(6));
+assert.throws(()=>normalizeNickname('🌿'.repeat(7)),/6자/);
+assert.equal(normalizeNickname('  원래긴닉네임유지  ','원래긴닉네임유지'),'원래긴닉네임유지');
+assert.throws(()=>normalizeNickname('다른긴닉네임차단','원래긴닉네임유지'),/6자/);
 assert.equal(nicknameInitial('🌿친구'),'🌿');
 let calls=[];const client={rpc:async(name,args)=>{calls.push({name,args});return {error:null};}};
 const before={...emptyCloudState(),serverPreferencesRevision:4};
@@ -19,4 +25,11 @@ const repeat=await persistNickname(client,next,'친구');assert.equal(calls.leng
 await assert.rejects(()=>persistNickname({rpc:async()=>({error:Error('offline')})},before,'실패'),/offline/);
 assert.equal(before.nicknameConfigured,undefined);
 await persistNickname(client,before,'나');assert.deepEqual(calls.at(-1).args.p_operations.map(o=>o.kind),['preferences']);
-console.log(JSON.stringify({status:'passed',checks:20}));
+const legacy={...before,nicknameConfigured:true,people:before.people.map(p=>p.id==='me'?{...p,name:'원래긴닉네임유지'}:p)};
+const count=calls.length;
+assert.equal((await persistNickname(client,legacy,'원래긴닉네임유지')).people[0].name,'원래긴닉네임유지');
+assert.equal(calls.length,count);
+await assert.rejects(()=>persistNickname(client,legacy,'다른긴닉네임차단'),/6자/);
+await assert.rejects(()=>persistNickname(client,{...legacy,nicknameConfigured:false},'원래긴닉네임유지'),/6자/);
+assert.equal((await persistNickname(client,legacy,'새이름')).people[0].name,'새이름');
+console.log(JSON.stringify({status:'passed',checks:31}));

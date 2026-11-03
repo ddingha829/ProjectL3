@@ -102,7 +102,8 @@ export default function useUnifiedState(){
   if(!fullRecords.current)requestSequence.current++;show({...before,logs:[...merged.values()]});return result;
  },[show]);
  const saveNickname=useCallback(async(value:string)=>{
-  const name=normalizeNickname(value),before=current.current;if(!before)throw Error('계정을 불러온 뒤 다시 시도해주세요.');
+  const before=current.current;if(!before)throw Error('계정을 불러온 뒤 다시 시도해주세요.');
+  const name=normalizeNickname(value,before.nicknameConfigured?before.people.find(p=>p.id==='me')?.name:undefined);
   if(modeRef.current==='demo'){if(!commit(s=>({...s,nicknameConfigured:true,people:s.people.map(p=>p.id==='me'?{...p,name,initial:nicknameInitial(name)}:p)})))throw Error('닉네임을 저장하지 못했어요.');return;}
   const c=client.current,id=userId.current,epoch=generation.current;
   if(!c||!id||modeRef.current!=='cloud')throw Error('로그인이 필요해요.');
