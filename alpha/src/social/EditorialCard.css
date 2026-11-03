@@ -170,4 +170,4 @@
 .ec-ticket>.ec-surface-edge{left:0;top:0}
 html:not(.light) .ec-face>.ec-surface-edge{display:block}
 @media print{.ec-face>.ec-surface-edge{display:none!important}}
-.ec-rating-gold{color:#F5C842;text-shadow:0 0 1px #A7750C}
+.ec-news-meta .ec-rating-gold{display:inline;color:#F5C842;text-shadow:0 0 1px #A7750C}
