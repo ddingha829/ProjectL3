@@ -13,7 +13,7 @@ export const bentoTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLa
 /** One automatic front for feed, detail, photo adjustment and image export. */
 export default function BentoFront({log,author,native=false,canvasHeight}:{log:LabLog;author:string;native?:boolean;canvasHeight?:number}){
  const kind=bentoKind(log),image=bentoImage(log),Icon=icons[kind],title=kind==='note'?log.title.trim()||log.body||bentoTitle(log):bentoTitle(log);
- const location=log.work?.creator||log.locationLabel||log.place?.name||'',meta=location!==title?location:'',photo=log.photo;
+ const meta=log.place?.area?.trim()||log.place?.name?.trim()||log.work?.creator||'',photo=log.photo;
  const imageStyle:CSSProperties={objectFit:photo?.fit||'cover',objectPosition:`${photo?.x??50}% ${photo?.y??50}%`,...(photo?{transform:`translate(${(50-photo.x)*(photo.zoom-1)}%, ${(50-photo.y)*(photo.zoom-1)}%) scale(${photo.zoom})`,filter:`saturate(${photo.saturation/100}) brightness(${photo.brightness/100}) contrast(${photo.contrast/100})`}:{})};
  const credit=<div className="ec-bento-credit"><time dateTime={new Date(log.createdAt).toISOString()}>{dateOf(log.createdAt)}</time>{log.video&&<span className="ec-bento-video"><Film aria-hidden="true"/>2초</span>}<p className="ec-bento-author"><span>{author}</span></p></div>;
  const height=canvasHeight??420/BENTO_RATIOS[kind];

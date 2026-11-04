@@ -29,6 +29,15 @@ check('work covers and missing images keep the original work topic',()=>{
   assert.ok(markup.includes('src="/cover.jpg"'));assert.ok(markup.includes(`data-topic-ratio="${ratio}"`));assert.ok(markup.includes('작품 제목'));assert.ok(markup.includes('작가'));
  }
 });
+check('stored addresses remain visible independently of title and custom location names',()=>{
+ const address='강원특별자치도 고성군 토성면';
+ for(const title of ['설악산 이쁘노',address])for(const locationLabel of ['',title,'직접 적은 장소']){
+  const markup=html(BentoFront,{log:{...base,title,locationLabel,place:{id:'place',name:'장소 이름',area:address,lat:38.2,lng:128.5}},author:'나',native:true});
+  assert.ok(markup.includes('<p class="ec-bento-meta"><span>'+address+'</span></p>'));
+ }
+ const legacy=html(BentoFront,{log:{...base,title:address,place:{id:'old',name:address,area:'',lat:38.2,lng:128.5}},author:'나'});
+ assert.ok(legacy.includes('<p class="ec-bento-meta"><span>'+address+'</span></p>'));
+});
 check('plain text is escaped and gets a full-width note front',()=>{
  const markup=html(BentoFront,{log:{...base,image:'',title:'',body:'<script>danger</script> 기록'},author:'나',native:true});
  assert.ok(markup.includes('data-topic-ratio="2:1"'));assert.ok(markup.includes('&lt;script&gt;'));assert.ok(!markup.includes('<script>'));
