@@ -13,7 +13,7 @@ export default function LocationPreview({place,label,onClose}:{place?:Place;labe
   let disposed=false,map:import('leaflet').Map|undefined,resize:ResizeObserver|undefined;
   void import('leaflet').then(L=>{
    if(disposed||!host.current)return;
-   map=L.map(host.current,{scrollWheelZoom:false,minZoom:3,maxZoom:17}).setView([place.lat,place.lng],9);
+   map=L.map(host.current,{scrollWheelZoom:false,minZoom:3,maxZoom:17,zoomSnap:.5}).setView([place.lat,place.lng],8.5);
    simpleMapLayer(L,{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',keepBuffer:1,updateWhenIdle:true}).on('tileload',()=>{if(!disposed){setError('');}}).on('tileerror',()=>{if(!disposed){setError('지도를 불러오지 못했어요. 잠시 후 다시 열어주세요.');}}).addTo(map);
    L.circle([place.lat,place.lng],{radius:180,color:'#fa653c',weight:2,fillColor:'#fa653c',fillOpacity:.16,interactive:false}).addTo(map);
    L.circleMarker([place.lat,place.lng],{radius:6,color:'#fff',weight:2,fillColor:'#fa653c',fillOpacity:1,interactive:false}).addTo(map);
