@@ -1,8 +1,10 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import {mediaFilter} from './mediaFilter';
+import type {PhotoSettings} from '@/unified/store';
 import type {VideoClip} from '@/lib/video';
 
-export default function ComposerMediaPreview({image,file,video,active}:{image:string;file?:File;video?:VideoClip;active:boolean}){
+export default function ComposerMediaPreview({image,file,video,active,photo}:{image:string;file?:File;video?:VideoClip;active:boolean;photo?:PhotoSettings}){
  const [source,setSource]=useState<{key:File|string;url:string}>();
  const player=useRef<HTMLVideoElement>(null);
  const key=file||video?.path;
@@ -15,5 +17,5 @@ export default function ComposerMediaPreview({image,file,video,active}:{image:st
  },[file,video?.path]);
  const url=source?.key===key?source?.url:undefined;
  useEffect(()=>{const target=player.current;if(!target)return;if(active)void target.play().catch(()=>{});else target.pause();},[active,url]);
- return url?<video ref={player} className="lab-story-photo un-story-video" src={url} poster={image} autoPlay={active} muted loop playsInline controls preload="metadata" aria-label="첨부 영상 전체 미리보기"/>:<img className="lab-story-photo" src={image} alt="첨부 사진 전체 미리보기"/>;
+ return url?<video style={{filter:mediaFilter(photo)}} ref={player} className="lab-story-photo un-story-video" src={url} poster={image} autoPlay={active} muted loop playsInline controls preload="metadata" aria-label="첨부 영상 전체 미리보기"/>:<img style={{filter:mediaFilter(photo)}} className="lab-story-photo" src={image} alt="첨부 사진 전체 미리보기"/>;
 }
