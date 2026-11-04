@@ -13,3 +13,23 @@
 .ec-face.ec-bento .ec-bento-copy h2{font-size:10.2cqw;line-height:1.3}.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy h2{font-size:7.3cqw;line-height:1.45;-webkit-line-clamp:2}.ec-bento[data-bento-kind=note] .ec-bento-meta{display:none}
 .ec-bento-category,.ec-bento-rating{font-size:max(10px,5.5cqw)}.ec-bento-author{font-size:max(10px,5.2cqw)}.ec-bento-meta{font-size:max(8px,3.5cqw)}
 [data-ec-export] .ec-bento-content::after{display:none}
+/* Quiet editorial hierarchy: compact labels, generous image, bottom-right credit. */
+.ec-face.ec-bento{border-radius:18px}
+.ec-bento-content::after{border-color:#ffffff26}
+.ec-bento-shade{background:linear-gradient(180deg,#00000026 0%,transparent 28%,#00000008 45%,#00000080 76%,#000000cc 100%)}
+.ec-bento-top{top:5.5cqw;left:5.5cqw;right:5.5cqw;align-items:center}
+.ec-bento-category,.ec-bento-rating{font-size:max(9px,4.8cqw);font-weight:600;letter-spacing:-.015em;line-height:1.35;padding:1.5cqw 2.2cqw;border-color:transparent;background:#181b205e;gap:1.1cqw}
+.ec-bento-category svg,.ec-bento-rating svg{width:5cqw;height:5cqw;stroke-width:1.7}
+.ec-bento-rating{background:#17171985;color:#ffdb63}
+.ec-bento-copy{left:6.5cqw;right:6.5cqw;bottom:5.5cqw;gap:2.4cqw}
+.ec-face.ec-bento .ec-bento-copy h2{margin:0;font-size:9.2cqw;font-weight:700;letter-spacing:-.045em;line-height:1.32;text-shadow:0 2px 12px #00000026}
+.ec-bento-meta{font-size:max(8px,3.5cqw);color:#ffffffb8;line-height:1.5}
+.ec-bento-credit{display:flex;align-items:center;justify-content:space-between;gap:3cqw;width:100%;min-width:0;margin-top:1.5cqw}
+.ec-bento-author{margin-left:auto!important;min-width:0;max-width:75%!important;justify-content:flex-end;text-align:right;font-size:max(10px,4.6cqw);font-weight:500;letter-spacing:-.02em;line-height:1.4;color:#ffffffdb}
+.ec-bento-video{font-size:max(9px,4cqw);color:#ffffffc4;flex:none}.ec-bento-video svg{width:4.6cqw;height:4.6cqw}
+.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy{justify-content:flex-start;gap:2cqw}
+.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy h2{font-size:6.5cqw;font-weight:600;line-height:1.45;letter-spacing:-.035em;text-shadow:none}
+.ec-bento[data-bento-kind=note] .ec-bento-credit{margin-top:auto}
+.ec-bento[data-bento-kind=note] .ec-bento-author{font-size:max(10px,3.4cqw)}
+.ec-bento-paper .ec-bento-category{border-color:transparent;background:color-mix(in srgb,var(--fg,#171718) 5%,transparent)}
+.ec-bento-paper .ec-bento-rating{border-color:transparent;background:transparent}

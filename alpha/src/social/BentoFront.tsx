@@ -2,7 +2,6 @@
 import {BookOpen,Clapperboard,Compass,Film,Quote,Star,Utensils} from 'lucide-react';
 import type {CSSProperties} from 'react';
 import type {LabLog} from './model';
-import {WeatherMark} from './weather';
 import {BENTO_RATIOS,BENTO_RATIO_LABELS,bentoImage,bentoKind} from './bentoLayout';
 import './BentoFront.css';
 
@@ -21,7 +20,7 @@ export default function BentoFront({log,author,native=false,canvasHeight}:{log:L
   <div className="ec-bento-content">
    {image?<><img className="ec-bento-image" src={image} alt="" loading={native?'lazy':undefined} decoding="async" draggable={false} style={imageStyle} onError={event=>{event.currentTarget.style.visibility='hidden';}}/><span className="ec-bento-shade" aria-hidden="true"/></>:<Icon className="ec-bento-watermark" aria-hidden="true"/>}
    <div className="ec-bento-top"><span className="ec-bento-category"><Icon aria-hidden="true"/>{labels[kind]}</span>{log.rating&&<span className="ec-bento-rating" aria-label={`별점 ${log.rating}점`}><Star aria-hidden="true" fill="currentColor"/>{log.rating}</span>}</div>
-   <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2><p className="ec-bento-author">{log.video&&<span className="ec-bento-video"><Film aria-hidden="true"/>2초</span>}<span>{author}</span></p><p className="ec-bento-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div>
+   <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2><p className="ec-bento-meta"><span>{meta}</span></p><div className="ec-bento-credit">{log.video&&<span className="ec-bento-video"><Film aria-hidden="true"/>2초</span>}<p className="ec-bento-author"><span>{author}</span></p></div></div>
   </div>
  </div>;
 }
