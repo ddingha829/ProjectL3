@@ -2,13 +2,16 @@ import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 
 const {outputFiles}=await build({entryPoints:['src/design-review/bento/bentoLayout.ts'],bundle:true,write:false,platform:'node',format:'esm'});
-const {bentoLayout}=await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
+const {bentoLayout,BENTO_RATIOS}=await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
+assert.deepEqual(BENTO_RATIOS,{daily:4/5,dining:4/5,movie:2/3,book:3/4,music:1,note:2},'Agreed topic ratios remain explicit');
 let checks=0;
-for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['daily','note'],['music','note','movie'],['daily','music','book','movie','note','daily','dining'],['note','note','music','movie','book','daily'],Array.from({length:40},(_,i)=>['daily','music','movie','note','book'][i%5])]){
+const pairs=Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').flatMap(first=>Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').map(second=>[first,second]));
+for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['daily','note'],['music','note','movie'],['daily','music','book','movie','note','daily','dining'],['note','note','music','movie','book','daily'],Array.from({length:40},(_,i)=>['daily','music','movie','note','book'][i%5]),...pairs]){
  const result=bentoLayout(kinds,width);
  assert.equal(result.tiles.length,kinds.length);
  result.tiles.forEach((tile,index)=>{
   assert.ok(tile.left>=0&&tile.left+tile.width<=width+.001,'Card stays inside viewport');
+  assert.ok(Math.abs(tile.width/tile.height-BENTO_RATIOS[kinds[index]])<.00001,'Whole card keeps its topic ratio, including single cards');
   assert.ok(tile.top+tile.height<=result.height+.001,'Feed reserves all card heights');
   if(index)assert.ok(tile.top>=result.tiles[index-1].top,'DOM chronology matches top-to-bottom visual order');
   if(kinds[index]==='note')assert.equal(tile.width,width,'Text spans both columns');
@@ -17,7 +20,7 @@ for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['dail
  const rows=[...new Set(result.tiles.map(tile=>tile.top))].map(top=>result.tiles.filter(tile=>tile.top===top));
  rows.forEach((row,index)=>{
   if(row.length===1)assert.equal(row[0].width,width,'Single cards fill the row');
-  else{assert.equal(row.length,2);assert.equal(row[0].height,row[1].height,'Both column bottoms align');}
+  else{assert.equal(row.length,2);assert.equal(row[0].height,row[1].height,'Both column bottoms align');assert.ok(Math.abs(row[0].width+row[1].width+12-width)<.001,'The paired widths fill the complete row');}
   if(index)assert.equal(row[0].top,rows[index-1][0].top+rows[index-1][0].height+12,'Only the intended gutter separates rows');
  });
  checks++;
