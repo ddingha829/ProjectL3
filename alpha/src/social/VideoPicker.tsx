@@ -6,7 +6,7 @@ import {configureCloud} from '@/unified/cloudRepository';
 import {VIDEO_SOURCE_LIMIT,validVideo,type VideoClip} from '@/lib/video';
 import './VideoPicker.css';
 import CameraSurface from './CameraSurface';
-import {cameraVideoPoster} from './cameraVideo';
+import {cameraVideoUploadPoster} from './cameraVideo';
 export type VideoAttachment={video:VideoClip;image:string;imagePath:string};
 export default function VideoPicker({cloud,onDone,onClose,initialFile,onCaptured,background=false}:{onCaptured?:(file:File)=>void;background?:boolean;initialFile?:File;cloud:boolean;onDone:(asset:VideoAttachment)=>void;onClose:()=>void}){
  const [file,setFile]=useState<File|undefined>(initialFile),[autoFile,setAutoFile]=useState<File|undefined>(initialFile),[cameraClip,setCameraClip]=useState(Boolean(initialFile)),[captureOpen,setCaptureOpen]=useState(false),[url,setUrl]=useState(''),[duration,setDuration]=useState(0),[start,setStart]=useState(0),[playing,setPlaying]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState('');
@@ -25,7 +25,7 @@ export default function VideoPicker({cloud,onDone,onClose,initialFile,onCaptured
    const target=await call({action:'prepare',size:selected.size});if(!alive.current)return;
    const uploaded=await client.storage.from('l2u-video-uploads').uploadToSignedUrl(target.path,target.token,selected,{contentType:selected.type||'application/octet-stream'});if(uploaded.error)throw Error('업로드하지 못했어요. 네트워크 연결을 확인해주세요.');
    if(!alive.current)return;setPhase(recorded?'영상을 저장하는 중…':'영상 구간을 준비하는 중…');
-   const result=await call({action:'encode',id:target.id,start:recorded?0:start,recorded,poster:recorded?cameraVideoPoster(selected):undefined});
+   const result=await call({action:'encode',id:target.id,start:recorded?0:start,recorded,poster:recorded?cameraVideoUploadPoster(selected):undefined});
    const latest=await client.auth.getSession();if(latest.data.session?.user.id!==owner)throw Error('계정이 변경됐어요. 다시 선택해주세요.');
    if(!validVideo(result.video)||typeof result.imagePath!=='string'||typeof result.image!=='string')throw Error('영상 형식을 확인하지 못했어요.');
    if(alive.current)onDone(result);

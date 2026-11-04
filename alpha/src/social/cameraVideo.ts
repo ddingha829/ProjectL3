@@ -1,5 +1,12 @@
 const cameraPosters=new WeakMap<File,string>();
 export const cameraVideoPoster=(file:File)=>cameraPosters.get(file);
+/** Safari can return a large PNG when WebP is requested. Keep it for local
+ * preview, but omit unsupported/oversize covers from the bounded JSON request;
+ * the server will extract the cover from the uploaded video instead. */
+export function cameraVideoUploadPoster(file:File){
+ const poster=cameraVideoPoster(file),prefix='data:image/webp;base64,',maxBase64Length=4*Math.ceil(307200/3);
+ return poster&&poster.length<=prefix.length+maxBase64Length&&poster.startsWith(prefix)&&/^[A-Za-z0-9+/]+={0,2}$/.test(poster.slice(prefix.length))?poster:undefined;
+}
 /** About two seconds, silent, portrait capture. Cancellation never returns a partial clip. */
 export function recordCameraVideo(source:HTMLVideoElement,options:{zoom:number;mirrored:boolean;signal:AbortSignal;onStart:()=>void}){
  return new Promise<File>((resolve,reject)=>{
