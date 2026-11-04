@@ -34,10 +34,10 @@
 .ec-bento-paper .ec-bento-category{border-color:transparent;background:color-mix(in srgb,var(--fg,#171718) 5%,transparent)}
 .ec-bento-paper .ec-bento-rating{border-color:transparent;background:transparent}
 /* Keep the image clear; reserve a compact baseline for date and author. */
-.ec-bento-shade{background:linear-gradient(180deg,transparent 64%,#00000008 76%,#00000052 100%)}
+.ec-bento-shade{background:linear-gradient(180deg,transparent 86%,#00000080 94%,#000000a6 100%)}
 .ec-bento-copy{bottom:4cqw;gap:1cqw}
 .ec-bento-credit{margin-top:0;gap:2cqw;align-items:baseline}
-.ec-bento-credit time{flex:none;font-size:max(8px,3.5cqw);line-height:1.4;color:#ffffffd9;white-space:nowrap}
+.ec-bento-credit time{flex:none;font-size:max(9px,4cqw);line-height:1.4;color:#fff;white-space:nowrap}
 .ec-bento-author{max-width:52%!important}
 .ec-bento-copy h2,.ec-bento-meta,.ec-bento-credit{text-shadow:0 1px 4px #0009}
 .ec-face.ec-bento .ec-bento-copy h2{text-shadow:0 1px 5px #0008}
@@ -45,3 +45,5 @@
 .ec-bento-paper .ec-bento-credit time{color:color-mix(in srgb,var(--fg,#171718) 68%,var(--surface,#fff))}
 .ec-face.ec-bento:not([data-native-preview]) .ec-bento-category,.ec-face.ec-bento:not([data-native-preview]) .ec-bento-rating{font-size:4.2cqw;padding:1.3cqw 2cqw}
 .ec-face.ec-bento:not([data-native-preview]) .ec-bento-category svg,.ec-face.ec-bento:not([data-native-preview]) .ec-bento-rating svg{width:4.4cqw;height:4.4cqw}
+
+.ec-bento:not(.ec-bento-paper) .ec-bento-author{font-size:max(11px,4.8cqw);color:#fff;font-weight:600}
