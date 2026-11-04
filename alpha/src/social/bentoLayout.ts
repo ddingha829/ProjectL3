@@ -17,7 +17,7 @@ export function bentoRows(kinds:readonly BentoKind[]):number[][]{
 }
 /** Justified pairs preserve ratios, chronological order and aligned bottoms.
  * A note or an orphan fills its row, without an empty second column. */
-export function bentoLayout(kinds:readonly BentoKind[],width:number,gap=12){
+export function bentoLayout(kinds:readonly BentoKind[],width:number,gap=8.4){
  const tiles:{top:number;left:number;width:number;height:number}[]=[];let top=0;
  for(const row of bentoRows(kinds)){
   const [first,second]=row,kind=kinds[first];

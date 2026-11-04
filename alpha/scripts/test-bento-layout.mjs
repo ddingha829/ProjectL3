@@ -20,8 +20,8 @@ for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['dail
  const rows=[...new Set(result.tiles.map(tile=>tile.top))].map(top=>result.tiles.filter(tile=>tile.top===top));
  rows.forEach((row,index)=>{
   if(row.length===1)assert.equal(row[0].width,width,'Notes and unpaired cards fill their row without a vacant column');
-  else{assert.equal(row.length,2);assert.equal(row[0].height,row[1].height,'Both column bottoms align');assert.ok(Math.abs(row[0].width+row[1].width+12-width)<.001,'The paired widths fill the complete row');}
-  if(index)assert.equal(row[0].top,rows[index-1][0].top+rows[index-1][0].height+12,'Only the intended gutter separates rows');
+  else{assert.equal(row.length,2);assert.equal(row[0].height,row[1].height,'Both column bottoms align');assert.ok(Math.abs(row[0].width+row[1].width+8.4-width)<.001,'The paired widths fill the complete row');}
+  if(index)assert.ok(Math.abs(row[0].top-(rows[index-1][0].top+rows[index-1][0].height+8.4))<.001,'Only the intended gutter separates rows');
  });
  checks++;
 }
