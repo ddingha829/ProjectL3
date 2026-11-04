@@ -22,21 +22,21 @@
 .ec-bento-category svg,.ec-bento-rating svg{width:5cqw;height:5cqw;stroke-width:1.7}
 .ec-bento-rating{background:#17171985;color:#ffdb63}
 .ec-bento-copy{left:6.5cqw;right:6.5cqw;bottom:5.5cqw;gap:2.4cqw}
-.ec-face.ec-bento .ec-bento-copy h2{margin:0;font-size:9.2cqw;font-weight:700;letter-spacing:-.045em;line-height:1.32;text-shadow:0 2px 12px #00000026}
+.ec-face.ec-bento .ec-bento-copy h2{margin:0;font-size:9.2cqw;font-weight:800;letter-spacing:-.045em;line-height:1.32;text-shadow:0 2px 12px #00000026}
 .ec-bento-meta{font-size:max(8px,3.5cqw);color:#ffffffb8;line-height:1.5}
 .ec-bento-credit{display:flex;align-items:center;justify-content:space-between;gap:3cqw;width:100%;min-width:0;margin-top:1.5cqw}
 .ec-bento-author{margin-left:auto!important;min-width:0;max-width:75%!important;justify-content:flex-end;text-align:right;font-size:max(10px,4.6cqw);font-weight:500;letter-spacing:-.02em;line-height:1.4;color:#ffffffdb}
 .ec-bento-video{font-size:max(9px,4cqw);color:#ffffffc4;flex:none}.ec-bento-video svg{width:4.6cqw;height:4.6cqw}
-.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy{justify-content:flex-start;gap:2cqw}
-.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy h2{font-size:6.5cqw;font-weight:600;line-height:1.45;letter-spacing:-.035em;text-shadow:none}
-.ec-bento[data-bento-kind=note] .ec-bento-credit{margin-top:auto}
+.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy{justify-content:flex-start;gap:1cqw}
+.ec-face.ec-bento[data-bento-kind=note] .ec-bento-copy h2{font-size:6.5cqw;font-weight:700;line-height:1.45;letter-spacing:-.035em;text-shadow:none}
+.ec-bento[data-bento-kind=note] .ec-bento-credit{margin-top:0}
 .ec-bento[data-bento-kind=note] .ec-bento-author{font-size:max(10px,3.4cqw)}
 .ec-bento-paper .ec-bento-category{border-color:transparent;background:color-mix(in srgb,var(--fg,#171718) 5%,transparent)}
 .ec-bento-paper .ec-bento-rating{border-color:transparent;background:transparent}
 /* Keep the image clear; reserve a compact baseline for date and author. */
 .ec-bento-shade{background:linear-gradient(180deg,transparent 64%,#00000008 76%,#00000052 100%)}
-.ec-bento-copy{bottom:4cqw;gap:1.8cqw}
-.ec-bento-credit{margin-top:1cqw;gap:2cqw;align-items:baseline}
+.ec-bento-copy{bottom:4cqw;gap:1cqw}
+.ec-bento-credit{margin-top:0;gap:2cqw;align-items:baseline}
 .ec-bento-credit time{flex:none;font-size:max(8px,3.5cqw);line-height:1.4;color:#ffffffd9;white-space:nowrap}
 .ec-bento-author{max-width:52%!important}
 .ec-bento-copy h2,.ec-bento-meta,.ec-bento-credit{text-shadow:0 1px 4px #0009}
