@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 
-const {outputFiles}=await build({entryPoints:['src/design-review/bento/bentoLayout.ts'],bundle:true,write:false,platform:'node',format:'esm'});
-const {bentoLayout,BENTO_RATIOS}=await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
+const {outputFiles}=await build({entryPoints:['src/social/bentoLayout.ts'],bundle:true,write:false,platform:'node',format:'esm'});
+const {bentoLayout,BENTO_RATIOS,bentoKind,cardCanvasHeight,hasBentoFront}=await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
 assert.deepEqual(BENTO_RATIOS,{daily:4/5,dining:4/5,movie:2/3,book:3/4,music:1,note:2},'Agreed topic ratios remain explicit');
 let checks=0;
 const pairs=Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').flatMap(first=>Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').map(second=>[first,second]));
@@ -19,10 +19,15 @@ for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['dail
  });
  const rows=[...new Set(result.tiles.map(tile=>tile.top))].map(top=>result.tiles.filter(tile=>tile.top===top));
  rows.forEach((row,index)=>{
-  if(row.length===1)assert.equal(row[0].width,width,'Single cards fill the row');
+  if(row.length===1)assert.equal(row[0].width,width,'Notes and unpaired cards fill their row without a vacant column');
   else{assert.equal(row.length,2);assert.equal(row[0].height,row[1].height,'Both column bottoms align');assert.ok(Math.abs(row[0].width+row[1].width+12-width)<.001,'The paired widths fill the complete row');}
   if(index)assert.equal(row[0].top,rows[index-1][0].top+rows[index-1][0].height+12,'Only the intended gutter separates rows');
  });
  checks++;
 }
 console.log(`Bento layout: ${checks} width/content scenarios passed`);
+const log={category:'daily',image:'photo.jpg'};
+assert.equal(bentoKind(log),'daily');assert.equal(cardCanvasHeight(log),525);
+assert.equal(bentoKind({...log,image:'',body:'긴 글'}),'note');assert.equal(cardCanvasHeight({...log,image:''}),672);
+for(const [category,height] of [['movie',630],['book',560]]){const entry={...log,category,image:'',work:{image:'cover.jpg'}};assert.equal(bentoKind(entry),category);assert.equal(cardCanvasHeight(entry),height);assert.equal(hasBentoFront(entry),true);}
+assert.equal(cardCanvasHeight({...log,card:{ratio:'1:1',front:'ticket'}}),525,'Legacy front/ratio cannot change the automatic topic proportions');

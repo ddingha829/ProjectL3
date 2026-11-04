@@ -6,11 +6,13 @@ import {DEFAULT_EDITORIAL,normalizeEditorial,editorialColors,cardCorner,mixColor
 import {photoMaterial,type PhotoMaterial} from './cardMaterial';
 import {WeatherMark} from './weather';
 import {useCardTurn} from './useCardTurn';
+import BentoFront,{bentoTitle} from './BentoFront';
+import {cardCanvasHeight,hasBentoFront} from './bentoLayout';
 import './EditorialCard.css';
 export function styleOf(log:LabLog):EditorialStyle{return normalizeEditorial(log.card||{...DEFAULT_EDITORIAL,front:log.design,back:log.category==='book'?'library':log.category==='movie'?'review':'postcard'});}
 const labels={daily:'DAILY',dining:'DINING',movie:'CINEMA',book:'BOOKS'};
 const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen};
-export const cardTitle=(log:LabLog)=>log.work?.title||log.title||log.locationLabel||log.place?.name||new Date(log.createdAt).toLocaleDateString('ko-KR');
+export const cardTitle=bentoTitle;
 const dateOf=(time:number)=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(time).replaceAll('-','.');
 
 /** A screen-only hairline follows the actual silhouette, including ticket holes. */
@@ -25,25 +27,20 @@ function CardSurfaceEdge({layout,height,square}:{layout:EditorialStyle['front']|
 
 export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number}){
  const s=appearance||styleOf(log),Icon=icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
- const needed=Boolean(log.image&&(s.finish==='film'||s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
+ const needed=side==='back'&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
  const rating=log.rating?<span className="ec-rating" style={{color:'#F5C842'}} aria-label={`별점 ${log.rating}점`}><Star size={15} fill="#F5C842" stroke="#A7750C" strokeWidth={1} aria-hidden="true"/>{log.rating}</span>:null;
  const category=<span className="ec-category"><Icon size={13}/>{labels[log.category]}</span>;
- const photoBadges=<div className="ec-photo-badges"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div>;
- const settings=log.photo;
- const photo=<img style={settings?{objectFit:settings.fit,objectPosition:settings.x+'% '+settings.y+'%',transform:'translate('+((50-settings.x)*(settings.zoom-1))+'%, '+((50-settings.y)*(settings.zoom-1))+'%) scale('+settings.zoom+')',filter:'saturate('+settings.saturation/100+') brightness('+settings.brightness/100+') contrast('+settings.contrast/100+')'}:undefined} className="ec-photo" src={s.finish==='film'&&prepared?.value?prepared.value.film:log.image} alt="" draggable={false}/>;
- const variables={...editorialColors(s),'--ec-height':`${canvasHeight??(s.ratio==='1:1'?420:672)}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
+ const logicalHeight=canvasHeight??cardCanvasHeight(log);
+ const variables={...editorialColors(s),'--ec-height':`${logicalHeight}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
  const surface=<>{side==='back'&&(s.ambientBleed||s.finish==='acrylic')&&<div className={`ec-color-residue ${s.finish==='acrylic'?'ec-frosted':''}`} aria-hidden="true"/>}{s.finish==='satin'&&<div className="ec-satin-sheen" aria-hidden="true"/>}</>;
  const materialClass=`ec-finish-${s.finish||'none'} ${s.fontMood?`ec-mood-${s.fontMood}`:''}`;
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
- const edge=<CardSurfaceEdge layout={layout} height={canvasHeight??(s.ratio==='1:1'?420:672)} square={s.ratio==='1:1'}/>;
+ const edge=<CardSurfaceEdge layout={layout} height={logicalHeight} square={logicalHeight<=420}/>;
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
- if(side==='front')return <div data-ec-face="front" data-ec-layout={s.front} data-ec-material={materialState} className={`ec-face ec-front ec-${s.front} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
-  {s.front==='cover'?<>{photo}<div className="ec-cover-shade"/><div className="ec-cover-top"><span className="ec-glass"><Icon size={14}/>{labels[log.category]}</span>{rating&&<span className="ec-glass">{rating}</span>}</div><div className="ec-cover-bottom"><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div></>:s.front==='ticket'?<><div className="ec-ticket-photo">{photo}{photoBadges}</div><div className="ec-ticket-stub"><div><h2>{title}</h2><p className="ec-meta"><span>{meta}</span><WeatherMark value={log.weather}/></p></div><div className="ec-ticket-code"><i className="ec-barcode" aria-hidden="true"/></div></div></>:<><div className="ec-polaroid-photo">{photo}{photoBadges}</div><div className="ec-polaroid-meta"><span>{place}</span><span className="ec-meta">{date}<WeatherMark value={log.weather}/></span></div><h2>{title}</h2><p className="ec-polaroid-caption">{log.body}</p></>}
-  {surface}{edge}
- </div>;
- return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${s.ratio==='1:1'?'ec-square':'ec-portrait'}`} style={variables}>
+ if(side==='front')return <BentoFront log={log} author={author} canvasHeight={logicalHeight}/>;
+ return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${logicalHeight<=420?'ec-square':'ec-portrait'}`} style={variables}>
   {surface}
   {s.back==='doodle'&&<i className="ec-tape" aria-hidden="true"/>}
   {s.back==='paint'&&<div className="ec-swatch" aria-hidden="true"/>}
@@ -64,13 +61,13 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  </div>;
 }
 
-export default function EditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal',compactPreview=false}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
- const scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!log.image);
- const s=appearance||styleOf(log),canFlip=interactive&&Boolean(log.image),compact=s.ratio!=='1:1',canvasHeight=s.ratio==='1:1'?420:672;
+function FullEditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal'}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
+ const hasFront=hasBentoFront(log),scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!hasFront);
+ const s=appearance||styleOf(log),canFlip=interactive&&hasFront,canvasHeight=cardCanvasHeight(log),compact=canvasHeight!==420;
  const targetBack=useRef(back);targetBack.current=back;
- const turn=useCardTurn(scene,initialSide==='back'||!log.image);
- useLayoutEffect(()=>{const initial=initialSide==='back'||!log.image;setBack(initial);turn.reset(initial);},[log.id,Boolean(log.image),initialSide,turn.reset]);
- useEffect(()=>{if(log.image)turn.turn(back);},[back,Boolean(log.image),turn.turn]);
+ const turn=useCardTurn(scene,initialSide==='back'||!hasFront);
+ useLayoutEffect(()=>{const initial=initialSide==='back'||!hasFront;setBack(initial);turn.reset(initial);},[log.id,hasFront,initialSide,turn.reset]);
+ useEffect(()=>{if(hasFront)turn.turn(back);},[back,hasFront,turn.turn]);
  useEffect(()=>{
   hintSeen.current=false;setHint(false);
   const element=scene.current;if(!element||!canFlip)return;
@@ -81,12 +78,16 @@ export default function EditorialCard({log,author,appearance,interactive=true,in
  },[log.id,canFlip,turn.hint,turn.reset,hintStrength]);
  useLayoutEffect(()=>{const element=scene.current;if(!element)return;setScale(parseFloat(getComputedStyle(element).width)/420);const observer=new ResizeObserver(([entry])=>setScale(entry.contentRect.width/420));observer.observe(element);return()=>observer.disconnect();},[]);
  const flip=()=>{hintSeen.current=true;setHint(false);if(canFlip&&!window.getSelection()?.toString())setBack(value=>!value);};
- return <div ref={scene} className={`ec-scene ${compact?'ec-feed-preview':''} ${log.image&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!log.image?'ec-single':''}`} style={{aspectRatio:`420 / ${canvasHeight}`,'--ec-scale':scale,'--ec-height':`${canvasHeight}px`} as CSSProperties} data-card-preview data-card-side={!log.image||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
+ return <div ref={scene} className={`ec-scene ${compact?'ec-feed-preview':''} ${hasFront&&back?'ec-is-back':''} ${canFlip?'ec-interactive':''} ${!hasFront?'ec-single':''}`} style={{aspectRatio:`420 / ${canvasHeight}`,'--ec-scale':scale,'--ec-height':`${canvasHeight}px`} as CSSProperties} data-card-preview data-card-side={!hasFront||back?'back':'front'} data-flip-hint={hint?true:undefined} role={canFlip?'button':undefined} tabIndex={canFlip?0:undefined} aria-label={canFlip?`${cardTitle(log)} · ${back?'앞면':'뒷면'}으로 뒤집기`:undefined} aria-pressed={canFlip?back:undefined}
   onPointerDown={event=>{start.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{if(start.current&&Math.hypot(event.clientX-start.current.x,event.clientY-start.current.y)<7)flip();start.current=null;}} onPointerCancel={()=>{start.current=null;}}
   onClick={event=>{if(event.detail===0)flip();}} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();flip();}}}>
-  <div className="ec-logical">{log.image?<div className={`ec-hint-stage ${hint?'ec-hint-active':''}`}><div className="ec-rotator">
+  <div className="ec-logical">{hasFront?<div className={`ec-hint-stage ${hint?'ec-hint-active':''}`}><div className="ec-rotator">
    <div ref={turn.front} className="ec-plane ec-front-plane" style={{visibility:turn.visibleBack?'hidden':'visible'}} aria-hidden={turn.visibleBack} inert={turn.visibleBack}><EditorialFace log={log} author={author} side="front" appearance={s} canvasHeight={canvasHeight}/></div>
    <div ref={turn.rear} className="ec-plane ec-back-plane" style={{visibility:turn.visibleBack?'visible':'hidden'}} aria-hidden={!turn.visibleBack} inert={!turn.visibleBack}><EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/></div>
   </div></div>:<EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/>}</div>
  </div>;
+}
+
+export default function EditorialCard(props:Parameters<typeof FullEditorialCard>[0]){
+ return props.compactPreview?<BentoFront log={props.log} author={props.author} native/>:<FullEditorialCard {...props}/>;
 }

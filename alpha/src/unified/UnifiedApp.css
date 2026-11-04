@@ -108,8 +108,8 @@
 @media(max-width:360px){.un-app .un-main{padding-inline:12px}.un-header{padding-inline:12px}.un-scope{padding-inline:12px;gap:8px}.un-scope-private{font-size:10px}.un-scope-tabs>button{min-width:68px;padding-inline:9px}.un-log-controls{padding-inline:9px}.un-app .un-grid{gap:18px 10px}.un-studio-edit-row{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.un-studio-actions>button{font-size:11px;padding-inline:7px}.un-design-shortcuts>button{font-size:9px}.un-detail-actions>button{padding-inline:8px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.un-app *{scroll-behavior:auto!important}.un-scope-tabs>button,.un-view-switch>button{transition:none}.un-backup-overlay progress::-webkit-progress-value{transition:none}}
 @supports not (backdrop-filter:blur(10px)){.un-log-controls{background:var(--surface)}}
-.lab-editorial-controls[data-section=design]>fieldset:nth-of-type(4),.lab-editorial-controls[data-section=design]>.lab-material-settings{display:none}
-.lab-editorial-controls[data-section=color]>fieldset:not(:nth-of-type(4)),.lab-editorial-controls[data-section=color]>.lab-material-settings{display:none}
+.lab-editorial-controls[data-section=design]>[data-card-control=color],.lab-editorial-controls[data-section=design]>.lab-material-settings{display:none}
+.lab-editorial-controls[data-section=color]>fieldset:not([data-card-control=color]),.lab-editorial-controls[data-section=color]>.lab-material-settings{display:none}
 .lab-editorial-controls[data-section=details]>fieldset{display:none}
 .un-design-modal .lab-editorial-themes{grid-template-columns:repeat(3,minmax(0,1fr))}
 .un-design-modal .lab-editorial-themes>button{min-width:0;padding:9px 6px;min-height:47px;flex-direction:column;gap:5px}

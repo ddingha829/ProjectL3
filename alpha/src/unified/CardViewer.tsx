@@ -5,6 +5,7 @@ import {AnimatePresence,motion,useMotionTemplate,useMotionValue,useSpring} from 
 import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
 import EditorialCard,{cardTitle} from '@/social/EditorialCard';
+import {cardCanvasHeight,hasBentoFront} from '@/social/bentoLayout';
 import type {EditorialStyle} from '@/social/editorialStyle';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
@@ -46,7 +47,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
  const changeExpanded=(value:boolean)=>{if(!value&&tools.current?.contains(document.activeElement))document.getElementById(toolsId+'-toggle')?.focus({preventScroll:true});setExpanded(value);};
  const damp=(over:number)=>Math.sign(over)*Math.pow(Math.abs(over),0.72)*0.36;
 
- return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':appearance.ratio==='1:1'?1:420/672,'--viewer-peek-content':'172px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
+ return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':420/cardCanvasHeight(log),'--viewer-peek-content':'172px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
   <button type="button" className="un-viewer-typing-done" onPointerDown={event=>event.preventDefault()} onClick={()=>tools.current?.querySelector<HTMLInputElement>('input')?.blur()}><ChevronDown size={16} aria-hidden="true"/>입력 완료</button>
   <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY,lastY:event.clientY,lastT:performance.now()};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;resetTilt();if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;resetTilt();}}>
    <motion.div
@@ -92,7 +93,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
    <div ref={tools} id={toolsId} className="un-detail-tools un-viewer-tools" hidden={!expanded} inert={!expanded}>{children}</div>
   </section>
   <AccessibleDialog open={videoOpen} title="움직이는 2초" closeLabel="영상 재생 닫기" onClose={()=>{videoRequest.current++;setVideoOpen(false);setVideoUrl('');}} panelClassName="lab-dialog un-video-picker">{videoError?<p className="lab-error" role="alert">{videoError}</p>:videoUrl?<video className="un-video-playback" src={videoUrl} poster={log.image} muted playsInline autoPlay controls preload="none"/>:<p role="status"><LoaderCircle size={18} className="lab-spin"/>영상을 불러오고 있어요</p>}<p className="un-video-note"><Film size={14}/>무음 2초 · 외부 공유는 정지 사진으로 보내요.</p></AccessibleDialog>
-  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={!!log.image}/></AccessibleDialog>
+  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={hasBentoFront(log)}/></AccessibleDialog>
   <AccessibleDialog open={optionsOpen} title="티끌 옵션" onClose={()=>setOptionsOpen(false)} panelClassName="lab-dialog un-log-options"><div className="un-log-options-list">{options?.(()=>setOptionsOpen(false))}</div></AccessibleDialog>
  </div>;
 }

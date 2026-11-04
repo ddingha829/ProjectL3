@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import BentoTestApp from '@/design-review/bento/BentoTestApp';
+import UnifiedApp from '@/unified/UnifiedApp';
 
-export const metadata:Metadata={title:'벤토 피드 테스트 · 티끌',robots:{index:false,follow:false},alternates:{canonical:'/test/'}};
-export default function Page(){return <BentoTestApp/>;}
+export const metadata:Metadata={title:'티끌 · 벤토 피드',robots:{index:false,follow:false},alternates:{canonical:'/'}};
+export default function Page(){return <UnifiedApp/>;}

@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import {build} from 'esbuild';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+await fs.mkdir('.test-data',{recursive:true});
+const output=path.resolve('.test-data/bento-migration.mjs');
+await build({stdin:{contents:"export {default as BentoFront} from './src/social/BentoFront';export {default as EditorialCard,EditorialFace} from './src/social/EditorialCard';export {applyBackPreset,DEFAULT_EDITORIAL,validEditorial} from './src/social/editorialStyle';export {initialUnified,parseUnified} from './src/unified/store';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:output,loader:{'.css':'empty'},external:['react','react-dom','react/jsx-runtime','lucide-react','motion/react'],logLevel:'silent'});
+const {BentoFront,EditorialCard,EditorialFace,applyBackPreset,DEFAULT_EDITORIAL,validEditorial,initialUnified,parseUnified}=await import(pathToFileURL(output));
+const base={id:'fixture',authorId:'me',circleId:null,title:'남겨둔 하루',body:'긴 본문도 지워지지 않아요. '.repeat(40),good:'좋았던 점',bad:'아쉬웠던 점',note:'다음에 기억할 점',image:'/images/studio-cafe.png',category:'daily',createdAt:1793770000000,design:'ticket',rating:'4.5',likes:['friend'],bookmarks:['me'],comments:[{id:'c',authorId:'friend',body:'댓글 유지'}],photo:{fit:'contain',x:37,y:42,zoom:1.2,saturation:85,brightness:110,contrast:105}};
+const html=(Component,props)=>renderToStaticMarkup(React.createElement(Component,props));
+let checks=0;const check=(name,fn)=>{fn();checks++;console.log('PASS '+name);};
+check('legacy front/ratio choices render the same automatic topic front',()=>{
+ for(const front of ['cover','ticket','polaroid'])for(const ratio of ['10:16','1:1','9:16']){
+  const markup=html(EditorialCard,{log:{...base,card:{...DEFAULT_EDITORIAL,front,ratio}},author:'나',compactPreview:true});
+  assert.match(markup,/data-ec-layout="bento"/);assert.match(markup,/data-topic-ratio="4:5"/);assert.ok(!markup.includes('ec-ticket')&&!markup.includes('ec-polaroid'));
+ }
+});
+check('feed previews keep author, rating, media flag, image settings and native ratios',()=>{
+ const markup=html(BentoFront,{log:{...base,video:{path:'fixture.mp4'}},author:'준혁',native:true});
+ for(const text of ['준혁','4.5','2초','남겨둔 하루','object-fit:contain','37% 42%','scale(1.2)','loading="lazy"','aspect-ratio:0.8'])assert.ok(markup.includes(text),text);
+ assert.ok(!markup.includes('<video')&&!markup.includes('ec-back-scroll'),'Feed never mounts a video player or hidden review');
+});
+check('work covers and missing images keep the original work topic',()=>{
+ for(const [category,ratio] of [['movie','2:3'],['book','3:4']]){
+  const markup=html(BentoFront,{log:{...base,category,image:'',work:{title:'작품 제목',image:'/cover.jpg',creator:'작가'}},author:'친구',native:true});
+  assert.ok(markup.includes('src="/cover.jpg"'));assert.ok(markup.includes(`data-topic-ratio="${ratio}"`));assert.ok(markup.includes('작품 제목'));assert.ok(markup.includes('작가'));
+ }
+});
+check('plain text is escaped and gets a full-width note front',()=>{
+ const markup=html(BentoFront,{log:{...base,image:'',title:'',body:'<script>danger</script> 기록'},author:'나',native:true});
+ assert.ok(markup.includes('data-topic-ratio="2:1"'));assert.ok(markup.includes('&lt;script&gt;'));assert.ok(!markup.includes('<script>'));
+});
+check('detail front and back use topic geometry, and every review block survives',()=>{
+ const appearance={...DEFAULT_EDITORIAL,front:'polaroid',ratio:'1:1',back:'review'};
+ const front=html(EditorialFace,{log:base,author:'나',side:'front',appearance});assert.ok(front.includes('data-card-height="525"'));
+ const back=html(EditorialFace,{log:base,author:'나',side:'back',appearance});
+ assert.ok(back.includes('--ec-height:525px'));for(const text of [base.body,base.good,base.bad,base.note])assert.ok(back.includes(text));
+});
+check('back presets preserve archived per-card front and ratio fields',()=>{
+ const current={...DEFAULT_EDITORIAL,front:'ticket',ratio:'1:1'},preset={...DEFAULT_EDITORIAL,front:'polaroid',ratio:'10:16',back:'library',bg:'#123456',finish:'acrylic',fontMood:'serif'};
+ const applied=applyBackPreset(current,preset);assert.equal(applied.front,'ticket');assert.equal(applied.ratio,'1:1');assert.equal(applied.back,'library');assert.equal(applied.bg,'#123456');assert.ok(validEditorial(applied));assert.equal(current.front,'ticket');
+});
+check('existing storage round-trips without a destructive migration',()=>{
+ const state=initialUnified(),snapshot=JSON.stringify(state),parsed=parseUnified(snapshot);assert.ok(parsed);assert.deepEqual(parsed.logs,state.logs);assert.deepEqual(parsed.presets,state.presets);assert.deepEqual(parsed.mosaic,state.mosaic);assert.equal(JSON.stringify(state),snapshot);
+});
+console.log(JSON.stringify({passed:checks}));

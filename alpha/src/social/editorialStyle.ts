@@ -21,6 +21,10 @@ export const EDITORIAL_THEMES=[
 ] as const;
 export const DEFAULT_EDITORIAL:EditorialStyle={front:'cover',back:'postcard',ratio:'10:16',bg:EDITORIAL_THEMES[0].bg,text:EDITORIAL_THEMES[0].text,accent:EDITORIAL_THEMES[0].accent};
 export const normalizeEditorial=(style:EditorialStyle):EditorialStyle=>style.ratio==='9:16'?{...style,ratio:'10:16'}:style;
+/** Back-only preset application preserves the archived front/ratio on old cards. */
+export function applyBackPreset(current:EditorialStyle,preset:EditorialStyle):EditorialStyle{
+ return {...current,back:preset.back,bg:preset.bg,text:preset.text,accent:preset.accent,finish:preset.finish,fontMood:preset.fontMood,ambientBleed:preset.ambientBleed};
+}
 export const validHex=(value:unknown):value is string=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
 export function validEditorial(value:unknown):value is EditorialStyle{const p=value as EditorialStyle;return Boolean(p&&FRONTS.includes(p.front)&&BACKS.includes(p.back)&&['10:16','9:16','1:1'].includes(p.ratio)&&validHex(p.bg)&&validHex(p.text)&&validHex(p.accent)&&(p.finish===undefined||FINISHES.includes(p.finish))&&(p.fontMood===undefined||FONT_MOODS.includes(p.fontMood))&&(p.ambientBleed===undefined||typeof p.ambientBleed==='boolean'));}
 export function mixColor(a:string,b:string,fraction:number){const rgb=(hex:string)=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));const x=rgb(a),y=rgb(b);return '#'+x.map((n,i)=>Math.round(n*(1-fraction)+y[i]*fraction).toString(16).padStart(2,'0')).join('');}
