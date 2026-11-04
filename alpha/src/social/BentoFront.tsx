@@ -15,12 +15,13 @@ export default function BentoFront({log,author,native=false,canvasHeight}:{log:L
  const kind=bentoKind(log),image=bentoImage(log),Icon=icons[kind],title=kind==='note'?log.title.trim()||log.body||bentoTitle(log):bentoTitle(log);
  const location=log.work?.creator||log.locationLabel||log.place?.name||'',meta=location!==title?location:'',photo=log.photo;
  const imageStyle:CSSProperties={objectFit:photo?.fit||'cover',objectPosition:`${photo?.x??50}% ${photo?.y??50}%`,...(photo?{transform:`translate(${(50-photo.x)*(photo.zoom-1)}%, ${(50-photo.y)*(photo.zoom-1)}%) scale(${photo.zoom})`,filter:`saturate(${photo.saturation/100}) brightness(${photo.brightness/100}) contrast(${photo.contrast/100})`}:{})};
+ const credit=<div className="ec-bento-credit"><time dateTime={new Date(log.createdAt).toISOString()}>{dateOf(log.createdAt)}</time>{log.video&&<span className="ec-bento-video"><Film aria-hidden="true"/>2초</span>}<p className="ec-bento-author"><span>{author}</span></p></div>;
  const height=canvasHeight??420/BENTO_RATIOS[kind];
  return <div className={`ec-face ec-front ec-bento ${!image?'ec-bento-paper':''}`} data-ec-face="front" data-ec-layout="bento" data-native-preview={native?'true':undefined} data-bento-kind={kind} data-topic-ratio={BENTO_RATIO_LABELS[kind]} data-card-width="420" data-card-height={height} style={{'--ec-height':`${height}px`,...(native?{width:'100%',height:'auto',aspectRatio:String(BENTO_RATIOS[kind])}:{})} as CSSProperties}>
   <div className="ec-bento-content">
    {image?<><img className="ec-bento-image" src={image} alt="" loading={native?'lazy':undefined} decoding="async" draggable={false} style={imageStyle} onError={event=>{event.currentTarget.style.visibility='hidden';}}/><span className="ec-bento-shade" aria-hidden="true"/></>:<Icon className="ec-bento-watermark" aria-hidden="true"/>}
    <div className="ec-bento-top"><span className="ec-bento-category"><Icon aria-hidden="true"/>{labels[kind]}</span>{log.rating&&<span className="ec-bento-rating" aria-label={`별점 ${log.rating}점`}><Star aria-hidden="true" fill="currentColor"/>{log.rating}</span>}</div>
-   <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2>{meta&&<p className="ec-bento-meta"><span>{meta}</span></p>}<div className="ec-bento-credit"><time dateTime={new Date(log.createdAt).toISOString()}>{dateOf(log.createdAt)}</time>{log.video&&<span className="ec-bento-video"><Film aria-hidden="true"/>2초</span>}<p className="ec-bento-author"><span>{author}</span></p></div></div>
+   <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2>{meta&&<p className="ec-bento-meta"><span>{meta}</span></p>}{kind==='note'&&credit}</div>{kind!=='note'&&credit}
   </div>
  </div>;
 }
