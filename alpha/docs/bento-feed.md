@@ -9,7 +9,7 @@ The production feed uses chronological, justified two-card rows. Each pair share
 | Book | 3:4 |
 | Text only | 2:1 in feed; full-height review in detail |
 
-`social/bentoLayout.ts` owns grouping and geometry. `BentoFront` is shared by feed, detail, photo editing and image export. It retains title, author, rating, date, place/creator, weather, video indicator and photo corrections. A work with no cover retains its topic and gets a typography placeholder. Video files load only through the existing detail player.
+`social/bentoLayout.ts` owns grouping and geometry. `BentoFront` is shared by feed, detail, photo editing and image export. It retains title, author, rating, date, place/creator, video indicator and photo corrections. A work with no cover retains its topic and gets a typography placeholder. Weather and temperature are available on the back only. Date and author share the front footer row. Video files load only through the existing detail player.
 
 The production feed retains the existing scopes, category/search filters, sorting, saved items, collections and multi-select, list/calendar modes, four-record automatic pagination, new-arrival highlight, comments/reactions and history/scroll restoration. Collection contents use the same bento presentation. The paused prototype controls and duplicate bento renderer are removed; `/test/` now opens the production presentation. `/test/music/` remains separate.
 
