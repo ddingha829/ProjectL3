@@ -62,24 +62,11 @@
 .ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]){--ec-credit-height:clamp(18px,6.7cqw,26px)}
 [data-ec-export] .ec-bento-content::after,[data-ec-export] .ec-bento-reactions,[data-ec-export] .ec-bento-reaction-divider,[data-ec-export] .ec-bento-author:not(:has(.ec-bento-author-name)){display:none}
 .ec-bento-motion-host{position:absolute;inset:0;pointer-events:none}.ec-bento-motion{pointer-events:none}.un-bento-playback-control{position:absolute;right:6px;top:42px;z-index:3;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:#10111280;color:white;cursor:pointer;touch-action:manipulation}.un-bento-playback-control:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.un-detail-video-controls{position:absolute;right:8px;top:54px;z-index:6;display:flex;flex-direction:column;gap:6px}.un-detail-video-controls>button{display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffff36;border-radius:50%;background:#10111280;color:#fff;cursor:pointer;touch-action:manipulation}.un-detail-video-controls>button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* Music sleeves: square, uncropped artwork above a quiet information panel. */
-.ec-face.ec-bento[data-bento-kind=music]{--ec-credit-height:4.8cqw;background:var(--surface,#fff);color:var(--fg,#171718)}
-.ec-bento-album{position:absolute;top:0;left:0;width:100%;aspect-ratio:1;overflow:hidden;background:var(--surface-2,#eee9df)}
-.ec-bento-album .ec-bento-shade{display:none}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-content::after{border-color:var(--line,#0002)}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy{top:calc(75% + 2cqw);bottom:var(--ec-credit-height);justify-content:flex-start;gap:.5cqw}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy h2{display:block;max-width:100%;font-size:8cqw;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;text-shadow:none}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-meta{line-height:1.5;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent);text-shadow:none}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-content>.ec-bento-credit{background:none;border:0;padding-bottom:.5cqw}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-credit time,.ec-face.ec-bento[data-bento-kind=music] .ec-bento-author{line-height:1.05;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music]{--ec-credit-height:clamp(12px,5cqw,20px)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-copy h2{font-size:clamp(12px,8cqw,18px)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-credit time,.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-author{font-size:clamp(9px,3.3cqw,11px)}
+/* Square music cards keep the entire album; information overlays the lower edge. */
+.ec-bento-album{position:absolute;inset:0;width:100%;aspect-ratio:1;overflow:hidden;background:var(--surface-2,#eee9df)}
 
 /* Feed reading rhythm: compact headings, readable supporting text, quiet credits. */
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-meta{font-size:clamp(10px,4.8cqw,12px);line-height:1.45}
 .ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy{gap:5px}
 .ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy h2{line-height:1.4;letter-spacing:-.025em}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-credit time{font-variant-numeric:tabular-nums;letter-spacing:-.015em}
-
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-meta{font-size:clamp(9px,5cqw,12px);line-height:1.3}
