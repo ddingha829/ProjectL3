@@ -1,6 +1,6 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 /** Limit simultaneous decoders; waiting cards remain still posters. */
-export function createCardPlaybackPool(limit=2){
+export function createCardPlaybackPool(limit=6){
  const waiting=new Map<symbol,(allowed:boolean)=>void>();
  const update=()=>{let index=0;for(const callback of waiting.values())callback(index++<limit);};
  return {request(callback:(allowed:boolean)=>void){const id=Symbol();waiting.set(id,callback);update();return()=>{waiting.delete(id);update();};}};

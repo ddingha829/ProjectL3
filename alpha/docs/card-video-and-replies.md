@@ -1,6 +1,6 @@
 # Inline card video and comment replies
 
-Feed and detail explicitly opt into inline video; studio, map, thumbnails and image exports retain still covers. Only at least 60% visible foreground cards play, up to two decoders at a time. Other dialogs, hidden tabs, back faces, reduced-motion and data-saver preferences suspend autoplay. Pause and manual playback remain available. Signed sources are reused in memory for 20 seconds per client/account (60-second URLs), without a persistent token or media cache.
+Feed and detail explicitly opt into inline video; studio, map, thumbnails and image exports retain still covers. Only at least 60% visible foreground cards play, up to six decoders at a time. Other dialogs, hidden tabs, back faces, reduced-motion and data-saver preferences suspend autoplay. Pause and manual playback remain available. Signed sources are reused in memory for 20 seconds per client/account (60-second URLs), without a persistent token or media cache.
 
 New recordings use a silent 480×768 canvas at 15fps and a 600kbps target. Album/compatibility encodes also use 15fps with bounded bitrate fallbacks. Existing conforming camera MP4s are copied, not batch re-encoded. Sharing still captures the underlying poster and strips video UI.
 
