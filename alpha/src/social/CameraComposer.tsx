@@ -8,6 +8,7 @@ import {useMotionPreference} from '@/lib/useMotionPreference';
 import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import type {Circle,LabLog,Person} from './model';
 import Composer from './Composer';
+import {useComposerBackHistory} from './useComposerBackHistory';
 import MediaAdjust from './MediaAdjust';
 import {DEFAULT_PHOTO,type PhotoSettings} from '@/unified/store';
 import VideoPicker,{type VideoAttachment} from './VideoPicker';
@@ -23,6 +24,7 @@ import type {PhotoOrigin} from './LocationSuggestion';
 type Props={paused?:boolean;onPause?:()=>void;editing?:LabLog;storageMode?:'cloud'|'demo';initialWork?:Work;nearbyLogs?:LabLog[];actor:Person;circles:Circle[];audience:string|null;dark:boolean;onSave:(log:LabLog)=>boolean;onClose:()=>void};
 export default function CameraComposer(p:Props){
  const reduced=useMotionPreference();
+ useComposerBackHistory(!p.paused,p.onClose);
  const [photo,setPhoto]=useState<PhotoSettings>({...DEFAULT_PHOTO,...p.editing?.photo}),[adjustOpen,setAdjustOpen]=useState(false);
  const [mode,setMode]=useState<'camera'|'video'|'work'|'text'|null>(p.editing?(p.editing.video?'video':p.editing.work?'work':p.editing.image?'camera':'text'):p.initialWork?'work':null),[workKind,setWorkKind]=useState<'movie'|'book'|null>(null),[image,setImage]=useState(p.editing?p.editing.image:p.initialWork?.image||''),[editor,setEditor]=useState(Boolean(p.editing||p.initialWork)),[busy,setBusy]=useState(false),[error,setError]=useState(''),[cameraAttempt,setCameraAttempt]=useState(0),[origin,setOrigin]=useState<PhotoOrigin>(p.editing?.work&&p.editing.image===p.editing.work.image||!p.editing&&p.initialWork?'work':p.editing?'album':undefined),[activeWork,setActiveWork]=useState(p.editing?.work||p.initialWork);
  const [audienceIds,setAudienceIds]=useState<string[]>(p.editing?.circleIds??(p.editing?.circleId?[p.editing.circleId]:[])),[workChosen,setWorkChosen]=useState(Boolean(p.editing||p.initialWork));

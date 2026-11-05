@@ -17,6 +17,7 @@ import {briefMediaText} from '@/lib/media';
 import WeatherInput from './WeatherInput';
 import ComposerWeather from './ComposerWeather';
 import StarRating from './StarRating';
+import {watchComposerResumeFocus} from '@/lib/composerResumeFocus';
 import PhotoAttachment from './PhotoAttachment';
 import type {CardWeather} from './weatherValidation';
 import {addsGroupShare,canAddGroupShare,SHARE_WINDOW_MESSAGE} from '@/lib/groupSharing';
@@ -40,6 +41,7 @@ export default function Composer(p:Props){
  useEffect(()=>{const key=`${place?.lat}:${place?.lng}`;if(weatherPlace.current===key)return;weatherPlace.current=key;setWeather(current=>current?.observation&&(place===undefined||current.observation.lat!==Number(place.lat.toFixed(2))||current.observation.lng!==Number(place.lng.toFixed(2)))?undefined:current);},[place?.lat,place?.lng]);
  const album=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null),upload=useRef(0),alive=useRef(true),submitLock=useRef(false);
  const story=Boolean(p.panelClassName?.includes('lab-story-editor')),bodyInput=useRef<HTMLTextAreaElement>(null),locationButton=useRef<HTMLButtonElement>(null),titleId=useId(),bodyId=useId(),subDialog=story?' lab-story-subdialog':'';
+ useEffect(()=>{if(story&&p.open!==false)return watchComposerResumeFocus(()=>bodyInput.current?.closest<HTMLElement>('.lab-compose-dialog')||null);},[story,p.open]);
  useLayoutEffect(()=>{if(story&&p.open!==false&&bodyInput.current){const input=bodyInput.current;input.style.height='auto';input.style.height=`${Math.max(90,Math.min(220,input.scrollHeight))}px`;}},[story,p.open,body]);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;upload.current++;};},[]);
  useEffect(()=>{alive.current=p.open!==false;if(p.open===false){upload.current++;setSub(null);}},[p.open]);
