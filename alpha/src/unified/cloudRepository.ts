@@ -6,6 +6,7 @@ import {backendSessionKey} from './backendSession';
 import type {Person,Circle} from '@/social/model';
 import {normalizeNickname,nicknameInitial} from './nickname';
 import {photoUrls} from './photoUrls';
+import {commentGroup} from './commentScope';
 export type CloudOperation=Record<string,unknown>&{kind:string};
 export type Snapshot={actorId:string;people:Pick<Person,'id'|'name'|'color'>[];circles:(Circle&{revision:number})[];logs:UnifiedLog[];preferences:{payload:Pick<UnifiedState,'presets'|'collections'|'intents'|'nicknameConfigured'|'groupIntroSeen'>;revision:number}|null;placements:{logId:string;scope:string|null;slotIndex:number;placedBy:string;placedAt:number}[]};
 let configuredClient:{signature:string;client:SupabaseClient}|undefined;
@@ -26,7 +27,7 @@ export function cloudError(error:unknown){
  if(text.includes('SHARE_WINDOW_EXPIRED'))return '등록 후 48시간이 지나 새 모임에 공유할 수 없어요. 기존 공유는 유지되며 해제할 수 있어요.';
  if(code==='42501'||text.includes('LOG_READ_REQUIRED'))return '이 티끌의 공유 권한이 바뀌었어요. 변경을 백업한 뒤 최신 기록을 불러와주세요.';
  if(/fetch|network|timeout|load failed/i.test(text))return '서버 연결이 끊겼어요. 변경은 이 기기에 보관되어 있어요. 연결 후 다시 시도해주세요.';
- const known:Record<string,string>={STALE_VERSION:'다른 기기에서 바뀐 내용이 있어요. 임시 변경을 백업한 뒤 최신 기록을 불러와주세요.',COMMENT_PARENT_INVALID:'답글을 달 댓글이 바뀌었어요. 최신 댓글을 확인해주세요.',SLOT_TAKEN:'다른 모임원이 먼저 채운 칸이에요. 최신 보드에서 빈 칸을 골라주세요.',GROUP_FULL:'모임 정원이 찼어요.',INVALID_INVITE:'초대 코드를 확인해주세요. 만료되었거나 다시 발급된 코드일 수 있어요.',INVITE_RATE_LIMITED:'시도 횟수가 많아요. 잠시 뒤 다시 입력해주세요.',GROUP_OWNER_REQUIRED:'모임장만 변경할 수 있어요.',GROUP_MEMBER_REQUIRED:'이 모임에 참여한 뒤 다시 시도해주세요.',LOG_OWNER_REQUIRED:'내가 작성한 기록만 수정할 수 있어요.',OWNER_TRANSFER_REQUIRED:'다른 모임원이 있는 동안 모임장은 탈퇴할 수 없어요.',AUTH_REQUIRED:'로그인이 필요해요.'};
+ const known:Record<string,string>={STALE_VERSION:'다른 기기에서 바뀐 내용이 있어요. 임시 변경을 백업한 뒤 최신 기록을 불러와주세요.',COMMENT_SCOPE_REQUIRED:'모임을 다시 열고 댓글을 작성해주세요.',COMMENT_SCOPE_INVALID:'댓글을 남길 모임의 공유 상태가 바뀌었어요. 모임을 다시 확인해주세요.',COMMENT_PARENT_INVALID:'답글을 달 댓글이 바뀌었어요. 최신 댓글을 확인해주세요.',SLOT_TAKEN:'다른 모임원이 먼저 채운 칸이에요. 최신 보드에서 빈 칸을 골라주세요.',GROUP_FULL:'모임 정원이 찼어요.',INVALID_INVITE:'초대 코드를 확인해주세요. 만료되었거나 다시 발급된 코드일 수 있어요.',INVITE_RATE_LIMITED:'시도 횟수가 많아요. 잠시 뒤 다시 입력해주세요.',GROUP_OWNER_REQUIRED:'모임장만 변경할 수 있어요.',GROUP_MEMBER_REQUIRED:'이 모임에 참여한 뒤 다시 시도해주세요.',LOG_OWNER_REQUIRED:'내가 작성한 기록만 수정할 수 있어요.',OWNER_TRANSFER_REQUIRED:'다른 모임원이 있는 동안 모임장은 탈퇴할 수 없어요.',AUTH_REQUIRED:'로그인이 필요해요.'};
  for(const [key,value]of Object.entries(known))if(text.includes(key))return value;
  if(/Invalid login credentials/i.test(text))return '이메일 또는 비밀번호를 확인해주세요.';
  if(/already registered/i.test(text))return '이미 가입된 이메일이에요. 로그인해주세요.';
@@ -74,7 +75,7 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
   const old=before.logs.find(l=>l.id===log.id);
   if(log.authorId==='me'&&(!old||!same(logPayload(old),logPayload(log))||!same(audienceIds(old),audienceIds(log))))ops.push({kind:'log',id:log.id,payload:logPayload(log),groups:audienceIds(log),expected:old?.serverRevision||0});
   for(const [key,type]of [['likes','like'],['bookmarks','bookmark']]as const)if(Boolean(old?.[key].includes('me'))!==log[key].includes('me'))ops.push({kind:'reaction',id:log.id,type,active:log[key].includes('me')});
-  for(const comment of log.comments)if(comment.authorId==='me'&&!old?.comments.some(c=>c.id===comment.id))ops.push({kind:'comment',id:comment.id,logId:log.id,body:comment.body,...(comment.parentId?{parentId:comment.parentId}:{})});
+  for(const comment of log.comments)if(comment.authorId==='me'&&!old?.comments.some(c=>c.id===comment.id))ops.push({kind:'comment',id:comment.id,logId:log.id,body:comment.body,groupId:commentGroup(log,comment),...(comment.parentId?{parentId:comment.parentId}:{})});
  }
  for(const old of before.logs)if(old.authorId==='me'&&!after.logs.some(l=>l.id===old.id))ops.push({kind:'delete_log',id:old.id,expected:old.serverRevision||0});
  const prefs=(s:UnifiedState)=>({presets:s.presets,collections:s.collections,intents:s.intents||[],nicknameConfigured:s.nicknameConfigured===true,groupIntroSeen:s.groupIntroSeen===true});

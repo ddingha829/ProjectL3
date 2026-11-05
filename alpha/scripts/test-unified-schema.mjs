@@ -8,6 +8,7 @@ const assert=(condition,name)=>{if(!condition)throw Error(name);checks.push(name
 const uid=[1,2,3].map(n=>`00000000-0000-4000-8000-00000000000${n}`);
 const ids=[1,2,3,4].map(n=>`10000000-0000-4000-8000-00000000000${n}`);
 const group='20000000-0000-4000-8000-000000000001';
+const legacyOwner=crypto.randomUUID(),legacyGroups=[crypto.randomUUID(),crypto.randomUUID()],legacyLogs=[crypto.randomUUID(),crypto.randomUUID()],legacyComments=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
 const op=operations=>pg.query('select public.l2u_apply($1::jsonb,$2::uuid)',[JSON.stringify(operations),crypto.randomUUID()]);
 const snapshot=async()=> (await pg.query('select public.l2u_snapshot() as data')).rows[0].data;
 const actor=async n=>{await pg.exec('reset role');await pg.query("select set_config('request.jwt.claim.sub',$1,false)",[uid[n]]);await pg.exec('set role authenticated');};
@@ -29,7 +30,23 @@ try{
  create table public.posts(id integer primary key); insert into public.posts values(17);`);
  for(let i=0;i<3;i++)await pg.query('insert into auth.users values($1,$2,$3)',[uid[i],`test${i}@example.invalid`,'{}']);
  const migrationDirectory=new URL('../supabase/migrations/',import.meta.url);
- for(const file of(await fs.readdir(migrationDirectory)).filter(name=>name.endsWith('.sql')).sort())await pg.exec(await fs.readFile(new URL(file,migrationDirectory),'utf8'));
+ for(const file of(await fs.readdir(migrationDirectory)).filter(name=>name.endsWith('.sql')).sort()){
+  if(file==='20261105_016_group_comments.sql'){
+   await pg.query('insert into auth.users values($1,$2,$3)',[legacyOwner,'legacy@example.invalid','{}']);
+   await pg.query('insert into public.l2u_profiles(id,name) values($1,$2)',[legacyOwner,'이전']);
+   for(const gid of legacyGroups)await pg.query('insert into public.l2u_groups(id,owner_id,name) values($1,$2,$3)',[gid,legacyOwner,'이전모임']);
+   for(const lid of legacyLogs)await pg.query('insert into public.l2u_logs(id,author_id,payload) values($1,$2,$3)',[lid,legacyOwner,JSON.stringify(payload('legacy fixture'))]);
+   await pg.query('insert into public.l2u_shares(log_id,group_id) values($1,$2),($3,$2),($3,$4)',[legacyLogs[0],legacyGroups[0],legacyLogs[1],legacyGroups[1]]);
+   await pg.query('insert into public.l2u_comments(id,log_id,author_id,body) values($1,$2,$3,$4),($5,$6,$3,$4)',[legacyComments[0],legacyLogs[0],legacyOwner,'이전 댓글',legacyComments[1],legacyLogs[1]]);
+   await pg.query('insert into public.l2u_comments(id,log_id,author_id,body,parent_id) values($1,$2,$3,$4,$5)',[legacyComments[2],legacyLogs[1],legacyOwner,'이전 답글',legacyComments[1]]);
+  }
+  await pg.exec(await fs.readFile(new URL(file,migrationDirectory),'utf8'));
+ }
+ const oldComments=(await pg.query('select id,group_id,parent_id from public.l2u_comments where author_id=$1',[legacyOwner])).rows;
+ assert(oldComments.length===3,'scope migration preserves all historical comments and replies');
+ assert(oldComments.find(c=>c.id===legacyComments[0]).group_id===legacyGroups[0],'a single historical share gives legacy comments an unambiguous group');
+ assert(oldComments.filter(c=>c.id!==legacyComments[0]).every(c=>c.group_id===null),'ambiguous multi-group historical comments remain private without duplication');
+ assert(oldComments.find(c=>c.id===legacyComments[2]).parent_id===legacyComments[1],'historical reply links survive scope migration');
  await actor(0); await snapshot();
  await op([{kind:'group',id:group,name:'Test group',capacity:2,expected:0},{kind:'log',id:ids[0],payload:payload('private'),groups:[],expected:0},{kind:'log',id:ids[1],payload:payload('shared'),groups:[group],expected:0}]);
  assert((await snapshot()).logs.length===2,'owner sees private and shared');
@@ -132,6 +149,31 @@ try{
  await op([{kind:'log',id:musicId,payload:{...music,body:'감상 수정'},groups:[group],expected:1}]);
  assert((await pg.query('select log_id from public.l2u_mosaic where log_id=$1',[musicId])).rows.length===1,'editing a music work preserves collection placement');
  await denied(()=>op([{kind:'log',id:musicId,payload:{...music,image:'/api/private?secret=1'},groups:[group],expected:2}]),'music image support does not allow arbitrary internal proxy paths');
+ const scopeA='20000000-0000-4000-8000-00000000000a',scopeB='20000000-0000-4000-8000-00000000000b',scopedLog='10000000-0000-4000-8000-00000000000a';
+ const commentA=crypto.randomUUID(),commentB=crypto.randomUUID(),personalComment=crypto.randomUUID();
+ await op([{kind:'group',id:scopeA,name:'모임가',capacity:4,expected:0},{kind:'group',id:scopeB,name:'모임나',capacity:4,expected:0},{kind:'log',id:scopedLog,payload:payload('one original two groups'),groups:[scopeA,scopeB],expected:0}]);
+ const codeA=(await pg.query('select public.l2u_invite_code($1) as data',[scopeA])).rows[0].data.code,codeB=(await pg.query('select public.l2u_invite_code($1) as data',[scopeB])).rows[0].data.code;
+ await actor(1);await pg.query('select public.l2u_join_code($1)',[codeA]);
+ await op([{kind:'comment',id:commentA,logId:scopedLog,groupId:scopeA,body:'A only'}]);
+ await denied(()=>op([{kind:'comment',id:crypto.randomUUID(),logId:scopedLog,groupId:scopeB,body:'forged B'}]),'reading the shared original cannot authorize writing comments in another group');
+ await denied(()=>op([{kind:'comment',id:crypto.randomUUID(),logId:scopedLog,groupId:null,body:'forged personal'}]),'another member cannot write private owner comments');
+ await pg.exec('reset role');await pg.query('delete from l2u_private.code_attempts where user_id=$1',[uid[2]]);
+ await actor(2);await pg.query('select public.l2u_join_code($1)',[codeB]);
+ await op([{kind:'comment',id:commentB,logId:scopedLog,groupId:scopeB,body:'B only'}]);
+ assert((await snapshot()).logs.find(l=>l.id===scopedLog).comments.every(c=>c.groupId===scopeB),'full snapshot cannot leak A comments to a B-only member');
+ assert((await pg.query('select id from public.l2u_comments where log_id=$1',[scopedLog])).rows.length===1,'direct comment reads obey group RLS');
+ await actor(1);assert((await snapshot()).logs.find(l=>l.id===scopedLog).comments.map(c=>c.id).join()===commentA,'A-only members do not receive B comments or counts');
+ await actor(0);await op([{kind:'comment',id:personalComment,logId:scopedLog,groupId:null,body:'owner personal'}]);
+ const allComments=(await snapshot()).logs.find(l=>l.id===scopedLog).comments;
+ assert(allComments.length===3&&allComments.some(c=>c.id===personalComment&&c.groupId===null),'a multi-group owner receives scope metadata without duplicating the original card');
+ await denied(()=>op([{kind:'comment',id:crypto.randomUUID(),logId:scopedLog,groupId:scopeB,parentId:commentA,body:'cross group reply'}]),'reply parents cannot cross groups even for an owner in both groups');
+ await denied(()=>op([{kind:'comment',id:crypto.randomUUID(),logId:scopedLog,groupId:scopeA,parentId:personalComment,body:'private reply leak'}]),'private parent comments cannot be quoted in a group reply');
+ const scopedReply=crypto.randomUUID();await op([{kind:'comment',id:scopedReply,logId:scopedLog,groupId:scopeA,parentId:commentA,body:'A reply'}]);
+ await actor(1);assert((await snapshot()).logs.find(l=>l.id===scopedLog).comments.length===2,'same-group replies remain visible and private comments remain hidden');
+ await actor(0);await op([{kind:'log',id:scopedLog,payload:payload('only B remains'),groups:[scopeB],expected:1}]);
+ assert((await snapshot()).logs.find(l=>l.id===scopedLog).comments.every(c=>c.groupId!==scopeA),'removing a group share also removes access to that groups comments');
+ await pg.exec('reset role');await pg.exec(await fs.readFile(new URL('20261105_016_group_comments.sql',migrationDirectory),'utf8'));
+ assert((await pg.query('select group_id from public.l2u_comments where id=$1',[personalComment])).rows[0].group_id===null,'reapplying scope migration cannot move new private comments into a group');
  const result={status:'passed',checks:checks.length,names:checks,finishedAt:new Date().toISOString()};
  await fs.writeFile(new URL('../supabase/schema-test-result.json',import.meta.url),JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify(result));

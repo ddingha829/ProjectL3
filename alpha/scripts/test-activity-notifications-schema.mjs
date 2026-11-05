@@ -42,7 +42,7 @@ try{
  await actor(0);await rpc('l2u_notification_preferences',[true,false]);
  await comment(0);await like(0);await like(1,logs[0],true,'bookmark');assert(await count('push_jobs')===0&&await count('like_events')===0,'self comments, self likes and bookmarks are excluded');
  const first=await comment();let jobs=await claim(ids[1]);assert(jobs.length===1&&jobs[0].payload.kind==='comment'&&jobs[0].payload.ownerId===ids[0],'a new comment is immediately claimable for its author');
- assert(jobs[0].payload.url===`/?view=logs&scope=mine&log=${logs[0]}`,'comment alert opens the owner card in personal scope');
+ assert(jobs[0].payload.url===`/?view=logs&scope=${group}&log=${logs[0]}`,'comment alert opens its exact group rather than personal or another group');
  assert(!jobs[0].payload.body.includes('lock screen'),'private comment text is not copied to the lock screen');
  assert((await claim()).length===0,'leased comments cannot be claimed twice');await finish(jobs);
  await admin();await db.query('update public.l2u_comments set body=$1 where id=$2',['Edited comment',first]);assert((await claim()).length===0,'editing a comment does not notify again');
