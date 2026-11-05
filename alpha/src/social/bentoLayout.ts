@@ -7,20 +7,17 @@ export function bentoKind(log:LabLog):BentoKind{return log.category==='movie'?'m
 export const hasBentoFront=(log:LabLog)=>bentoKind(log)!=='note';
 /** Text-only details retain enough space for the complete review and pagination. */
 export const cardCanvasHeight=(log:LabLog)=>hasBentoFront(log)?420/BENTO_RATIOS[bentoKind(log)]:672;
-/** Gently asymmetric columns: media keeps its ratio instead of a shared bottom.
- * Width is chosen by the section's first card, so appending cannot resize it.
- * Notes span both columns and begin a new section. DOM chronology is preserved. */
+/** Equal-width columns retain each topic's height ratio and DOM chronology.
+ * Notes span both columns. Appending cannot resize or move existing cards. */
 export function bentoLayout(kinds:readonly BentoKind[],width:number,gap=8.4){
- const tiles:{top:number;left:number;width:number;height:number}[]=[],bottoms=[0,0];
- let sectionStart=true,leftShare=.5;
+ const tiles:{top:number;left:number;width:number;height:number}[]=[],bottoms=[0,0],columnWidth=Math.max(0,width-gap)/2;
  for(const kind of kinds){
   if(kind==='note'){
    const top=Math.max(...bottoms),height=width/BENTO_RATIOS.note;
-   tiles.push({top,left:0,width,height});bottoms.fill(top+height+gap);sectionStart=true;
+   tiles.push({top,left:0,width,height});bottoms.fill(top+height+gap);
   }else{
-   if(sectionStart){leftShare=kind==='music'||kind==='movie'?.46:.54;sectionStart=false;}
-   const available=Math.max(0,width-gap),column=bottoms[0]<=bottoms[1]?0:1,columnWidth=available*(column===0?leftShare:1-leftShare),top=bottoms[column],height=columnWidth/BENTO_RATIOS[kind];
-   tiles.push({top,left:column===0?0:available*leftShare+gap,width:columnWidth,height});bottoms[column]=top+height+gap;
+   const column=bottoms[0]<=bottoms[1]?0:1,top=bottoms[column],height=columnWidth/BENTO_RATIOS[kind];
+   tiles.push({top,left:column*(columnWidth+gap),width:columnWidth,height});bottoms[column]=top+height+gap;
   }
  }
  return {tiles,height:kinds.length?Math.max(...bottoms)-gap:0};

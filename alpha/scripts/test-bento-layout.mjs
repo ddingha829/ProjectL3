@@ -18,7 +18,7 @@ for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['dail
   result.tiles.slice(0,index).forEach(other=>assert.ok(tile.left>=other.left+other.width-.001||other.left>=tile.left+tile.width-.001||tile.top>=other.top+other.height-.001||other.top>=tile.top+tile.height-.001,'Cards do not overlap'));
  });
  result.tiles.forEach((tile,index)=>{
-  if(kinds[index]!=='note')assert.ok(Math.abs(tile.width/(width-8.4)-.46)<.00001||Math.abs(tile.width/(width-8.4)-.54)<.00001,'Media uses controlled asymmetric widths without enlarging an orphan');
+  if(kinds[index]!=='note')assert.equal(tile.width,(width-8.4)/2,'Both columns have equal widths, including an orphan card');
  });
  for(let count=0;count<kinds.length;count++)assert.deepEqual(bentoLayout(kinds.slice(0,count),width).tiles,result.tiles.slice(0,count),'Pagination never moves or resizes existing cards');
  checks++;
