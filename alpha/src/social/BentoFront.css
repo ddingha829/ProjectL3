@@ -10,7 +10,7 @@
 .ec-bento-category svg,.ec-bento-rating svg{flex:none;width:4.4cqw;height:4.4cqw;stroke-width:1.7}
 .ec-bento-rating{color:#ffdb63;background:#17171985;font-variant-numeric:tabular-nums}.ec-bento-rating svg{stroke-width:1.4}
 .ec-bento-copy{position:absolute;left:6.5cqw;right:6.5cqw;bottom:4cqw;z-index:1;display:flex;flex-direction:column;align-items:flex-start;gap:1cqw;min-width:0}
-.ec-face.ec-bento .ec-bento-copy h2{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0;font-family:inherit;font-size:9.2cqw;font-weight:800;letter-spacing:-.045em;line-height:1.32;word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty;text-shadow:0 1px 5px #0008}
+.ec-face.ec-bento .ec-bento-copy h2{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0;font-family:inherit;font-size:9.2cqw;font-weight:800;letter-spacing:-.03em;line-height:1.28;word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty;text-shadow:0 1px 4px #0008}
 .ec-bento-copy p{margin:0;max-width:100%}
 .ec-bento-meta{display:flex;align-items:center;gap:2cqw;font-size:3.5cqw;line-height:1.5;color:#ffffffb8;white-space:nowrap;text-shadow:0 1px 4px #0009}
 .ec-bento-meta>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -45,7 +45,7 @@
 .ec-bento[data-bento-kind=note] .ec-bento-watermark{right:4%;bottom:6%;left:auto;top:auto;width:32%;height:48%;opacity:.035}
 /* A full-height shade and transparent strip edge blend without a horizontal seam. */
 .ec-face.ec-bento:not([data-bento-kind=note]){--ec-credit-height:max(16px,6.7cqw)}
-.ec-bento:not([data-bento-kind=note]) .ec-bento-copy{bottom:calc(var(--ec-credit-height) + 3cqw);gap:.5cqw}
+.ec-bento:not([data-bento-kind=note]) .ec-bento-copy{bottom:calc(var(--ec-credit-height) + 3cqw);gap:1.2cqw}
 .ec-bento:not([data-bento-kind=note]) .ec-bento-content>.ec-bento-credit{position:absolute;left:0;right:0;bottom:0;z-index:2;box-sizing:border-box;width:100%;height:var(--ec-credit-height);padding:0 6.5cqw;margin:0;align-items:center;gap:2cqw;text-shadow:none}
 .ec-bento:not(.ec-bento-paper):not([data-bento-kind=note]) .ec-bento-content>.ec-bento-credit{background:linear-gradient(180deg,transparent 0%,rgba(12,13,15,.42) 45%,rgba(12,13,15,.76) 100%)}
 .ec-bento-paper:not([data-bento-kind=note]) .ec-bento-content>.ec-bento-credit{background:color-mix(in srgb,var(--fg,#171718) 5%,transparent);border-top:1px solid color-mix(in srgb,var(--fg,#171718) 8%,transparent)}
@@ -55,7 +55,7 @@
    detail/export canvases retain their existing scale independently of the feed. */
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-category,.ec-face.ec-bento[data-native-preview=true] .ec-bento-rating{font-size:clamp(9.5px,4.5cqw,12px);padding:clamp(3px,1.3cqw,5px) clamp(6px,2cqw,9px)}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-category svg,.ec-face.ec-bento[data-native-preview=true] .ec-bento-rating svg{width:clamp(10px,4.5cqw,13px);height:clamp(10px,4.5cqw,13px)}
-.ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]) .ec-bento-copy h2{font-size:clamp(13px,8.8cqw,20px)}
+.ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]) .ec-bento-copy h2{font-size:clamp(14px,9cqw,20px)}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-meta{font-size:clamp(9px,3.5cqw,12.5px)}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-credit time,.ec-face.ec-bento[data-native-preview=true] .ec-bento-author{font-size:clamp(9px,3.3cqw,11.5px)}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-video{font-size:clamp(8px,3.2cqw,11px)}.ec-face.ec-bento[data-native-preview=true] .ec-bento-video svg{width:clamp(9px,3.6cqw,12px);height:clamp(9px,3.6cqw,12px)}
@@ -67,11 +67,19 @@
 .ec-bento-album{position:absolute;top:0;left:0;width:100%;aspect-ratio:1;overflow:hidden;background:var(--surface-2,#eee9df)}
 .ec-bento-album .ec-bento-shade{display:none}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-content::after{border-color:var(--line,#0002)}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy{top:60%;bottom:var(--ec-credit-height);justify-content:center;gap:.4cqw}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy h2{display:block;max-width:100%;font-size:7.4cqw;line-height:1.15;white-space:nowrap;text-overflow:ellipsis;text-shadow:none}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-meta{line-height:1.1;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent);text-shadow:none}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-content>.ec-bento-credit{background:none;border:0}
+.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy{top:calc(75% + 2cqw);bottom:var(--ec-credit-height);justify-content:flex-start;gap:.5cqw}
+.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy h2{display:block;max-width:100%;font-size:8cqw;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;text-shadow:none}
+.ec-face.ec-bento[data-bento-kind=music] .ec-bento-meta{line-height:1.5;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent);text-shadow:none}
+.ec-face.ec-bento[data-bento-kind=music] .ec-bento-content>.ec-bento-credit{background:none;border:0;padding-bottom:.5cqw}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-credit time,.ec-face.ec-bento[data-bento-kind=music] .ec-bento-author{line-height:1.05;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music]{--ec-credit-height:clamp(10px,4.8cqw,18px)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-copy h2{font-size:clamp(11px,7.4cqw,18px)}
-.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-credit time,.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-author{font-size:clamp(8.5px,3.3cqw,11px)}
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music]{--ec-credit-height:clamp(12px,5cqw,20px)}
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-copy h2{font-size:clamp(12px,8cqw,18px)}
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-credit time,.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-author{font-size:clamp(9px,3.3cqw,11px)}
+
+/* Feed reading rhythm: compact headings, readable supporting text, quiet credits. */
+.ec-face.ec-bento[data-native-preview=true] .ec-bento-meta{font-size:clamp(10px,4.8cqw,12px);line-height:1.45}
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy{gap:5px}
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy h2{line-height:1.4;letter-spacing:-.025em}
+.ec-face.ec-bento[data-native-preview=true] .ec-bento-credit time{font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+
+.ec-face.ec-bento[data-native-preview=true][data-bento-kind=music] .ec-bento-meta{font-size:clamp(9px,5cqw,12px);line-height:1.3}

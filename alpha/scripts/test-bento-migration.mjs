@@ -72,7 +72,7 @@ check('shared cards keep the author alongside passive counts and distinguish my 
 });
 check('feed forwards personal scope and viewer identity, including liked cards and orphan rows',()=>{
  const props={logs:[{...base,likes:['me']}],people:[{id:'me',name:'실제닉네임'}],viewerId:'me',onOpen:()=>{}};
- const own=html(BentoFeed,{...props,scope:'mine'});assert.ok(!own.includes('ec-bento-author-name'));assert.ok(own.includes('data-liked="true"'));assert.ok(own.includes('data-bento-row="single"'));
+ const own=html(BentoFeed,{...props,scope:'mine'});assert.ok(!own.includes('ec-bento-author-name'));assert.ok(own.includes('data-liked="true"'));assert.ok(own.includes('class="un-bento-card '));
  const group=html(BentoFeed,{...props,scope:'group'});assert.ok(group.includes('ec-bento-author-name">실제닉네임'));assert.ok(group.includes('좋아요 1개'));
 });
 check('detail front and back use topic geometry, and every review block survives',()=>{
