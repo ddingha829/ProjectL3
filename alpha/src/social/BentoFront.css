@@ -67,7 +67,7 @@
 .ec-bento-album{position:absolute;top:0;left:0;width:100%;aspect-ratio:1;overflow:hidden;background:var(--surface-2,#eee9df)}
 .ec-bento-album .ec-bento-shade{display:none}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-content::after{border-color:var(--line,#0002)}
-.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy{top:80%;bottom:var(--ec-credit-height);justify-content:center;gap:.4cqw}
+.ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy{top:60%;bottom:var(--ec-credit-height);justify-content:center;gap:.4cqw}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-copy h2{display:block;max-width:100%;font-size:7.4cqw;line-height:1.15;white-space:nowrap;text-overflow:ellipsis;text-shadow:none}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-meta{line-height:1.1;color:color-mix(in srgb,var(--fg,#171718) 65%,transparent);text-shadow:none}
 .ec-face.ec-bento[data-bento-kind=music] .ec-bento-content>.ec-bento-credit{background:none;border:0}

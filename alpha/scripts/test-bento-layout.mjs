@@ -3,7 +3,7 @@ import {build} from 'esbuild';
 
 const {outputFiles}=await build({entryPoints:['src/social/bentoLayout.ts'],bundle:true,write:false,platform:'node',format:'esm'});
 const {bentoLayout,BENTO_RATIOS,bentoKind,cardCanvasHeight,hasBentoFront}=await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`);
-assert.deepEqual(BENTO_RATIOS,{daily:4/5,dining:4/5,movie:2/3,book:3/4,music:4/5,note:2},'Agreed topic ratios remain explicit');
+assert.deepEqual(BENTO_RATIOS,{daily:4/5,dining:4/5,movie:2/3,book:3/4,music:3/5,note:2},'Agreed topic ratios remain explicit');
 let checks=0;
 const pairs=Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').flatMap(first=>Object.keys(BENTO_RATIOS).filter(kind=>kind!=='note').map(second=>[first,second]));
 for(const width of [284,339,357,724,760])for(const kinds of [[],['music'],['daily','note'],['music','note','movie'],['daily','music','book','movie','note','daily','dining'],['note','note','music','movie','book','daily'],Array.from({length:40},(_,i)=>['daily','music','movie','note','book'][i%5]),...pairs]){
