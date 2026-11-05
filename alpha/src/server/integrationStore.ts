@@ -14,3 +14,4 @@ export async function readUsage(bucket:string):Promise<number>{return Number(awa
 export async function reserve(bucket:string,limit:number,ttl:number):Promise<number|null>{const result=await call('l2u_api_reserve',{p_bucket:bucket,p_limit:limit,p_ttl_ms:ttl});return result===null?null:Number(result);}
 export async function cached<T>(key:string):Promise<T|null>{return await call('l2u_api_cached',{p_key:key}) as T|null;}
 export async function cache(key:string,value:unknown,ttl=3600000):Promise<void>{await call('l2u_api_cache_put',{p_key:key,p_value:value,p_ttl_ms:ttl});}
+export async function musicbrainzSlot():Promise<boolean>{return await call('l2u_musicbrainz_slot',{})===true;}

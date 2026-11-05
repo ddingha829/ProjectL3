@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs",
+    "test": "npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs",
     "dev": "next dev --webpack -H 127.0.0.1 -p 3014",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 3014",
@@ -13,7 +13,7 @@
     "test:surfaces": "node scripts/test-surface-interactions.mjs",
     "test:notifications": "node scripts/test-notification-rules.mjs && node scripts/test-push-delivery.mjs && node scripts/test-notification-worker.mjs && node scripts/test-notification-lifecycle.mjs && node scripts/test-notification-onboarding.mjs && node scripts/test-notifications-schema.mjs && node scripts/test-activity-notifications-schema.mjs",
     "test:weather": "node scripts/test-weather.mjs",
-    "test:music": "node scripts/test-youtube-music.mjs",
+    "test:music": "node scripts/test-musicbrainz.mjs && node scripts/test-youtube-music.mjs",
     "test:swipe": "node scripts/test-page-swipe.mjs && node scripts/test-page-swipe-events.mjs",
     "test:viewport": "node scripts/test-app-viewport.mjs",
     "test:feed-toolbar": "node scripts/test-feed-toolbar-pinned.mjs",

@@ -25,7 +25,7 @@ export default function UnifiedStudio({state,commit,notify}:{state:UnifiedState;
  <AccessibleDialog open={open==='settings'} title="프리셋 설정" onClose={()=>setOpen(null)} panelClassName="lab-dialog studio-settings-dialog">
  <label className="studio-name-field">프리셋 이름<input aria-label="프리셋 이름" maxLength={40} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>
  <h3>새 티끌에 기본으로 사용</h3><p className="un-subtle">선택한 종류의 새 티끌에 적용돼요. 기존 티끌의 뒷면은 그대로예요.</p>
- <div className="un-default-options">{[['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책']].map(([id,label])=><button key={id} aria-pressed={draft.defaults.includes(id)} onClick={()=>defaults(id)}><span>{label}</span>{draft.defaults.includes(id)?<Check size={18}/>:<Plus size={18}/>}</button>)}</div>
+ <div className="un-default-options">{[['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책'],['music','음악']].map(([id,label])=><button key={id} aria-pressed={draft.defaults.includes(id)} onClick={()=>defaults(id)}><span>{label}</span>{draft.defaults.includes(id)?<Check size={18}/>:<Plus size={18}/>}</button>)}</div>
  <p className="un-subtle">변경사항은 프리셋 저장을 누르면 함께 저장돼요.</p>
  </AccessibleDialog></section>;
 }

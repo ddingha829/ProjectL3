@@ -122,6 +122,16 @@ try{
  assert((await pg.query("select public.l2u_api_reserve('qa:atomic',20,60000) as used")).rows[0].used===1,'expired quota counter resets atomically');
  assert((await pg.query("select public.l2u_api_cached('qa:cache') as value")).rows[0].value===null,'expired provider cache is not returned');
  await denied(()=>pg.query('select * from l2u_private.api_usage'),'server RPC does not grant direct private table reads');
+ const firstSlot=await pg.query('select public.l2u_musicbrainz_slot() as allowed'),secondSlot=await pg.query('select public.l2u_musicbrainz_slot() as allowed');
+ assert(firstSlot.rows[0].allowed===true&&secondSlot.rows[0].allowed===false,'MusicBrainz shares one upstream slot across server clients');
+ await actor(0);await denied(()=>pg.query('select public.l2u_musicbrainz_slot()'),'signed-in clients cannot bypass MusicBrainz provider throttle');
+ const musicId='10000000-0000-4000-8000-000000000009',cover='/api/music/cover?group=8409ea9b-5f9d-4954-88b7-a9ae77a1814c';
+ const music={...payload('밤편지'),category:'music',image:cover,work:{id:'musicbrainz:recording:cf3b2fd9-e6cc-49bf-abf3-63a3af75a6dc',kind:'music',mediaType:'music',title:'밤편지',creator:'아이유',album:'Palette',image:cover}};
+ await op([{kind:'log',id:musicId,payload:music,groups:[group],expected:0},{kind:'place',id:musicId,slot:3,groupId:group}]);
+ assert((await snapshot()).logs.some(l=>l.id===musicId&&l.category==='music'&&l.work.creator==='아이유'&&l.image===cover),'music category and album cover reference survive server save and snapshot');
+ await op([{kind:'log',id:musicId,payload:{...music,body:'감상 수정'},groups:[group],expected:1}]);
+ assert((await pg.query('select log_id from public.l2u_mosaic where log_id=$1',[musicId])).rows.length===1,'editing a music work preserves collection placement');
+ await denied(()=>op([{kind:'log',id:musicId,payload:{...music,image:'/api/private?secret=1'},groups:[group],expected:2}]),'music image support does not allow arbitrary internal proxy paths');
  const result={status:'passed',checks:checks.length,names:checks,finishedAt:new Date().toISOString()};
  await fs.writeFile(new URL('../supabase/schema-test-result.json',import.meta.url),JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify(result));

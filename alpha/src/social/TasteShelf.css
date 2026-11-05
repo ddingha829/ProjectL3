@@ -12,3 +12,8 @@
 .lab-theme-dots{display:flex;flex:none;padding:3px;border-radius:15px;background:#aaa2}
 .lab-theme-dots i{width:11px;height:11px;border:1px solid #8884;border-radius:50%;margin-left:-2px}
 .lab-theme-dots i:first-child{margin:0}
+
+/* Album art keeps its complete square in shelves and monthly archives. */
+.lab-work-cover:has(.lab-work-music-cover),.ec-monthly-grid>div>span:has(.lab-work-music-cover){aspect-ratio:1}
+.ec-monthly-grid .lab-work-music-cover{object-fit:contain}
+.lab-work-cover-text.lab-work-music-cover{border-left:0;background:var(--surface-2);color:var(--fg);font-family:var(--font-sans)}

@@ -11,7 +11,7 @@ import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import '@/components/logbook/FloatingLogControls.css';
 import './FeedToolbar.css';
 
-const categories=[['all','모든 카테고리'],['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책']] as const;
+const categories=[['all','모든 카테고리'],['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책'],['music','음악']] as const;
 
 type Props={
   query:string;

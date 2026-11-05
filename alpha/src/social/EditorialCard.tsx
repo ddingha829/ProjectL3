@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
-import {BookOpen,Clapperboard,Utensils,Compass,Star} from 'lucide-react';
+import {BookOpen,Clapperboard,Utensils,Compass,Music2,Star} from 'lucide-react';
 import type {LabLog} from './model';
 import {DEFAULT_EDITORIAL,normalizeEditorial,editorialColors,cardCorner,mixColor,type EditorialStyle} from './editorialStyle';
 import {photoMaterial,type PhotoMaterial} from './cardMaterial';
@@ -10,8 +10,8 @@ import BentoFront,{bentoTitle} from './BentoFront';
 import {cardCanvasHeight,hasBentoFront} from './bentoLayout';
 import './EditorialCard.css';
 export function styleOf(log:LabLog):EditorialStyle{return normalizeEditorial(log.card||{...DEFAULT_EDITORIAL,front:log.design,back:log.category==='book'?'library':log.category==='movie'?'review':'postcard'});}
-const labels={daily:'DAILY',dining:'DINING',movie:'CINEMA',book:'BOOKS'};
-const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen};
+const labels={daily:'DAILY',dining:'DINING',movie:'CINEMA',book:'BOOKS',music:'MUSIC'};
+const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen,music:Music2};
 export const cardTitle=bentoTitle;
 const dateOf=(time:number)=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(time).replaceAll('-','.');
 

@@ -16,11 +16,11 @@ export function editOwnLog(state:LabState,id:string,actorId:string,revision:numb
  const title=changes.title.trim(),body=changes.body.trim();
  if(!title&&!body&&!changes.image)throw new Error('글이나 사진을 하나 이상 남겨주세요.');
  if(title.length>80||body.length>2000||typeof changes.image!=='string'||changes.image.length>500000)throw new Error('입력한 내용이 너무 길어요. 조금 줄여주세요.');
- if(!['daily','dining','movie','book'].includes(changes.category))throw new Error('분류를 다시 선택해주세요.');
+ if(!['daily','dining','movie','book','music'].includes(changes.category))throw new Error('분류를 다시 선택해주세요.');
  if(changes.weather!==undefined&&!validWeather(changes.weather))throw new Error('날씨와 온도를 다시 확인해주세요.');
  const p=changes.place;
  if(p&&(!p.name.trim()||p.name.length>60||!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||Math.abs(p.lat)>90||Math.abs(p.lng)>180))throw new Error('장소 이름과 위치를 다시 확인해주세요.');
- const next:LabLog={...log,title,body,image:changes.image,category:changes.category,place:changes.category==='movie'||changes.category==='book'?undefined:p?{...p}:undefined,work:changes.work,rating:changes.rating,good:changes.good,bad:changes.bad,note:changes.note,weather:changes.weather,design:!changes.image&&log.design==='ticket'?'cover':log.design,revision:(log.revision||0)+1,updatedAt:now};
+ const next:LabLog={...log,title,body,image:changes.image,category:changes.category,place:changes.category==='movie'||changes.category==='book'||changes.category==='music'?undefined:p?{...p}:undefined,work:changes.work,rating:changes.rating,good:changes.good,bad:changes.bad,note:changes.note,weather:changes.weather,design:!changes.image&&log.design==='ticket'?'cover':log.design,revision:(log.revision||0)+1,updatedAt:now};
  return {...state,logs:state.logs.map(row=>row.id===id?enqueuePublication(next,now):row)};
 }
 export function withdrawOwnLog(state:LabState,id:string,actorId:string,revision:number,now=Date.now()):LabState{

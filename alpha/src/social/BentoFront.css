@@ -1,9 +1,10 @@
 /* Automatic topic fronts: photo and paper surfaces share geometry, never their ink. */
-.ec-face.ec-bento{container-type:inline-size;padding:0;border:0;border-radius:18px;background:#15191d;color:#fff;font-family:'NanumSquareNeo',sans-serif;isolation:isolate;box-shadow:none}
+.ec-face.ec-bento{position:relative;box-sizing:border-box;container-type:inline-size;padding:0;border:0;border-radius:18px;background:#15191d;color:#fff;font-family:'NanumSquareNeo',sans-serif;isolation:isolate;box-shadow:none}
 .ec-bento-content{position:absolute;inset:0;overflow:hidden;border-radius:inherit;text-align:left}
 .ec-bento-content::after{content:'';position:absolute;inset:0;border:1px solid #ffffff26;border-radius:inherit;pointer-events:none;z-index:3}
 .ec-bento-image{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .ec-bento-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 76%,#00000012 88%,#00000038 100%);pointer-events:none}
+.ec-bento[data-bento-kind=music]:not(.ec-bento-paper) .ec-bento-shade{background:linear-gradient(180deg,transparent 50%,#0c0d0f33 64%,#0c0d0fb3 86%,#0c0d0fc2 100%)}
 .ec-bento-top{position:absolute;top:5.5cqw;left:5.5cqw;right:5.5cqw;display:flex;align-items:center;justify-content:space-between;gap:2cqw;z-index:1}
 .ec-bento-category,.ec-bento-rating{display:inline-flex;align-items:center;gap:1.1cqw;min-width:0;padding:1.3cqw 2cqw;border:1px solid transparent;border-radius:30px;background:#181b205e;color:#fff;font-size:4.2cqw;line-height:1.35;font-weight:600;white-space:nowrap;letter-spacing:-.015em}
 .ec-bento-category svg,.ec-bento-rating svg{flex:none;width:4.4cqw;height:4.4cqw;stroke-width:1.7}

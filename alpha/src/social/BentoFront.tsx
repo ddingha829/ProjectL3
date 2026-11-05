@@ -1,5 +1,5 @@
 'use client';
-import {BookOpen,Clapperboard,Compass,Film,Heart,MessageCircle,Quote,Star,Utensils} from 'lucide-react';
+import {BookOpen,Clapperboard,Compass,Film,Heart,MessageCircle,Music2,Quote,Star,Utensils} from 'lucide-react';
 import type {CSSProperties} from 'react';
 import type {LabLog} from './model';
 import {BENTO_RATIOS,BENTO_RATIO_LABELS,bentoImage,bentoKind} from './bentoLayout';
@@ -7,7 +7,7 @@ import './BentoFront.css';
 import CardVideoPlayer from './CardVideoPlayer';
 import {compactAddressTitle} from './cardAddressTitle';
 
-const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen,music:Film,note:Quote};
+const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen,music:Music2,note:Quote};
 const labels={daily:'일상',dining:'미식',movie:'영화·드라마',book:'책',music:'음악',note:'일상'};
 const dateOf=(time:number)=>new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'numeric',day:'numeric'}).format(time);
 export const bentoTitle=(log:LabLog)=>log.work?.title||compactAddressTitle(log.title||log.locationLabel||log.place?.name||(!bentoImage(log)?log.body.trim().slice(0,60):'')||dateOf(log.createdAt),log.place);

@@ -15,7 +15,7 @@ export default function YouTubeMusicTest(){
  useEffect(()=>{
   setDark(!document.documentElement.classList.contains('light'));
   const controller=new AbortController();
-  fetch('/api/music/search/?status=1',{signal:controller.signal}).then(response=>response.ok?response.json():null).then(data=>{if(data)setSearchAvailable(data.searchAvailable===true);}).catch(()=>{});
+  fetch('/api/music/youtube/?status=1',{signal:controller.signal}).then(response=>response.ok?response.json():null).then(data=>{if(data)setSearchAvailable(data.searchAvailable===true);}).catch(()=>{});
   return()=>{controller.abort();request.current?.abort();sequence.current++;};
  },[]);
  function reset(nextMode:'link'|'search'){
@@ -28,7 +28,7 @@ export default function YouTubeMusicTest(){
   const timer=setTimeout(()=>controller.abort(),15000);
   try{
    const params=new URLSearchParams({[mode==='link'?'url':'q']:input.trim()});
-   const response=await fetch(`/api/music/search/?${params}`,{signal:controller.signal,headers:{'X-L2-Request':'1'}}),data=await response.json();
+   const response=await fetch(`/api/music/youtube/?${params}`,{signal:controller.signal,headers:{'X-L2-Request':'1'}}),data=await response.json();
    if(!response.ok)throw Error(typeof data.error==='string'?data.error:'불러오지 못했어요. 다시 시도해주세요.');
    if(id===sequence.current)setResults(Array.isArray(data.results)?data.results:[]);
   }catch(cause){if(id===sequence.current)setError(controller.signal.aborted?'연결이 늦어지고 있어요. 다시 시도해주세요.':cause instanceof Error?cause.message:'정보를 불러오지 못했어요.');}
