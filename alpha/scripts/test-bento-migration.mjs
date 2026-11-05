@@ -7,8 +7,8 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 await fs.mkdir('.test-data',{recursive:true});
 const output=path.resolve('.test-data/bento-migration.mjs');
-await build({stdin:{contents:"export {default as BentoFront} from './src/social/BentoFront';export {default as EditorialCard,EditorialFace} from './src/social/EditorialCard';export {applyBackPreset,DEFAULT_EDITORIAL,validEditorial} from './src/social/editorialStyle';export {initialUnified,parseUnified} from './src/unified/store';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:output,loader:{'.css':'empty'},external:['react','react-dom','react/jsx-runtime','lucide-react','motion/react'],logLevel:'silent'});
-const {BentoFront,EditorialCard,EditorialFace,applyBackPreset,DEFAULT_EDITORIAL,validEditorial,initialUnified,parseUnified}=await import(pathToFileURL(output));
+await build({stdin:{contents:"export {default as BentoFront} from './src/social/BentoFront';export {default as BentoFeed} from './src/unified/BentoFeed';export {default as EditorialCard,EditorialFace} from './src/social/EditorialCard';export {applyBackPreset,DEFAULT_EDITORIAL,validEditorial} from './src/social/editorialStyle';export {initialUnified,parseUnified} from './src/unified/store';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:output,loader:{'.css':'empty'},external:['react','react-dom','react/jsx-runtime','lucide-react','motion/react'],logLevel:'silent'});
+const {BentoFront,BentoFeed,EditorialCard,EditorialFace,applyBackPreset,DEFAULT_EDITORIAL,validEditorial,initialUnified,parseUnified}=await import(pathToFileURL(output));
 const base={id:'fixture',authorId:'me',circleId:null,title:'남겨둔 하루',body:'긴 본문도 지워지지 않아요. '.repeat(40),good:'좋았던 점',bad:'아쉬웠던 점',note:'다음에 기억할 점',image:'/images/studio-cafe.png',category:'daily',createdAt:1793770000000,design:'ticket',rating:'4.5',likes:['friend'],bookmarks:['me'],comments:[{id:'c',authorId:'friend',body:'댓글 유지'}],photo:{fit:'contain',x:37,y:42,zoom:1.2,saturation:85,brightness:110,contrast:105}};
 const html=(Component,props)=>renderToStaticMarkup(React.createElement(Component,props));
 let checks=0;const check=(name,fn)=>{fn();checks++;console.log('PASS '+name);};
@@ -49,6 +49,31 @@ check('address titles shorten without changing custom titles or the full address
 check('plain text is escaped and gets a full-width note front',()=>{
  const markup=html(BentoFront,{log:{...base,image:'',title:'',body:'<script>danger</script> 기록'},author:'나',native:true});
  assert.ok(markup.includes('data-topic-ratio="2:1"'));assert.ok(markup.includes('&lt;script&gt;'));assert.ok(!markup.includes('<script>'));
+});
+check('text notes show a distinct trimmed body without repeating a title or body-only note',()=>{
+ const note={...base,image:'',title:'  짧은 제목  ',body:'  별개의 본문 <script>내용</script>  '};
+ const markup=html(BentoFront,{log:note,author:'나',native:true});
+ assert.ok(markup.includes('<p class="ec-bento-excerpt">별개의 본문 &lt;script&gt;내용&lt;/script&gt;</p>'));
+ for(const [title,body] of [['반복',' 반복 '],['','본문만'],['제목만','  ']]){
+  assert.ok(!html(BentoFront,{log:{...note,title,body},author:'나',native:true}).includes('ec-bento-excerpt'));
+ }
+ assert.ok(!html(BentoFront,{log:base,author:'친구',native:true}).includes('ec-bento-excerpt'),'Photo cards do not duplicate the body');
+});
+check('own cards hide a redundant author while keeping the date and optional reactions',()=>{
+ const own=html(BentoFront,{log:base,author:'나',native:true,showReactions:true,viewerId:'friend'});
+ assert.ok(!own.includes('ec-bento-author-name'));assert.ok(own.includes('<time'));assert.ok(own.includes('좋아요 1개'));assert.ok(own.includes('댓글 1개'));assert.ok(own.includes('data-liked="true"'));
+ const quiet=html(BentoFront,{log:{...base,likes:[],comments:[]},author:'실제닉네임',hideAuthor:true,native:true,showReactions:true});
+ assert.ok(!quiet.includes('ec-bento-author'));assert.ok(quiet.includes('<time'));
+});
+check('shared cards keep the author alongside passive counts and distinguish my own like',()=>{
+ const friend=html(BentoFront,{log:base,author:'윤슬',native:true,showReactions:true,viewerId:'me'});
+ assert.ok(friend.includes('ec-bento-author-name">윤슬'));assert.ok(friend.includes('ec-bento-reaction-divider'));assert.ok(friend.includes('좋아요 1개'));assert.ok(!friend.includes('data-liked="true"'));
+ const preview=html(BentoFront,{log:base,author:'윤슬'});assert.ok(!preview.includes('ec-bento-reactions'),'Detail, studio and export fronts do not opt into feed reactions');
+});
+check('feed forwards personal scope and viewer identity, including liked cards and orphan rows',()=>{
+ const props={logs:[{...base,likes:['me']}],people:[{id:'me',name:'실제닉네임'}],viewerId:'me',onOpen:()=>{}};
+ const own=html(BentoFeed,{...props,scope:'mine'});assert.ok(!own.includes('ec-bento-author-name'));assert.ok(own.includes('data-liked="true"'));assert.ok(own.includes('data-bento-row="single"'));
+ const group=html(BentoFeed,{...props,scope:'group'});assert.ok(group.includes('ec-bento-author-name">실제닉네임'));assert.ok(group.includes('좋아요 1개'));
 });
 check('detail front and back use topic geometry, and every review block survives',()=>{
  const appearance={...DEFAULT_EDITORIAL,front:'polaroid',ratio:'1:1',back:'review'};
