@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs",
+    "test": "npm run test:export && npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs",
     "dev": "next dev --webpack -H 127.0.0.1 -p 3014",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 3014",
@@ -19,7 +19,8 @@
     "test:feed-toolbar": "node scripts/test-feed-toolbar-pinned.mjs",
     "test:bento": "node scripts/test-bento-layout.mjs && node scripts/test-bento-migration.mjs",
     "test:video": "node scripts/test-camera-video.mjs && node scripts/test-video-encoding.mjs && node scripts/test-video-schema.mjs",
-    "test:auth-motion": "node scripts/test-auth-motion.mjs"
+    "test:auth-motion": "node scripts/test-auth-motion.mjs",
+    "test:export": "node scripts/test-editorial-media.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

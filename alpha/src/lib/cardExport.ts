@@ -162,6 +162,15 @@ async function decodeImage(image: HTMLImageElement) {
   if (!image.naturalWidth || !image.naturalHeight) throw new Error('사진을 불러오지 못해 카드를 저장하지 않았습니다.');
 }
 
+/** A decoded PNG avoids WebKit carrying a WebP/video compositing surface into
+ * SVG foreignObject. Work uses the existing small poster, never the video. */
+async function staticPoster(dataUrl:string){
+ const image=new Image();image.src=dataUrl;await decodeImage(image);
+ const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+ const context=canvas.getContext('2d');if(!context)throw Error('영상 표지 사진을 준비하지 못했어요.');
+ context.drawImage(image,0,0);return canvas.toDataURL('image/png');
+}
+
 /** Freeze one export without replacing sources or crop positions in the live preview.
  * html-to-image's resource loader may cache an empty placeholder after a failed
  * CORS request. Strictly embed and decode our own resources before it sees them.
@@ -175,14 +184,15 @@ async function imageSnapshot(node: HTMLElement, width: number, height: number) {
     let pending = embedded.get(url);
     if (!pending) {
       pending = (async () => {
-        if (url.startsWith('data:')) return url;
+        if (url.startsWith('data:')) return image.hasAttribute('data-ec-video-poster')?staticPoster(url):url;
         const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
         try {
           const response = await fetch(url, { mode: 'cors', cache: 'reload', credentials: 'same-origin', signal: controller.signal });
           if (!response.ok || response.type === 'opaque') throw new Error('사진 원본을 가져오지 못했어요. 네트워크 연결을 확인해 주세요.');
           const blob = await response.blob();
           if (!blob.size) throw new Error('사진 원본이 비어 있어요. 다시 시도해 주세요.');
-          return await blobAsDataUrl(blob);
+          const dataUrl=await blobAsDataUrl(blob);
+          return image.hasAttribute('data-ec-video-poster')?staticPoster(dataUrl):dataUrl;
         } finally { clearTimeout(timer); }
       })();
       embedded.set(url, pending);
