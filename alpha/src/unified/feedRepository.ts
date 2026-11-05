@@ -25,10 +25,10 @@ async function expandRows(client:SupabaseClient,rows:LogRow[]):Promise<UnifiedLo
  const ids=rows.map(row=>row.id),[shares,reactions,comments]=await Promise.all([
   client.from('l2u_shares').select('log_id,group_id').in('log_id',ids),
   client.from('l2u_reactions').select('log_id,user_id,kind').in('log_id',ids),
-  client.from('l2u_comments').select('id,log_id,author_id,body,created_at').in('log_id',ids).order('created_at'),
+  client.from('l2u_comments').select('id,log_id,author_id,body,parent_id,created_at').in('log_id',ids).order('created_at'),
  ]);
  const s=checked(shares),r=checked(reactions),c=checked(comments);
- return rows.map(row=>({...row.payload,id:row.id,authorId:row.author_id,serverRevision:row.revision,serverPublishedAt:Date.parse(row.published_at),circleIds:s.filter(s=>s.log_id===row.id).map(s=>s.group_id),likes:r.filter(r=>r.log_id===row.id&&r.kind==='like').map(r=>r.user_id),bookmarks:r.filter(r=>r.log_id===row.id&&r.kind==='bookmark').map(r=>r.user_id),comments:c.filter(c=>c.log_id===row.id).map(c=>({id:c.id,authorId:c.author_id,body:c.body}))}));
+ return rows.map(row=>({...row.payload,id:row.id,authorId:row.author_id,serverRevision:row.revision,serverPublishedAt:Date.parse(row.published_at),circleIds:s.filter(s=>s.log_id===row.id).map(s=>s.group_id),likes:r.filter(r=>r.log_id===row.id&&r.kind==='like').map(r=>r.user_id),bookmarks:r.filter(r=>r.log_id===row.id&&r.kind==='bookmark').map(r=>r.user_id),comments:c.filter(c=>c.log_id===row.id).map(c=>({id:c.id,authorId:c.author_id,body:c.body,parentId:c.parent_id||undefined}))}));
 }
 export async function fetchFeedPage(client:SupabaseClient,actorId:string,query:FeedQuery,cursor?:FeedCursor){
  const rows=checked(await applyFeedQuery(client,actorId,query,cursor)) as unknown as LogRow[];
