@@ -25,7 +25,7 @@ function CardSurfaceEdge({layout,height,square}:{layout:EditorialStyle['front']|
  return <svg className="ec-surface-edge" data-ec-ui="surface-edge" aria-hidden="true" focusable="false" viewBox={`0 0 420 ${height}`}><path d={path}/></svg>;
 }
 
-export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number}){
+export function EditorialFace({log,author,side,appearance,canvasHeight,autoplayVideo=false}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number;autoplayVideo?:boolean}){
  const s=appearance||styleOf(log),Icon=icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
  const needed=side==='back'&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
@@ -39,7 +39,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  const materialState=needed&&!prepared?'pending':prepared?.failed?'fallback':'ready';
  const edge=<CardSurfaceEdge layout={layout} height={logicalHeight} square={logicalHeight<=420}/>;
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
- if(side==='front')return <BentoFront log={log} author={author} canvasHeight={logicalHeight}/>;
+ if(side==='front')return <BentoFront log={log} author={author} canvasHeight={logicalHeight} autoplayVideo={autoplayVideo}/>;
  return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${logicalHeight<=420?'ec-square':'ec-portrait'}`} style={variables}>
   {surface}
   {s.back==='doodle'&&<i className="ec-tape" aria-hidden="true"/>}
@@ -61,7 +61,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight}:{log:Lab
  </div>;
 }
 
-function FullEditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal'}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean}){
+function FullEditorialCard({log,author,appearance,interactive=true,initialSide,hintStrength='normal',autoplayVideo=false}:{log:LabLog;author:string;appearance?:EditorialStyle;interactive?:boolean;initialSide?:'front'|'back';hintStrength?:'normal'|'strong';compactPreview?:boolean;autoplayVideo?:boolean}){
  const hasFront=hasBentoFront(log),scene=useRef<HTMLDivElement>(null),start=useRef<{x:number;y:number}|null>(null),hintSeen=useRef(false),[hint,setHint]=useState(false),[scale,setScale]=useState(.5),[back,setBack]=useState(initialSide==='back'||!hasFront);
  const s=appearance||styleOf(log),canFlip=interactive&&hasFront,canvasHeight=cardCanvasHeight(log),compact=canvasHeight!==420;
  const targetBack=useRef(back);targetBack.current=back;
@@ -82,7 +82,7 @@ function FullEditorialCard({log,author,appearance,interactive=true,initialSide,h
   onPointerDown={event=>{start.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{if(start.current&&Math.hypot(event.clientX-start.current.x,event.clientY-start.current.y)<7)flip();start.current=null;}} onPointerCancel={()=>{start.current=null;}}
   onClick={event=>{if(event.detail===0)flip();}} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();flip();}}}>
   <div className="ec-logical">{hasFront?<div className={`ec-hint-stage ${hint?'ec-hint-active':''}`}><div className="ec-rotator">
-   <div ref={turn.front} className="ec-plane ec-front-plane" style={{visibility:turn.visibleBack?'hidden':'visible'}} aria-hidden={turn.visibleBack} inert={turn.visibleBack}><EditorialFace log={log} author={author} side="front" appearance={s} canvasHeight={canvasHeight}/></div>
+   <div ref={turn.front} className="ec-plane ec-front-plane" style={{visibility:turn.visibleBack?'hidden':'visible'}} aria-hidden={turn.visibleBack} inert={turn.visibleBack}><EditorialFace log={log} author={author} side="front" appearance={s} canvasHeight={canvasHeight} autoplayVideo={autoplayVideo&&!back&&!turn.visibleBack}/></div>
    <div ref={turn.rear} className="ec-plane ec-back-plane" style={{visibility:turn.visibleBack?'visible':'hidden'}} aria-hidden={!turn.visibleBack} inert={!turn.visibleBack}><EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/></div>
   </div></div>:<EditorialFace log={log} author={author} side="back" appearance={s} canvasHeight={canvasHeight}/>}</div>
  </div>;

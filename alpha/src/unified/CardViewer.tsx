@@ -1,9 +1,10 @@
 'use client';
 import {useEffect,useId,useRef,useState,type CSSProperties,type PointerEvent,type ReactNode,type RefObject} from 'react';
-import {Film,Play,LoaderCircle,ArrowUpRight,ChevronDown,MessageCircle,MoreHorizontal,Share2,Users} from 'lucide-react';
+import {Film,Play,LoaderCircle,ArrowUpRight,ChevronDown,MessageCircle,MoreHorizontal,Share2,Users,Pause,Expand} from 'lucide-react';
 import {AnimatePresence,motion,useMotionTemplate,useMotionValue,useSpring} from 'motion/react';
 import dynamic from 'next/dynamic';
 import AccessibleDialog from '@/components/AccessibleDialog';
+import {useVideoAutoplay} from '@/social/useVideoAutoplay';
 import {mediaFilter} from '@/social/mediaFilter';
 import EditorialCard,{cardTitle} from '@/social/EditorialCard';
 import {cardCanvasHeight,hasBentoFront} from '@/social/bentoLayout';
@@ -21,6 +22,7 @@ const TILT_SPRING={stiffness:280,damping:24,mass:0.6};
 
 type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;onShareToGroups?:()=>void;options?:(close:()=>void)=>ReactNode;children:ReactNode};
 export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
+ const [autoPaused,setAutoPaused]=useState(false),allowAutoplay=useVideoAutoplay();
  const [locationOpen,setLocationOpen]=useState(false);
  const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),[draggingSheet,setDraggingSheet]=useState(false),[sheetOffset,setSheetOffset]=useState(0);
  const gesture=useRef<{x:number;y:number;lastY:number;lastT:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
@@ -62,10 +64,11 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
     onPointerLeave={resetTilt}
     onPointerCancel={resetTilt}
    >
-    <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong"/></div>
+    <div ref={root} className="un-detail-card"><EditorialCard key={log.id} log={log} author={author} appearance={appearance} hintStrength="strong" autoplayVideo={!autoPaused&&!videoOpen&&!sharing&&!optionsOpen&&!locationOpen}/></div>
     {!reduced&&<motion.span className="un-card-specular" aria-hidden="true" style={{opacity:glareOpacity,background:glareBackground}}/>}
+    {log.video&&<div className="un-detail-video-controls">{allowAutoplay&&<button type="button" aria-label={autoPaused?'카드 영상 자동 재생 켜기':'카드 영상 자동 재생 끄기'} onClick={()=>setAutoPaused(value=>!value)}>{autoPaused?<Play size={16}/>:<Pause size={16}/>}</button>}<button type="button" aria-label="영상 크게 재생" onClick={()=>{resetTilt();void playVideo();}}><Expand size={16}/></button></div>}
    </motion.div>
-   {log.video&&<button type="button" className="un-viewer-video-control" onClick={()=>{resetTilt();void playVideo();}}><Play size={16} aria-hidden="true"/>영상 재생 · 2초</button>}
+   
   </div>
   <section className="un-viewer-drawer" aria-label="티끌 반응과 댓글">
    <div className="un-viewer-sheet-heading"><button id={toolsId+'-toggle'} className="un-viewer-toggle" aria-label={expanded?'댓글 접기':'댓글 펼치기'} aria-controls={toolsId} aria-expanded={expanded} onClick={event=>{if(skipClick.current&&event.detail>0){skipClick.current=false;return;}skipClick.current=false;changeExpanded(!expanded);}}

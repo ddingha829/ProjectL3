@@ -20,10 +20,10 @@ export async function encodeVideo(source:Uint8Array,start:number,recorded=false,
   // only non-conforming formats, large files or album segments need encoding.
   const cameraCopy=recorded&&start===0&&source.length<=450000&&duration>=1.7&&duration<=2.5&&/^Input #0, mov,mp4,/m.test(info)&&/^  Stream #0:\d+[^\r\n]*: Video: h264[^\r\n]*\b480x768\b/m.test(info)&&!/^  Stream #[^\r\n]*: Audio:/m.test(info);
   let video:Buffer|undefined=cameraCopy?Buffer.from(source):undefined;
-  for(const bitrate of cameraCopy?[]:['1000k','700k','450k']){
-   const {stdout}=await run(['-ss',String(start),'-format_whitelist','mov,mp4,m4a,3gp,3g2,mj2,matroska,webm','-i',input,'-map','0:v:0','-t',recorded?'2.5':'2','-vf',tone+'fps=24,scale=480:768:force_original_aspect_ratio=increase,crop=480:768,setsar=1','-frames:v',recorded?'60':'48','-an','-sn','-dn','-map_metadata','-1','-c:v','libx264','-preset',recorded?'ultrafast':'fast','-pix_fmt','yuv420p','-b:v',bitrate,'-maxrate',bitrate,'-bufsize','1200k','-movflags','+faststart','-progress','pipe:1',output]);
+  for(const bitrate of cameraCopy?[]:['600k','450k','300k']){
+   const {stdout}=await run(['-ss',String(start),'-format_whitelist','mov,mp4,m4a,3gp,3g2,mj2,matroska,webm','-i',input,'-map','0:v:0','-t',recorded?'2.5':'2','-vf',tone+'fps=15,scale=480:768:force_original_aspect_ratio=increase,crop=480:768,setsar=1','-frames:v',recorded?'38':'30','-an','-sn','-dn','-map_metadata','-1','-c:v','libx264','-preset',recorded?'ultrafast':'fast','-pix_fmt','yuv420p','-b:v',bitrate,'-maxrate',bitrate,'-bufsize','1200k','-movflags','+faststart','-progress','pipe:1',output]);
    const frames=[...stdout.matchAll(/^frame=(\d+)/gm)].at(-1)?.[1];
-   if(recorded?Number(frames)<40:Number(frames)!==48)throw Error('VIDEO_TOO_SHORT');
+   if(recorded?Number(frames)<25:Number(frames)!==30)throw Error('VIDEO_TOO_SHORT');
    video=await readFile(output);if(video.length<=450000)break;
   }
   if(!video||video.length>450000)throw Error('VIDEO_TOO_LARGE');

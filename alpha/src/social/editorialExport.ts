@@ -21,7 +21,7 @@ export async function exportEditorialFace(root:HTMLElement,side:'front'|'back',t
  const source=root.querySelector<HTMLElement>(`[data-ec-face="${side}"]`);if(!source)throw Error('사진이 없는 티끌은 뒷면으로 저장해주세요.');
  const clone=source.cloneNode(true) as HTMLElement,host=document.createElement('div');host.inert=true;host.setAttribute('aria-hidden','true');Object.assign(host.style,{position:'fixed',left:'-15000px',top:'0',width:'420px',pointerEvents:'none'});host.append(clone);document.body.append(host);
  try{
-  clone.querySelectorAll('[data-ec-ui]').forEach(node=>node.remove());
+  clone.querySelectorAll('[data-ec-ui],video').forEach(node=>node.remove());
   // The on-screen surface keyline is not printed artwork. A cover's absolute
   // photo starts inside that border, leaving a pale rim in shared PNGs.
   // Remove its width (not just its colour) so the image bleeds to the edge.

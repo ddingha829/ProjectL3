@@ -4,6 +4,7 @@ import type {CSSProperties} from 'react';
 import type {LabLog} from './model';
 import {BENTO_RATIOS,BENTO_RATIO_LABELS,bentoImage,bentoKind} from './bentoLayout';
 import './BentoFront.css';
+import CardVideoPlayer from './CardVideoPlayer';
 import {compactAddressTitle} from './cardAddressTitle';
 
 const icons={daily:Compass,dining:Utensils,movie:Clapperboard,book:BookOpen,music:Film,note:Quote};
@@ -12,7 +13,7 @@ const dateOf=(time:number)=>new Intl.DateTimeFormat('ko-KR',{year:'numeric',mont
 export const bentoTitle=(log:LabLog)=>log.work?.title||compactAddressTitle(log.title||log.locationLabel||log.place?.name||(!bentoImage(log)?log.body.trim().slice(0,60):'')||dateOf(log.createdAt),log.place);
 
 /** One automatic front for feed, detail, photo adjustment and image export. */
-export default function BentoFront({log,author,native=false,canvasHeight}:{log:LabLog;author:string;native?:boolean;canvasHeight?:number}){
+export default function BentoFront({log,author,native=false,canvasHeight,autoplayVideo=false}:{log:LabLog;author:string;native?:boolean;canvasHeight?:number;autoplayVideo?:boolean}){
  const kind=bentoKind(log),image=bentoImage(log),Icon=icons[kind],title=kind==='note'?(log.title.trim()?bentoTitle(log):log.body||bentoTitle(log)):bentoTitle(log);
  const meta=log.place?.area?.trim()||log.place?.name?.trim()||log.work?.creator||'',photo=log.photo;
  const imageStyle:CSSProperties={objectFit:photo?.fit||'cover',objectPosition:`${photo?.x??50}% ${photo?.y??50}%`,...(photo?{transform:`translate(${(50-photo.x)*(photo.zoom-1)}%, ${(50-photo.y)*(photo.zoom-1)}%) scale(${photo.zoom})`,filter:`saturate(${photo.saturation/100}) brightness(${photo.brightness/100}) contrast(${photo.contrast/100})`}:{})};
@@ -20,7 +21,7 @@ export default function BentoFront({log,author,native=false,canvasHeight}:{log:L
  const height=canvasHeight??420/BENTO_RATIOS[kind];
  return <div className={`ec-face ec-front ec-bento ${!image?'ec-bento-paper':''}`} data-ec-face="front" data-ec-layout="bento" data-native-preview={native?'true':undefined} data-bento-kind={kind} data-topic-ratio={BENTO_RATIO_LABELS[kind]} data-card-width="420" data-card-height={height} style={{'--ec-height':`${height}px`,...(native?{width:'100%',height:'auto',aspectRatio:String(BENTO_RATIOS[kind])}:{})} as CSSProperties}>
   <div className="ec-bento-content">
-   {image?<><img className="ec-bento-image" src={image} alt="" loading={native?'lazy':undefined} decoding="async" draggable={false} style={imageStyle} onError={event=>{event.currentTarget.style.visibility='hidden';}}/><span className="ec-bento-shade" aria-hidden="true"/></>:<Icon className="ec-bento-watermark" aria-hidden="true"/>}
+   {image?<><img className="ec-bento-image" src={image} alt="" loading={native?'lazy':undefined} decoding="async" draggable={false} style={imageStyle} onError={event=>{event.currentTarget.style.visibility='hidden';}}/>{log.video&&autoplayVideo&&<CardVideoPlayer key={log.video.path} path={log.video.path} poster={image} style={imageStyle}/>}<span className="ec-bento-shade" aria-hidden="true"/></>:<Icon className="ec-bento-watermark" aria-hidden="true"/>}
    <div className="ec-bento-top"><span className="ec-bento-category"><Icon aria-hidden="true"/>{labels[kind]}</span>{log.rating&&<span className="ec-bento-rating" aria-label={`별점 ${log.rating}점`}><Star aria-hidden="true" fill="currentColor"/>{log.rating}</span>}</div>
    <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2>{meta&&<p className="ec-bento-meta"><span>{meta}</span></p>}{kind==='note'&&credit}</div>{kind!=='note'&&credit}
   </div>
