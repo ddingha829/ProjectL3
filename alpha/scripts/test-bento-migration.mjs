@@ -38,6 +38,14 @@ check('stored addresses remain visible independently of title and custom locatio
  const legacy=html(BentoFront,{log:{...base,title:address,place:{id:'old',name:address,area:'',lat:38.2,lng:128.5}},author:'나'});
  assert.ok(legacy.includes('<p class="ec-bento-meta"><span>'+address+'</span></p>'));
 });
+check('address titles shorten without changing custom titles or the full address line',()=>{
+ for(const [address,title] of [['경기도 안양시 만안구 안양7동 137-32','안양시 안양7동'],['서울특별시 종로구 인의동 48-24','서울시 인의동'],['강원특별자치도 고성군 토성면 모모리 12','고성군 토성면'],['경기도 성남시 분당구 판교로 10','성남시 분당구 판교로']]){
+  const place={id:'p',name:address,area:address,lat:37,lng:127};
+  const markup=html(BentoFront,{log:{...base,title:address,place},author:'나'});
+  assert.ok(markup.includes('<h2>'+title+'</h2>'));assert.ok(markup.includes('<span>'+address+'</span>'));
+  const custom=html(BentoFront,{log:{...base,title:'설악산 이쁘노',place},author:'나'});assert.ok(custom.includes('<h2>설악산 이쁘노</h2>'));
+ }
+});
 check('plain text is escaped and gets a full-width note front',()=>{
  const markup=html(BentoFront,{log:{...base,image:'',title:'',body:'<script>danger</script> 기록'},author:'나',native:true});
  assert.ok(markup.includes('data-topic-ratio="2:1"'));assert.ok(markup.includes('&lt;script&gt;'));assert.ok(!markup.includes('<script>'));
