@@ -70,3 +70,10 @@ html:not(.light) .mosaic-tray{background:color-mix(in srgb,var(--surface) 74%,tr
 @media(prefers-reduced-motion:reduce){.mosaic-progress-note,.mosaic-frame[data-encouraging=true]{animation:none}}
 .mosaic-unplaced>button{min-width:0}
 @media(max-height:760px){.mosaic-tray:not([data-empty=true]){padding:6px 12px}.mosaic-tray:not([data-empty=true])>.mosaic-unplaced{padding:0}.mosaic-tray:not([data-empty=true]) .mosaic-unplaced>button{max-height:none;min-width:0;height:100%;width:auto;aspect-ratio:2/3}}
+
+/* Let artwork use the stage width; keep the controls outside the cover grid. */
+.mosaic-frame{padding:4px;width:min(calc(100cqw - 8px),calc((100cqh - 70px)/1.32 + 8px),490px)}
+.mosaic-invitation{margin-bottom:6px}
+.mosaic-invitation:has(.un-collection-taste) .mosaic-invitation-art{display:none}
+.mosaic-invitation:has(.un-collection-taste){align-items:flex-start}
+.mosaic-invitation:has(.un-collection-taste) .mosaic-members{padding-top:3px}
