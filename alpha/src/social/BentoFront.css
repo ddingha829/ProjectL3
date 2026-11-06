@@ -70,3 +70,17 @@
 .ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy{gap:5px}
 .ec-face.ec-bento[data-native-preview=true][data-bento-kind=note] .ec-bento-copy h2{line-height:1.4;letter-spacing:-.025em}
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-credit time{font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+
+/* Feed information hierarchy and consistent image badges. */
+.ec-face.ec-bento[data-native-preview=true] .ec-bento-copy h2{line-height:1.25;letter-spacing:-.025em}
+.ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]) .ec-bento-copy{bottom:calc(var(--ec-credit-height) + 5cqw);gap:1cqw}
+.ec-bento:not(.ec-bento-paper) :is(.ec-bento-category,.ec-bento-rating){background:#181b207a;border-color:#ffffff12}
+.ec-bento-category{color:#ffffffd9}
+.ec-bento-paper .ec-bento-category{color:var(--fg)}
+.ec-bento-credit>.ec-bento-reactions{font-size:inherit;color:inherit;gap:.4em}
+.ec-face.ec-bento[data-native-preview=true] .ec-bento-credit{gap:4px;font-size:9px;color:#fffffff0}
+.ec-face.ec-bento.ec-bento-paper .ec-bento-credit{color:color-mix(in srgb,var(--fg) 65%,transparent)}
+.ec-bento-credit>.ec-bento-author{flex:1;max-width:none;min-width:0}
+.ec-face.ec-bento[data-native-preview=true] .ec-bento-author{font-size:clamp(9px,3.3cqw,11.5px)}
+.un-bento-playback-control{background:transparent;top:36px;right:3px;isolation:isolate}
+.un-bento-playback-control::before{content:'';position:absolute;width:30px;height:30px;border-radius:50%;background:#10111280;z-index:-1}

@@ -1,9 +1,8 @@
 'use client';
 import {useCallback,useEffect,useId,useRef,useState,type ReactNode} from 'react';
-import {CalendarDays,Check,ChevronDown,Archive,Grid2X2,List,SlidersHorizontal,X} from 'lucide-react';
+import {Search,CalendarDays,Check,ChevronDown,Archive,Grid2X2,List,SlidersHorizontal,X} from 'lucide-react';
 import {LayoutGroup,motion} from 'motion/react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
-import {AnimatedSearch,type AnimatedSearchHandle} from '@/components/logbook/AnimatedSearch';
 import type {LogViewMode} from '@/components/logbook/FloatingLogControls';
 import {watchFeedToolbarPinned} from './feedToolbarPinned';
 import CompactPopover from '@/components/logbook/CompactPopover';
@@ -44,10 +43,10 @@ export default function FeedToolbar({
   libraryActive,
   library,
 }:Props){
-  const [open,setOpen]=useState<'filter'|'more'|null>(null),[searchOpen,setSearchOpen]=useState(false),[viewOpen,setViewOpen]=useState(false),[pinned,setPinned]=useState(false);
-  const sentinel=useRef<HTMLDivElement>(null),shell=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null),searchSlot=useRef<HTMLDivElement>(null),search=useRef<AnimatedSearchHandle>(null),viewSlot=useRef<HTMLDivElement>(null),viewButton=useRef<HTMLButtonElement>(null),id=useId(),viewId=useId();
+  const [open,setOpen]=useState<'filter'|'more'|null>(null),[searchOpen,setSearchOpen]=useState(false),[pinned,setPinned]=useState(false);
+  const sentinel=useRef<HTMLDivElement>(null),shell=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null),searchSlot=useRef<HTMLDivElement>(null),id=useId();
   const reduced=useMotionPreference();
-  const filterOpen=useCallback((value:boolean)=>{setOpen(value?'filter':null);if(value){setSearchOpen(false);setViewOpen(false);}},[]),moreOpen=useCallback((value:boolean)=>{setOpen(value?'more':null);if(value){setSearchOpen(false);setViewOpen(false);}},[]);
+  const filterOpen=useCallback((value:boolean)=>{setOpen(value?'filter':null);if(value){setSearchOpen(false);}},[]),moreOpen=useCallback((value:boolean)=>{setOpen(value?'more':null);if(value){setSearchOpen(false);}},[]);
 
   useEffect(()=>{
     const marker=sentinel.current,bar=shell.current;
@@ -55,17 +54,15 @@ export default function FeedToolbar({
   },[]);
 
   useEffect(()=>{
-    if(!searchOpen&&!viewOpen)return;
+    if(!searchOpen)return;
     if(searchOpen)input.current?.focus({preventScroll:true});
     const outside=(event:MouseEvent)=>{
       const path=event.composedPath();
       if(searchSlot.current&&!path.includes(searchSlot.current))setSearchOpen(false);
-      if(viewSlot.current&&!path.includes(viewSlot.current))setViewOpen(false);
     };
     const keyboard=(event:KeyboardEvent)=>{
       if(event.key==='Escape'){
         if(searchOpen){setSearchOpen(false);searchButton.current?.focus({preventScroll:true});}
-        if(viewOpen){setViewOpen(false);viewButton.current?.focus({preventScroll:true});}
       }
     };
     document.addEventListener('click',outside);
@@ -74,18 +71,17 @@ export default function FeedToolbar({
       document.removeEventListener('click',outside);
       document.removeEventListener('keydown',keyboard);
     };
-  },[searchOpen,viewOpen]);
+  },[searchOpen]);
 
   const filtered=category!=='all'||sort!=='recent'||photosOnly;
   const modes=([['cards','카드',Grid2X2],['list','리스트',List],...(allowCalendar?[['calendar','캘린더',CalendarDays] as const]:[])] as const);
-  const currentMode=modes.find(([value])=>value===mode)||modes[0],CurrentIcon=currentMode[2];
 
   return (
     <>
       <div ref={sentinel} className="flc-sentinel un-feed-toolbar-sentinel" aria-hidden="true"/>
       <div
         ref={shell}
-        className={`flc-shell un-log-controls un-feed-toolbar ${pinned?'is-pinned':''} ${searchOpen?'is-search-open':''} ${viewOpen?'is-view-open':''}`}
+        className={`flc-shell un-log-controls un-feed-toolbar ${pinned?'is-pinned':''} ${searchOpen?'is-search-open':''}`}
         data-pinned={pinned}
         data-no-swipe
       >
@@ -101,12 +97,10 @@ export default function FeedToolbar({
             whileTap={reduced?undefined:{scale:0.98}}
             whileHover={reduced?undefined:{scale:1.01}}
             transition={reduced?instantMotion:INTERACTION_SPRING}
-            onClick={()=>{setOpen(null);setViewOpen(false);setSearchOpen(value=>!value);search.current?.startAnimation();}}
-            onMouseEnter={()=>search.current?.startAnimation()}
-            onMouseLeave={()=>search.current?.stopAnimation()}
+            onClick={()=>{setOpen(null);setSearchOpen(value=>!value);}}
           >
-            <AnimatedSearch ref={search} size={19}/>
-            <span className="un-feed-search-label" aria-hidden="true">티끌 검색</span>
+            <Search aria-hidden="true" size={19}/>
+            <span className="un-feed-search-label" aria-hidden="true">검색</span>
             {query&&!searchOpen&&<i aria-hidden="true"/>}
           </motion.button>
           <div id={id} className="flc-search-field" aria-hidden={!searchOpen} inert={!searchOpen}>
@@ -224,42 +218,6 @@ export default function FeedToolbar({
             </div>
           )}
         </CompactPopover>
-        <div ref={viewSlot} className="un-feed-view-slot" data-expanded={viewOpen}>
-          <motion.button
-            ref={viewButton}
-            type="button"
-            className="un-feed-view-toggle"
-            aria-label="보기 방식 선택"
-            aria-expanded={viewOpen}
-            aria-controls={viewId}
-            title="보기 방식"
-            whileTap={reduced?undefined:{scale:0.98}}
-            whileHover={reduced?undefined:{scale:1.01}}
-            transition={reduced?instantMotion:INTERACTION_SPRING}
-            onClick={()=>{setOpen(null);setSearchOpen(false);setViewOpen(value=>!value);}}
-          >
-            <CurrentIcon aria-hidden="true" size={19}/>
-            <span>{currentMode[1]}</span>
-          </motion.button>
-          <div id={viewId} className="un-feed-view-options" aria-hidden={!viewOpen} inert={!viewOpen}>
-            <div>
-              {modes.filter(([value])=>value!==mode).map(([value,label,Icon])=>(
-                <motion.button
-                  type="button"
-                  key={value}
-                  aria-label={`${label} 보기`}
-                  whileTap={reduced?undefined:{scale:0.98}}
-                  whileHover={reduced?undefined:{scale:1.01}}
-                  transition={reduced?instantMotion:INTERACTION_SPRING}
-                  onClick={()=>{onModeChange(value);setViewOpen(false);viewButton.current?.focus({preventScroll:true});}}
-                >
-                  <Icon aria-hidden="true" size={17}/>
-                  <span>{label}</span>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        </div>
         <CompactPopover
           label="보관함"
           open={open==='more'}
@@ -268,7 +226,7 @@ export default function FeedToolbar({
           active={libraryActive}
           trigger={<Archive aria-hidden="true" size={20}/>}
         >
-          {close=><>{library(close)}</>}
+          {close=><>{library(close)}<fieldset className="un-feed-library-views"><legend>보기 설정</legend>{modes.map(([value,label,Icon])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>{onModeChange(value);close();}}><Icon size={17} aria-hidden="true"/>{label}{mode===value&&<Check size={14} aria-hidden="true"/>}</button>)}</fieldset></>}
         </CompactPopover>
       </div>
       {(query||filtered)&&<div className="un-feed-filter-chips" aria-label="적용한 검색 조건">

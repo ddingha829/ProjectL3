@@ -20,7 +20,7 @@ check('legacy front/ratio choices render the same automatic topic front',()=>{
 });
 check('feed previews keep author, rating, media flag, image settings and native ratios',()=>{
  const markup=html(BentoFront,{log:{...base,video:{path:'fixture.mp4'}},author:'준혁',native:true});
- for(const text of ['준혁','4.5','2초','남겨둔 하루','object-fit:contain','37% 42%','scale(1.2)','loading="lazy"','aspect-ratio:0.8'])assert.ok(markup.includes(text),text);
+ for(const text of ['준혁','4.5','data-ec-video-poster','남겨둔 하루','object-fit:contain','37% 42%','scale(1.2)','loading="lazy"','aspect-ratio:0.8'])assert.ok(markup.includes(text),text);
  assert.ok(!markup.includes('<video')&&!markup.includes('ec-back-scroll'),'Feed never mounts a video player or hidden review');
 });
 check('work covers and missing images keep the original work topic',()=>{
@@ -33,7 +33,7 @@ check('stored addresses remain visible independently of title and custom locatio
  const address='강원특별자치도 고성군 토성면';
  for(const title of ['설악산 이쁘노',address])for(const locationLabel of ['',title,'직접 적은 장소']){
   const markup=html(BentoFront,{log:{...base,title,locationLabel,place:{id:'place',name:'장소 이름',area:address,lat:38.2,lng:128.5}},author:'나',native:true});
-  assert.ok(markup.includes('<p class="ec-bento-meta"><span>'+address+'</span></p>'));
+  assert.ok(markup.includes('<p class="ec-bento-meta"><span>고성군 토성면</span></p>'));
  }
  const legacy=html(BentoFront,{log:{...base,title:address,place:{id:'old',name:address,area:'',lat:38.2,lng:128.5}},author:'나'});
  assert.ok(legacy.includes('<p class="ec-bento-meta"><span>'+address+'</span></p>'));
@@ -67,7 +67,7 @@ check('own cards hide a redundant author while keeping the date and optional rea
 });
 check('shared cards keep the author alongside passive counts and distinguish my own like',()=>{
  const friend=html(BentoFront,{log:base,author:'윤슬',native:true,showReactions:true,viewerId:'me'});
- assert.ok(friend.includes('ec-bento-author-name">윤슬'));assert.ok(friend.includes('ec-bento-reaction-divider'));assert.ok(friend.includes('좋아요 1개'));assert.ok(!friend.includes('data-liked="true"'));
+ assert.ok(friend.includes('ec-bento-author-name">윤슬'));assert.ok(friend.indexOf('ec-bento-reactions')<friend.indexOf('ec-bento-author-name'));assert.ok(friend.includes('좋아요 1개'));assert.ok(!friend.includes('data-liked="true"'));
  const preview=html(BentoFront,{log:base,author:'윤슬'});assert.ok(!preview.includes('ec-bento-reactions'),'Detail, studio and export fronts do not opt into feed reactions');
 });
 check('feed forwards personal scope and viewer identity, including liked cards and orphan rows',()=>{
