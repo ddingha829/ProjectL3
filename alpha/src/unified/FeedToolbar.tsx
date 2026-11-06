@@ -13,6 +13,7 @@ import './FeedToolbar.css';
 const categories=[['all','모든 카테고리'],['daily','일상'],['dining','미식'],['movie','영화·드라마'],['book','책'],['music','음악']] as const;
 
 type Props={
+  scopeLabel?:string;
   query:string;
   onQueryChange:(value:string)=>void;
   category:string;
@@ -29,6 +30,7 @@ type Props={
 };
 
 export default function FeedToolbar({
+  scopeLabel,
   query,
   onQueryChange,
   category,
@@ -108,7 +110,7 @@ export default function FeedToolbar({
               ref={input}
               aria-label="티끌 검색"
               type="search"
-              placeholder="티끌 검색"
+              placeholder={scopeLabel?`${scopeLabel}에서 검색`:'티끌 검색'}
               maxLength={200}
               value={query}
               onChange={event=>onQueryChange(event.target.value)}
@@ -229,6 +231,7 @@ export default function FeedToolbar({
           {close=><>{library(close)}<fieldset className="un-feed-library-views"><legend>보기 설정</legend>{modes.map(([value,label,Icon])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>{onModeChange(value);close();}}><Icon size={17} aria-hidden="true"/>{label}{mode===value&&<Check size={14} aria-hidden="true"/>}</button>)}</fieldset></>}
         </CompactPopover>
       </div>
+      {searchOpen&&scopeLabel&&<p className="un-search-scope">{scopeLabel}에서 검색</p>}
       {(query||filtered)&&<div className="un-feed-filter-chips" aria-label="적용한 검색 조건">
         {query&&<button type="button" onClick={()=>onQueryChange('')} aria-label="검색어 조건 해제">검색: {query}<X size={12} aria-hidden="true"/></button>}
         {category!=='all'&&<button type="button" onClick={()=>onCategoryChange('all')} aria-label="카테고리 조건 해제">{categories.find(([value])=>value===category)?.[1]||category}<X size={12} aria-hidden="true"/></button>}

@@ -168,3 +168,5 @@
 
 /* Keep the boot spinner and label together despite the SVG block reset. */
 .lab-boot>.un-boot-status{display:flex;align-items:center;justify-content:center;gap:8px;max-width:calc(100% - 40px);margin:0;color:var(--muted);font-size:11px;line-height:1.6;text-align:center}.un-boot-status>svg{display:block;flex:none}.un-boot-status>span{display:block;min-width:0}
+
+.un-feed-arrival{position:sticky;top:64px;z-index:12;display:block;margin:0 auto 8px;padding:10px 16px;min-height:44px;border:1px solid var(--line);border-radius:24px;background:var(--surface);color:var(--accent-ink);box-shadow:0 3px 14px #0002;font-size:12px}.un-search-scope{font-size:11px;color:var(--muted);margin:0 8px 10px}.un-empty-secondary{display:block;min-height:44px;margin:-8px auto 20px;color:var(--accent-ink)}.un-viewer-full-title{font-size:16px;line-height:1.5;overflow-wrap:anywhere;white-space:normal;margin:12px 0;font-weight:700}
