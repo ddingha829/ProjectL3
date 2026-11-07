@@ -4,7 +4,7 @@ function trustedArchive(url:URL){return url.protocol==='https:'&&!url.username&&
 async function coverImage(url:URL,signal:AbortSignal,fetcher:typeof fetch):Promise<Response|null>{
  for(let step=0;step<4;step++){
   if(!trustedArchive(url))return null;
-  const response=await fetcher(url,{redirect:'manual',cache:'force-cache',headers:{'User-Agent':MUSIC_USER_AGENT},signal});
+  const response=await fetcher(url,{redirect:'manual',cache:'no-store',headers:{'User-Agent':MUSIC_USER_AGENT},signal});
   if([301,302,303,307,308].includes(response.status)){
    const location=response.headers.get('location');await response.body?.cancel();if(!location)return null;url=new URL(location,url);continue;
   }
@@ -20,11 +20,12 @@ async function coverImage(url:URL,signal:AbortSignal,fetcher:typeof fetch):Promi
 export async function handleMusicCover(request:Request,fetcher:typeof fetch=fetch){
  const params=new URL(request.url).searchParams,group=params.get('group'),release=params.get('release');
  if((group!==null&&!isMbid(group))||(release!==null&&!isMbid(release))||(!group&&!release))return new Response(null,{status:400});
- const signal=AbortSignal.timeout(8000);
+ 
  for(const [kind,id]of [['release-group',group],['release',release]]){
   if(!id)continue;
-  try{const result=await coverImage(new URL(`https://coverartarchive.org/${kind}/${id}/front-500`),signal,fetcher);if(result)return result;}catch{if(signal.aborted)break;}
+  const signal=AbortSignal.timeout(6000);
+  try{const result=await coverImage(new URL(`https://coverartarchive.org/${kind}/${id}/front-500`),signal,fetcher);if(result)return result;}catch{/* Give the release its own timeout if group lookup is slow. */}
  }
  // No broken-image frame, extra MusicBrainz lookup or audio download for missing art.
- return new Response(FALLBACK,{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public, max-age=3600, s-maxage=3600','X-Content-Type-Options':'nosniff'}});
+ return new Response(FALLBACK,{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public, max-age=30, s-maxage=60','X-Content-Type-Options':'nosniff'}});
 }
