@@ -84,3 +84,11 @@
 .ec-face.ec-bento[data-native-preview=true] .ec-bento-author{font-size:clamp(9px,3.3cqw,11.5px)}
 .un-bento-playback-control{background:transparent;top:36px;right:3px;isolation:isolate}
 .un-bento-playback-control::before{content:'';position:absolute;width:30px;height:30px;border-radius:50%;background:#10111280;z-index:-1}
+/* Optical spacing: keep the title and subtitle together, lift credits off the edge. */
+.ec-face.ec-bento:not([data-bento-kind=note]) .ec-bento-copy{gap:.45cqw;bottom:calc(var(--ec-credit-height) + 2.2cqw)}
+.ec-face.ec-bento:not([data-bento-kind=note]) .ec-bento-copy h2{line-height:1.16;letter-spacing:-.025em}
+.ec-face.ec-bento:not([data-bento-kind=note]) .ec-bento-meta{line-height:1.4}
+.ec-face.ec-bento:not([data-bento-kind=note]){--ec-credit-height:max(24px,9cqw)}
+.ec-face.ec-bento:not([data-bento-kind=note]) .ec-bento-content>.ec-bento-credit{padding-bottom:1.4cqw}
+.ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]){--ec-credit-height:clamp(24px,9cqw,34px)}
+.ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]) .ec-bento-copy{gap:.45cqw;bottom:calc(var(--ec-credit-height) + 2.2cqw)}
