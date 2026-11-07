@@ -173,3 +173,9 @@ html:not(.light) .ec-face>.ec-surface-edge{display:block}
 .ec-news-meta .ec-rating-gold{display:inline;color:#F5C842;text-shadow:0 0 1px #A7750C}
 
 .ec-rating,.ec-news-meta .ec-rating-score,.ec-passport-grid .ec-rating-score{color:#F5C842;text-shadow:0 1px 1px #4a320a66}
+/* Back ratings use the card's ink with a clear symbol/value hierarchy. */
+.ec-back .ec-rating{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--ec-text);text-shadow:none;font-size:30px;font-weight:800;line-height:1.05;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ec-back .ec-rating>svg{width:16px;height:16px;flex:none}
+.ec-back .ec-stamp .ec-rating{font-size:30px}
+.ec-back.ec-square .ec-rating,.ec-back.ec-square .ec-stamp .ec-rating{font-size:26px}
+.ec-back .ec-rating-score,.ec-back .ec-news-meta .ec-rating-gold{color:var(--ec-text);text-shadow:none}

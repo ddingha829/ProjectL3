@@ -30,7 +30,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight,autoplayV
  const needed=side==='back'&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
- const rating=log.rating?<span className="ec-rating" style={{color:'#F5C842'}} aria-label={`별점 ${log.rating}점`}><Star size={15} fill="#F5C842" stroke="#A7750C" strokeWidth={1} aria-hidden="true"/>{log.rating}</span>:null;
+ const rating=log.rating?<span className="ec-rating" aria-label={`별점 ${log.rating}점`}><Star size={15} fill="currentColor" stroke="currentColor" strokeWidth={1} aria-hidden="true"/><span>{Number(log.rating).toFixed(1)}</span></span>:null;
  const category=<span className="ec-category"><Icon size={13}/>{labels[log.category]}</span>;
  const logicalHeight=canvasHeight??cardCanvasHeight(log);
  const variables={...editorialColors(s),'--ec-height':`${logicalHeight}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
@@ -91,3 +91,4 @@ function FullEditorialCard({log,author,appearance,interactive=true,initialSide,h
 export default function EditorialCard(props:Parameters<typeof FullEditorialCard>[0]){
  return props.compactPreview?<BentoFront log={props.log} author={props.author} native/>:<FullEditorialCard {...props}/>;
 }
+
