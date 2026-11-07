@@ -4,7 +4,7 @@
 .mosaic-print>header{display:flex;justify-content:space-between;gap:8px;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:#656158;border-bottom:1px solid #d8d3c8;padding-bottom:10px}
 .mosaic-print>h2{font-size:24px;line-height:1.35;letter-spacing:-.06em;margin:16px 0 5px;font-weight:800;overflow-wrap:anywhere}
 .mosaic-print>p{font-size:10px;color:#6b665d;margin:0 0 16px}
-.mosaic-print-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.mosaic-print-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .mosaic-print-grid>div{position:relative;aspect-ratio:2/3;overflow:hidden;border-radius:3px;background:#e9e5dc}
 .mosaic-print-grid img,.mosaic-print-grid>div>span{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mosaic-print-grid>div>span{display:flex;align-items:center;padding:5px;font-size:9px;line-height:1.6;overflow:hidden;word-break:keep-all}

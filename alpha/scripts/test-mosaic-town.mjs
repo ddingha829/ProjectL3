@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';import fs from 'node:fs/promises';import {pathToFileURL} from 'node:url';import path from 'node:path';
+const built=await build({stdin:{contents:"export * from './src/unified/mosaic'; export * from './src/unified/store';export * from './src/unified/mosaicEncouragement';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false});
+const file=path.resolve('.test-data/town-test.mjs');await fs.writeFile(file,built.outputFiles[0].text);const m=await import(pathToFileURL(file));
+const logs=Array.from({length:12},(_,i)=>({id:'l'+i,authorId:'me',title:'작품'+i,body:'기록',category:'book',work:{id:'book:'+i,kind:'book',title:'작품'+i,image:''},image:'',circleId:null,createdAt:i,likes:[],bookmarks:[],comments:[],design:'cover'}));
+let state={...m.initialUnified(),logs};assert.equal(m.MOSAIC_PAGE_SIZE,9);assert.equal(m.townFrontier({},4),true);assert.equal(m.townFrontier({},0),false);assert.equal(m.townPageOpen({},1),false);
+assert.throws(()=>m.placeMosaic(state,'mine','me','l0',0));state=m.placeMosaic(state,'mine','me','l0',4);let rows=m.boardRows(state,'mine');assert.deepEqual([0,1,2,3,5,6,7,8].filter(i=>m.townFrontier(rows,i)),[1,3,5,7]);
+for(const [i,slot] of [1,0,2,3,5,6,7,8].entries())state=m.placeMosaic(state,'mine','me','l'+(i+1),slot);
+rows=m.boardRows(state,'mine');assert.equal(m.townPageOpen(rows,1),true);assert.equal(m.townFrontier(rows,13),true);assert.equal(m.townPageOpen(rows,2),false);assert.equal(m.mosaicEncouragement(9,9,true).complete,true);
+const duplicate={...logs[9],work:logs[0].work};assert.throws(()=>m.placeMosaic({...state,logs:[...logs.slice(0,9),duplicate]},'mine','me',duplicate.id,13));assert.throws(()=>m.placeMosaic(state,'mine','other','l9',13));assert.throws(()=>m.placeMosaic(state,'mine','me','l0',13));
+const legacy={...state,mosaic:{...state.mosaic,personalBoard:{0:'l0',15:'l1',499:'l2'}}};assert.equal(m.validMosaic(legacy.mosaic),true);assert.deepEqual(Object.values(m.boardRows(legacy,'mine')).map(r=>r.logId),['l0','l1','l2']);assert.equal(m.townPageOpen(m.boardRows(legacy,'mine'),55),true);assert.equal(m.townPageOpen(rows,56),false);assert.equal(m.townFrontier(rows,500),false);
+console.log('PASS 9-slot start, adjacency, page unlock, completion, duplicate prevention, ownership, moves and legacy preservation');

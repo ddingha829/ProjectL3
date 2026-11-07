@@ -7,7 +7,7 @@ html:not(.light) .un-mosaic{--mosaic-empty:color-mix(in srgb,var(--fg) 3%,var(--
 .mosaic-layout{display:grid;grid-template-rows:minmax(0,1fr) var(--mosaic-tray-height);gap:12px;flex:1;min-height:0;min-width:0}
 .mosaic-gallery-stage{position:relative;display:grid;place-items:center;min-height:0;min-width:0;container-type:size;overflow:hidden;border:1px solid transparent;background:transparent;touch-action:pan-y pinch-zoom}
 .mosaic-frame{position:relative;width:min(calc(100cqw - 24px),calc((100cqh - 94px)/1.32 + 40px),490px);max-width:100%;padding:10px;min-width:0;border:1px solid transparent;background:transparent}
-.mosaic-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.mosaic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;min-width:0}
 .mosaic-slot{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1/1.32;border-radius:9px;overflow:hidden;padding:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:transform .2s,box-shadow .2s,border-color .2s;touch-action:pan-y}
 .mosaic-slot.is-empty{background:var(--mosaic-empty);border:1px dashed var(--mosaic-line);box-shadow:none;color:color-mix(in srgb,var(--mosaic-ink) 36%,transparent)}
 .mosaic-slot.is-empty>svg{width:15px;height:15px;opacity:1}.mosaic-slot.is-unavailable{visibility:hidden}
@@ -77,3 +77,17 @@ html:not(.light) .mosaic-tray{background:color-mix(in srgb,var(--surface) 74%,tr
 .mosaic-invitation:has(.un-collection-taste) .mosaic-invitation-art{display:none}
 .mosaic-invitation:has(.un-collection-taste){align-items:flex-start}
 .mosaic-invitation:has(.un-collection-taste) .mosaic-members{padding-top:3px}
+/* Nine larger covers form an expanding neighborhood; empty frontier is the CTA. */
+.mosaic-town-help{display:grid;place-items:center;min-width:44px;min-height:44px;color:var(--muted)}
+.mosaic-town-goal{display:flex;align-items:center;gap:6px;min-height:28px;margin:-7px 2px 5px;text-align:left;font-size:11px;color:var(--muted)}.mosaic-town-goal b{margin-left:auto;font-size:10px;color:var(--accent-ink)}
+.mosaic-slot.is-filled{border-color:color-mix(in srgb,var(--tile-owner,var(--accent)) 55%,var(--surface))}
+.un-mosaic .mosaic-slot.is-empty[data-frontier=true]{border:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--bg));color:var(--accent-ink);align-content:center;gap:7px}
+.un-mosaic .mosaic-slot.is-empty[data-locked=true]{border:1px solid color-mix(in srgb,var(--fg) 4%,transparent);background:color-mix(in srgb,var(--fg) 2%,var(--bg));color:color-mix(in srgb,var(--fg) 20%,transparent)}
+.mosaic-empty-label{font-size:10px;font-weight:600}.mosaic-building{position:absolute;bottom:0;left:0;right:0;padding:14px 5px 5px;background:linear-gradient(transparent,#0009);color:white;font-size:9px;text-align:left;pointer-events:none}
+.mosaic-town-rules>p,.mosaic-town-achievements p{font-size:13px;line-height:1.7;color:var(--muted)}.mosaic-town-achievements{padding:14px;margin:16px 0;background:var(--surface-2);border-radius:14px}.mosaic-town-achievements strong{color:var(--accent-ink)}
+.mosaic-town-related{padding:10px;background:var(--surface);border-radius:12px;margin-top:8px;max-height:130px;overflow-y:auto}.mosaic-town-related>strong{font-size:10px;color:var(--muted)}.mosaic-town-related>button{display:flex;align-items:center;gap:6px;min-height:44px;width:100%;text-align:left;font-size:11px}.mosaic-town-related>button>span{margin-left:auto;font-size:9px;color:var(--muted)}
+
+.un-mosaic .mosaic-slot.is-empty[data-frontier=true]>svg{color:var(--accent-ink)}
+.mosaic-invitation-art{display:none}
+.mosaic-town-compose{display:block;min-height:44px;margin-top:4px;color:var(--accent-ink);font-size:11px;font-weight:700}
+.mosaic-tray-empty>div:has(.mosaic-town-compose)>span{display:none}.mosaic-town-compose{margin-top:0;text-align:left}
