@@ -5,6 +5,7 @@ import type * as Leaflet from 'leaflet';
 import type {FeatureCollection} from 'geojson';
 import {archive,timeAgo,type LabLog,type Person,type Place} from './model';
 import EditorialCard from './EditorialCard';
+import AccessibleDialog from '@/components/AccessibleDialog';
 import MapEntrance,{useMapEntrance} from '@/components/MapEntrance';
 import {LocateFixedIcon,type LocateFixedIconHandle} from '@/components/icons/locate-fixed';
 import {RotateCcwIcon,type RotateCcwIconHandle} from '@/components/icons/rotate-ccw';
@@ -26,6 +27,7 @@ const LOG_DETAIL_ZOOM=MAP_DONG_ZOOM;
 // Keep city context on phone widths, including after the first GPS response.
 const CITY_VIEW_ZOOM=11;
 export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,pageSwipeEdges=false,compact=false,scopeKey,highlightedDong,focusedLog,discoveryLog,onDiscoveryConsumed}:Props){
+ const [clusterIds,setClusterIds]=useState<string[]>([]);
  const host=useRef<HTMLDivElement>(null),map=useRef<Leaflet.Map|null>(null),engine=useRef<typeof Leaflet|null>(null),markers=useRef<Leaflet.LayerGroup|null>(null),outlines=useRef<Leaflet.LayerGroup|null>(null),panes=useRef<HTMLElement[]>([]),colorLayers=useRef(new Map<number,Leaflet.GridLayer>()),raf=useRef(0),revealRaf=useRef(0),progress=useRef(1);
  const revealMasks=useRef(new Map<HTMLElement,ReturnType<typeof createMapRevealMask>>());
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[focused,setFocused]=useState(''),[boundaries,setBoundaries]=useState<DongCollection|null>(null),[boundaryError,setBoundaryError]=useState(false),[retry,setRetry]=useState(0),[showLogDetails,setShowLogDetails]=useState(true);
@@ -122,7 +124,13 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
  },[compact,scopeKey]);
  useEffect(()=>{
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
-  for(const log of located){
+  const renderMarkers=()=>{layer.clearLayers();
+  const groups:{logs:LabLog[];x:number;y:number}[]=[],cells=new Map<string,number>(),places=new Map<string,number>();
+  for(const log of located){const p=log.place!,point=m.latLngToContainerPoint([p.lat,p.lng]),x=Math.floor(point.x/40),y=Math.floor(point.y/40),key=p.id||`${p.lat.toFixed(5)}:${p.lng.toFixed(5)}`;let index=places.get(key);
+   if(index===undefined)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const candidate=cells.get(`${x+dx}:${y+dy}`);if(candidate!==undefined&&Math.hypot(groups[candidate].x-point.x,groups[candidate].y-point.y)<40)index=candidate;}
+   if(index===undefined){index=groups.length;groups.push({logs:[],x:point.x,y:point.y});cells.set(`${x}:${y}`,index);}groups[index].logs.push(log);places.set(key,index);
+  }
+  for(const group of groups){const log=group.logs[0];
    const p=log.place!,person=people.find(u=>u.id===log.authorId),button=document.createElement('button');
    button.type='button';button.className='scratch-place-pin scratch-user-dot';button.dataset.logId=log.id;button.style.setProperty('--person',person?.color||'#F4511E');
    button.setAttribute('aria-label',`${person?.name||'나'} · ${p.name} 위치 정보 보기`);button.setAttribute('aria-expanded','false');
@@ -130,11 +138,12 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
    const title=document.createElement('span');title.className='scratch-map-title';title.textContent=mapTitle(log);title.setAttribute('aria-hidden','true');
    button.append(dot,title);
    button.setAttribute('aria-label',`${person?.name||'나'} · ${title.textContent} · ${p.name} 위치 정보 보기`);
-   button.onclick=()=>{if(focusedRef.current===log.id)current.current.onSelect?.(log);else setFocused(log.id);};L.DomEvent.disableClickPropagation(button);
+   if(group.logs.length>1){button.classList.add('scratch-cluster-pin');dot.textContent=String(group.logs.length);title.textContent=`티끌 ${group.logs.length}개`;button.setAttribute('aria-label',`${p.name} 주변 티끌 ${group.logs.length}개 목록 보기`);}
+   button.onclick=()=>{if(group.logs.length>1){setFocused('');setClusterIds(group.logs.map(l=>l.id));return;}if(focusedRef.current===log.id)current.current.onSelect?.(log);else setFocused(log.id);};L.DomEvent.disableClickPropagation(button);
    L.marker([p.lat,p.lng],{icon:L.divIcon({className:'logbook-map-marker',html:button,iconSize:[0,0],iconAnchor:[0,0]}),keyboard:false}).addTo(layer);
-  }
+  }};renderMarkers();m.on('moveend zoomend resize',renderMarkers);return()=>{m.off('moveend zoomend resize',renderMarkers);};
  },[geometry,markerContent,ready,people]);
- useEffect(()=>{setFocused(focusedLog||'');},[focusedLog,scopeKey]);
+ useEffect(()=>{setClusterIds([]);setFocused(focusedLog||'');},[focusedLog,scopeKey]);
  useEffect(()=>{if(!focusedLog){notificationFocusRef.current='';return;}const m=map.current,place=logs.find(log=>log.id===focusedLog)?.place;if(!ready||!m||!place)return;const key=`${focusedLog}:${place.lat}:${place.lng}`;if(notificationFocusRef.current===key)return;notificationFocusRef.current=key;m.flyTo([place.lat,place.lng],Math.max(14.25,m.getZoom()),{animate:!matchMedia('(prefers-reduced-motion:reduce)').matches,duration:.65});},[focusedLog,ready,logs]);
  useEffect(()=>{
   const m=map.current,L=engine.current;if(!ready||!m||!L||!currentPoint)return;
@@ -214,7 +223,8 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
  },[focused,geometry,ready]);
  useEffect(()=>{const m=map.current;if(!ready||!m)return;if(!active){m.stop();cancelAnimationFrame(raf.current);cancelAnimationFrame(revealRaf.current);progress.current=1;return;}const frame=requestAnimationFrame(()=>{if(!host.current?.getClientRects().length)return;m.invalidateSize({pan:false});m.fire('moveend');redraw();});return()=>cancelAnimationFrame(frame);},[active,ready]);
  const matched=activeCoverage.dongs.reduce((sum,d)=>sum+d.count,0);
- return <><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe={pageSwipeEdges?undefined:true} data-page-swipe-map={pageSwipeEdges||undefined} data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
+ const clusterLogs=located.filter(log=>clusterIds.includes(log.id)).sort((a,b)=>b.createdAt-a.createdAt);
+ return <><AccessibleDialog open={clusterLogs.length>0} title="이 위치의 티끌" onClose={()=>setClusterIds([])} panelClassName="lab-dialog scratch-cluster-dialog"><p className="scratch-cluster-summary">함께 표시된 티끌 {clusterLogs.length}개</p><div className="scratch-cluster-list">{clusterLogs.map(log=><button type="button" key={log.id} onClick={()=>{setClusterIds([]);current.current.onSelect?.(log);}}>{log.image?<img src={log.image} alt="" loading="lazy"/>:<MapPin size={22}/>}<span><strong>{mapTitle(log)}</strong><small>{log.locationLabel||log.place?.name}</small><small>{people.find(p=>p.id===log.authorId)?.name||'나'} · {timeAgo(log.createdAt)}</small></span><ArrowUpRight size={16}/></button>)}</div></AccessibleDialog><div onKeyDown={event=>{if(event.key==='Escape'&&focused){event.stopPropagation();setFocused('');}}} className={`logbook-map scratch-map ${compact?'is-compact':''} ${dark?'is-dark':''} ${onPick?'is-picking':''}`} data-no-page-swipe={pageSwipeEdges?undefined:true} data-page-swipe-map={pageSwipeEdges||undefined} data-map-revealed={revealed} aria-busy={!revealed} data-reveal-style="admin-regions" data-region-tier={tier} data-detail={onPick?'precise':'simplified'} data-dongs={activeCoverage.dongs.length} data-matched-logs={matched} data-unmatched-logs={activeCoverage.unmatched}>
   <div ref={host} className="scratch-map-canvas" aria-label={onPick?'장소를 고를 수 있는 지도':'확대 수준별 지역 티끌 지도'}/>
   {discoveryName&&<div className="scratch-discovery-note" role="status"><strong>새로운 동네를 채웠어요</strong><span>{discoveryName}</span></div>}
   <MapEntrance revealed={revealed}/>

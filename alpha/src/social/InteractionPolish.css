@@ -29,3 +29,10 @@
 @keyframes lab-location-wait{0%,100%{box-shadow:0 0 0 0 #f4511e00}50%{box-shadow:0 0 0 4px #f4511e1a}}
 @media(prefers-reduced-motion:reduce){.scratch-map-tools button[data-location-state=locating]{animation:none}}
 @media(prefers-reduced-motion:reduce){.lab-sliding-indicator.is-set,.lab-sliding-segments>button{transition:none}.lab-bloom-toggle[data-bloom=true]>.lab-bloom-fill{animation:none}.lab-focused-photo[data-photo-ready=true]>.lab-photo-corner{animation:none;opacity:.7}}
+.scratch-cluster-pin .scratch-dot-core{display:grid;place-items:center;width:32px;height:32px;border:2px solid #fff;border-radius:50%;background:var(--person);color:white;font-size:12px;font-weight:800;box-shadow:0 2px 7px #0003}
+.scratch-cluster-summary{font-size:12px;color:var(--muted);margin:0 0 12px}
+.scratch-cluster-list{display:grid;gap:4px;max-height:60dvh;overflow-y:auto;overscroll-behavior:contain}
+.scratch-cluster-list>button{display:flex;align-items:center;gap:12px;min-height:76px;width:100%;padding:10px 4px;text-align:left;border-bottom:1px solid var(--line);color:var(--fg)}
+.scratch-cluster-list>button>img{width:44px;height:56px;object-fit:cover;border-radius:7px;flex:none}
+.scratch-cluster-list>button>span{flex:1;min-width:0;display:grid;gap:4px}
+.scratch-cluster-list strong{font-size:14px;overflow-wrap:anywhere}.scratch-cluster-list small{font-size:11px;color:var(--muted)}
