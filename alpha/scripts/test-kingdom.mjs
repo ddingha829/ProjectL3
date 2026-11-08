@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';import fs from 'node:fs/promises';import {pathToFileURL} from 'node:url';import path from 'node:path';
+const built=await build({entryPoints:['src/unified/kingdom.ts'],bundle:true,platform:'node',format:'esm',write:false});
+const file=path.resolve('.test-data/kingdom-test.mjs');await fs.mkdir('.test-data',{recursive:true});await fs.writeFile(file,built.outputFiles[0].text);const m=await import(pathToFileURL(file));
+const t=Date.parse('2026-11-10T00:00:00Z');
+const log=(id,authorId='a',kind='book',workId=id,time=t)=>({id,authorId,createdAt:time,work:{id:workId,kind,title:id,image:''},image:''});
+const people=[{id:'a',name:'가',color:'#fff'},{id:'b',name:'나',color:'#000'},{id:'c',name:'다',color:'#777'}];
+assert.equal(m.kingdomMonth(Date.parse('2026-11-30T14:59:59Z')),'2026-11');assert.equal(m.kingdomMonth(Date.parse('2026-11-30T15:00:00Z')),'2026-12');
+assert.equal(m.kingdomLevel(3,4).level,1);assert.equal(m.kingdomLevel(4,4).level,2);assert.equal(m.kingdomLevel(24,4).level,7);assert.equal(m.kingdomLevel(99,4).level,7);assert.equal(m.kingdomLevel(1,0).step,1);
+for(let level=1;level<=7;level++)assert.equal(m.kingdomLevel((level-1)*4,4).level,level);
+const rows=[log('1','a','book','same'),log('2','a','book','same',t+1),log('3','b','book','same'),log('4','a','music'),log('5','b','movie'),log('old','a','movie','old',Date.parse('2026-10-01')),log('future','a','movie','x',t+10000),{...log('published'),createdAt:Date.parse('2020-01-01'),serverPublishedAt:t}];
+const data=m.collectKingdom(rows,'2026-11',4,people,t+2);
+assert.deepEqual(data.counts,{castle:5,book:3,movie:1,music:1});assert.equal(data.records.length,6);assert.equal(data.records[0].id,'2');assert.equal(data.records.find(r=>r.id==='2').earned,false);
+assert.equal(m.kingdomContributions(data,'book').find(p=>p.id==='a').count,2);assert.equal(m.kingdomContributions(data,'castle').find(p=>p.id==='c').count,0);
+assert.equal(data.counts.castle,Object.values(data.counts).slice(1).reduce((a,b)=>a+b,0));assert.equal(m.collectKingdom(rows,'2026-12',4,people,t+2).counts.castle,0);
+assert.equal(m.kingdomLevel(7,4,'castle').level,1);assert.equal(m.kingdomLevel(8,4,'castle').level,2);assert.equal(m.kingdomLevel(48,4,'castle').level,7);assert.deepEqual(m.kingdomContributions(data,'castle').find(p=>p.id==='a').byKind,{movie:0,book:2,music:1});
+console.log('PASS kingdom: Korean month boundary, 7 growth stages, per-member deduplication, cross-member credit, trusted upload dates, contributions and future exclusion');

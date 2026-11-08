@@ -1,0 +1,48 @@
+{
+  "canvasAspectRatio": "900 / 1200",
+  "worldWidth": 900,
+  "worldHeight": 1200,
+  "spriteWidth": 520,
+  "spriteHeight": 450,
+  "renderOrder": [
+    "book",
+    "movie",
+    "castle",
+    "music"
+  ],
+  "anchors": {
+    "movie": {
+      "q": -1,
+      "r": -2,
+      "leftPct": 31.34,
+      "topPct": 34.69,
+      "widthPct": 57.78,
+      "heightPct": 37.5
+    },
+    "book": {
+      "q": 2,
+      "r": -3,
+      "leftPct": 67.89,
+      "topPct": 34.39,
+      "widthPct": 57.78,
+      "heightPct": 37.5
+    },
+    "castle": {
+      "q": 0,
+      "r": 0,
+      "leftPct": 50.23,
+      "topPct": 48.16,
+      "widthPct": 57.78,
+      "heightPct": 37.5
+    },
+    "music": {
+      "q": -1,
+      "r": 4,
+      "leftPct": 48.58,
+      "topPct": 69.58,
+      "widthPct": 57.78,
+      "heightPct": 37.5
+    }
+  },
+  "credits": "3D Models & Textures by Kenney (www.kenney.nl) - Hexagon Kit, Castle Kit, Fantasy Town Kit 2.0, Tower Defense Kit (CC0 1.0 Public Domain)"
+}

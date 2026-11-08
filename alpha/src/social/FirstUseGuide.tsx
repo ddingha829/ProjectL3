@@ -12,7 +12,7 @@ type Seen=Partial<Record<GuideContext|'all',boolean>>;
 type Step={targets:string[];title:string;body:string};
 type Rect={left:number;top:number;width:number;height:number};
 const copy:Record<Exclude<GuideContext,'detail'|'own-detail'>,Step[]>={
- mosaic:[{targets:['.mosaic-frame','.mosaic-tray'],title:'취향을 한 칸씩',body:'가운데에 첫 작품을 놓고, 밝게 열린 옆 칸을 채워보세요. 9칸이 모이면 새 동네가 열려요.'}],
+ mosaic:[{targets:['.kg-world'],title:'작품으로 자라는 왕국',body:'작품 티끌이 자동으로 모여 마을이 자라요. 성이나 마을을 누르면 함께 키운 사람들과 작품을 볼 수 있어요.'}],
  studio:[{targets:['.un-studio-tools'],title:'리뷰에도 나의 취향을',body:'앞면은 주제에 맞춰 자동으로 배치돼요. 여기서는 뒷면 리뷰의 디자인과 색을 고르고 프리셋으로 저장해요.'}],
  today:[{targets:['.un-navigation .lab-nav-rail'],title:'가볍게 남겨보세요',body:'＋로 순간을 기록하고, 카드를 눌러 다시 꺼내봐요. 로고 옆에서 내 티끌과 모임을 바꿀 수 있어요.'}],
  library:[{targets:['.flc-shell'],title:'다시 찾고 싶은 기록',body:'검색과 필터로 기록을 찾아요. 보기 버튼으로 카드·목록·캘린더를 바꿔보세요.'}],
