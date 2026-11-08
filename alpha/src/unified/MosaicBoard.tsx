@@ -42,7 +42,7 @@ export default function MosaicBoard({state,logs,scope,actor,circle,onCompose,onO
  return <section className="kg-shell">
   <header className="kg-header"><div><h1>{scope==='mine'?'나의':circle?.name||'우리'} 취향 왕국</h1></div><div><button type="button" aria-label="지난달 왕국 보기" onClick={()=>setHistory(true)}><History size={19}/></button><button type="button" aria-label="왕국 성장 안내" onClick={()=>setRules(true)}><Info size={19}/></button></div></header>
   <div className="kg-canvas" ref={scene}>
-   <div className="kg-season"><span>{data.month.replace('-','.')} <b>{current?'함께 짓는 중':'월말 기념 기록'}</b></span><span>{data.members}명</span></div>
+   <div className="kg-season"><span>{data.month.replace('-','.')}{!current&&<b>월말 기념 기록</b>}</span><span>{data.members}명</span></div>
    <KingdomScene data={data} onArea={openArea} growing={current?growing:[]}/>
   </div>
   {(growing.length>0||message)&&<p className="kg-celebration" role="status">{growing.length&&current?growing.map(k=>KINGDOM_NAMES[k]).join(' · ')+'이 자랐어요!':message}</p>}
