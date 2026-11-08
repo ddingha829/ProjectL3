@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "npm run test:comments && npm run test:export && npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs && npm run test:mosaic",
+    "test": "npm run test:comments && npm run test:export && npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs && npm run test:mosaic && node scripts/test-work-summary.mjs",
     "dev": "next dev --webpack -H 127.0.0.1 -p 3014",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 3014",

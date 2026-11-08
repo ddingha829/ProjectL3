@@ -6,13 +6,14 @@ export interface MediaResult {
 }
 export interface LogMedia { id: string; type: MediaKind; title: string; url?: string; authors?: string[]; publisher?: string; isbn?: string }
 export const plainMediaText = (value: unknown) => typeof value === 'string' ? value.replace(/<[^>]*>/g, '').replace(/&(?:amp|lt|gt|quot|#39);/g, entity => ({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[entity] || '')).replace(/\s+/g, ' ').trim() : '';
+export const MEDIA_SUMMARY_LIMIT=120;
 export function briefMediaText(value: unknown): string {
   const text = plainMediaText(value);
   const sentences = text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || [text];
   const brief = sentences.slice(0, 2).map(sentence => sentence.trim()).join(' ').trim();
-  if (brief.length <= 160) return brief;
-  const cut = brief.slice(0, 157), space = cut.lastIndexOf(' ');
-  return cut.slice(0, space > 110 ? space : 157).replace(/[,.\s]+$/, '') + '…';
+  if (brief.length <= MEDIA_SUMMARY_LIMIT) return brief;
+  const cut = brief.slice(0, MEDIA_SUMMARY_LIMIT-1), space = cut.lastIndexOf(' ');
+  return cut.slice(0, space > MEDIA_SUMMARY_LIMIT*.7 ? space : MEDIA_SUMMARY_LIMIT-1).replace(/[,.\s]+$/, '') + '…';
 }
 export function normalizeLogMedia(value: unknown): LogMedia | undefined {
   if (!value || typeof value !== 'object') return;

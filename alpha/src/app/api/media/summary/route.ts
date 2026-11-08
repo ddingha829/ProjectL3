@@ -9,7 +9,7 @@ export async function POST(request:Request){
  let context:Awaited<ReturnType<typeof browserContext>>|undefined;
  try{const raw=await limitedBody(request);if(raw.length>6000)return json({error:'작품 소개가 너무 길어요.'},413);let body;try{body=JSON.parse(raw);}catch{return json({error:'작품 정보를 확인해주세요.'},400);}if(typeof body?.title!=='string'||!body.title.trim()||body.title.length>200||typeof body.overview!=='string'||body.overview.length>3000||!['movie','tv','book'].includes(body.type))return json({error:'작품 정보를 확인해주세요.'},400);
  const overview=plainMediaText(body.overview),fallback=briefMediaText(overview);context=await browserContext(request);const used=await usage(context.id);if(!overview)return json({summary:'',source:'empty',used,limit:AI_DAILY_LIMIT},200,context.cookie);
- const key=`summary:v1:${await digest(JSON.stringify([body.type,body.title,overview]))}`,hit=await cached<string>(key);if(hit)return json({summary:hit,source:'ai-cache',used,limit:AI_DAILY_LIMIT},200,context.cookie);
+ const key=`summary:v2:${await digest(JSON.stringify([body.type,body.title,overview]))}`,hit=await cached<string>(key);if(hit)return json({summary:briefMediaText(hit),source:'ai-cache',used,limit:AI_DAILY_LIMIT},200,context.cookie);
  if(!settings().GEMINI_API_KEY)return json({summary:fallback,source:'excerpt',reason:'not-configured',used,limit:AI_DAILY_LIMIT},200,context.cookie);
  if(used>=AI_DAILY_LIMIT)return json({summary:fallback,source:'excerpt',reason:'daily-limit',used,limit:AI_DAILY_LIMIT},200,context.cookie);
  if(await cached(await providerStateKey()))return json({summary:fallback,source:'excerpt',reason:'provider-unavailable',used,limit:AI_DAILY_LIMIT},200,context.cookie);
