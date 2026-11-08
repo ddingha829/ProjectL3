@@ -4,3 +4,6 @@
 .un-bento-card[data-new-arrival=true]::after{border-radius:18px}
 @media(min-width:780px){.un-grid.un-bento-grid,.un-app .un-grid.un-bento-grid{--bento-gap:11.2px}}
 @media(prefers-reduced-motion:reduce){.un-bento-card-surface{transition:none}}
+/* Small feed cards need a broader contrast bed; detail/export fronts keep their
+   original image shading in BentoFront.css. Paper cards retain their ink surface. */
+.un-bento-grid .ec-face.ec-bento:not(.ec-bento-paper) .ec-bento-shade{background:linear-gradient(180deg,transparent 44%,rgba(0,0,0,.12) 61%,rgba(0,0,0,.48) 79%,rgba(0,0,0,.8) 100%)}
