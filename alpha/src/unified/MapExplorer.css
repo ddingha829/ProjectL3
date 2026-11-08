@@ -28,3 +28,6 @@
 /* The map keeps its center gesture; side handles mark inward screen paging. */
 .un-map-page-edge{position:absolute;z-index:3;top:50%;width:4px;height:44px;transform:translateY(-50%);border:1px solid color-mix(in srgb,var(--fg) 14%,transparent);border-radius:99px;background:color-mix(in srgb,var(--surface) 75%,transparent);box-shadow:0 1px 4px #0002;pointer-events:none}
 .un-map-page-edge.is-left{left:5px}.un-map-page-edge.is-right{right:5px}
+/* Leaflet and the empty-map invitation must never escape above app dialogs. */
+.un-map-panel{isolation:isolate}
+body:has([aria-modal="true"]) .un-map-empty-invitation{visibility:hidden;pointer-events:none}
