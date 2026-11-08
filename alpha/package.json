@@ -23,7 +23,7 @@
     "test:export": "node scripts/test-editorial-media.mjs",
     "test:comments": "node scripts/test-comment-scope.mjs && node scripts/test-comment-threads.mjs && node scripts/test-comment-management.mjs",
     "test:mosaic": "node scripts/test-mosaic-town.mjs",
-    "test:kingdom": "node scripts/test-kingdom.mjs && node scripts/test-kingdom-schema.mjs"
+    "test:kingdom": "node scripts/test-kingdom.mjs && node scripts/test-kingdom-schema.mjs && node scripts/test-kingdom-zoom.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",
