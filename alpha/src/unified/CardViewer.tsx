@@ -54,7 +54,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
  const damp=(over:number)=>Math.sign(over)*Math.pow(Math.abs(over),0.72)*0.36;
 
  return <div ref={viewer} className={`un-card-viewer ${expanded?'is-expanded':''} ${draggingSheet?'is-sheet-dragging':''}`} style={{'--viewer-ratio':420/cardCanvasHeight(log),'--viewer-peek-content':'172px','--viewer-drag-y':`${sheetOffset}px`} as CSSProperties} data-viewer-state={expanded?'commenting':'viewing'}>
-  <button type="button" className="un-viewer-typing-done" onPointerDown={event=>event.preventDefault()} onClick={()=>tools.current?.querySelector<HTMLInputElement>('input')?.blur()}><ChevronDown size={16} aria-hidden="true"/>입력 완료</button>
+  <button type="button" className="un-viewer-typing-done" onPointerDown={event=>event.preventDefault()} onClick={()=>tools.current?.querySelector<HTMLInputElement|HTMLTextAreaElement>('input:focus,textarea:focus')?.blur()}><ChevronDown size={16} aria-hidden="true"/>입력 완료</button>
   <div className="un-viewer-stage" onPointerDown={event=>{if(event.pointerType==='mouse'&&event.button!==0)return;gesture.current={x:event.clientX,y:event.clientY,lastY:event.clientY,lastT:performance.now()};}} onPointerUp={event=>{const start=gesture.current;gesture.current=null;resetTilt();if(!start)return;const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.abs(dy)>48&&Math.abs(dy)>Math.abs(dx)*1.4){const review=(event.target as HTMLElement).closest('[data-ec-scroll]');if(review&&review.scrollHeight>review.clientHeight)return;changeExpanded(dy<0);}}} onPointerCancel={()=>{gesture.current=null;resetTilt();}}>
    <motion.div
     className="un-detail-card-tilt"

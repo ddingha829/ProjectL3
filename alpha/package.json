@@ -21,7 +21,7 @@
     "test:video": "node scripts/test-camera-video.mjs && node scripts/test-video-encoding.mjs && node scripts/test-video-schema.mjs",
     "test:auth-motion": "node scripts/test-auth-motion.mjs",
     "test:export": "node scripts/test-editorial-media.mjs",
-    "test:comments": "node scripts/test-comment-scope.mjs && node scripts/test-comment-threads.mjs",
+    "test:comments": "node scripts/test-comment-scope.mjs && node scripts/test-comment-threads.mjs && node scripts/test-comment-management.mjs",
     "test:mosaic": "node scripts/test-mosaic-town.mjs"
   },
   "dependencies": {

@@ -59,17 +59,17 @@
 .un-viewer-icon-action.un-viewer-share{background:var(--accent);color:var(--accent-fg);border-color:transparent;box-shadow:0 3px 9px color-mix(in srgb,var(--accent) 20%,transparent)}
 
 /* The rounded field owns the focus treatment, including the keyboard outline. */
-.un-card-viewer .un-viewer-tools .un-comments input:focus-visible{outline:none;box-shadow:none}
+.un-card-viewer .un-viewer-tools .un-comments :is(input,textarea):focus-visible{outline:none;box-shadow:none}
 .un-card-viewer .un-viewer-tools .un-comments>form:focus-within{border-color:var(--accent-ink,var(--accent));box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)}
 .un-viewer-typing-done{display:none}
 /* Reserve the shortened visual viewport for the conversation, not the card. */
-html[data-lab-keyboard=open] .un-detail-dialog:has(.un-comments input:focus)>.quick-dialog-header{display:none!important}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus){display:flex;flex-direction:column;min-height:0;transition:none}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) :is(.un-viewer-stage,.un-viewer-toggle,.un-viewer-summary){display:none!important}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) .un-viewer-typing-done{display:flex;align-items:center;justify-content:center;gap:5px;align-self:flex-end;flex:none;min-height:44px;margin:4px 16px 4px 0;padding:0 10px;border:0;border-radius:12px;background:none;color:var(--fg);font-size:12px}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) .un-viewer-drawer{flex:1;align-self:stretch;width:100%;min-height:0;height:auto;max-height:none;margin:0;padding-bottom:0;border:0;border-radius:0;background:var(--surface);box-shadow:none}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) .un-viewer-tools{padding:0 16px 12px}
-html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) .un-comments{padding-top:0;border:0}
+html[data-lab-keyboard=open] .un-detail-dialog:has(.un-comments :is(input,textarea):focus)>.quick-dialog-header{display:none!important}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus){display:flex;flex-direction:column;min-height:0;transition:none}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus) :is(.un-viewer-stage,.un-viewer-toggle,.un-viewer-summary){display:none!important}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-viewer-typing-done{display:flex;align-items:center;justify-content:center;gap:5px;align-self:flex-end;flex:none;min-height:44px;margin:4px 16px 4px 0;padding:0 10px;border:0;border-radius:12px;background:none;color:var(--fg);font-size:12px}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-viewer-drawer{flex:1;align-self:stretch;width:100%;min-height:0;height:auto;max-height:none;margin:0;padding-bottom:0;border:0;border-radius:0;background:var(--surface);box-shadow:none}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-viewer-tools{padding:0 16px 12px}
+html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-comments{padding-top:0;border:0}
 /* Expanded sheet contains only the conversation and owns its scroll area. */
 .un-detail-dialog .un-card-viewer.is-expanded{display:grid;grid-template-rows:minmax(0,1fr) var(--viewer-open);overflow:hidden;padding-bottom:0}
 .un-detail-dialog .un-card-viewer.is-expanded .un-viewer-drawer{display:flex;position:relative;overflow:hidden;min-height:0}
@@ -80,5 +80,5 @@ html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments input:focus) .un-c
 .un-detail-dialog .un-card-viewer.is-expanded .un-comment-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 0 12px;gap:10px;scrollbar-width:thin}
 .un-detail-dialog .un-card-viewer.is-expanded .un-comments>form{position:static;flex:none;margin:0;width:auto;max-width:none;min-height:50px;border-radius:16px;background:var(--surface-2)}
 @media(min-width:780px){.un-detail-dialog .un-card-viewer.is-expanded{grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:minmax(0,1fr)}}
-html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer.is-expanded:has(.un-comments input:focus){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
-html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer:has(.un-comments input:focus) .un-viewer-drawer{display:flex;flex:1;min-height:0;overflow:hidden}
+html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer.is-expanded:has(.un-comments :is(input,textarea):focus){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-viewer-drawer{display:flex;flex:1;min-height:0;overflow:hidden}

@@ -101,6 +101,23 @@ export default function useUnifiedState(){
   const merged=new Map(before.logs.map(log=>[log.id,log]));for(const log of result.logs)merged.set(log.id,log);
   if(!fullRecords.current)requestSequence.current++;show({...before,logs:[...merged.values()]});return result;
  },[show]);
+ const manageComment=useCallback(async(logId:string,commentId:string,expected:string,body:string|null)=>{
+  const before=current.current,row=before?.logs.find(l=>l.id===logId)?.comments.find(c=>c.id===commentId);
+  if(!row||row.authorId!=='me')throw Error('본인이 작성한 댓글만 변경할 수 있어요.');
+  if(row.body!==expected)throw Error('댓글이 변경됐어요. 최신 내용을 확인해주세요.');
+  const apply=(s:UnifiedState):UnifiedState=>({...s,logs:s.logs.map(l=>l.id!==logId?l:{...l,comments:body===null?l.comments.filter(c=>c.id!==commentId).map(c=>c.parentId===commentId?{...c,parentId:null}:c):l.comments.map(c=>c.id===commentId?{...c,body:body.trim()}:c)})});
+  if(modeRef.current==='demo'){if(!commit(apply))throw Error('댓글을 저장하지 못했어요.');return;}
+  const c=client.current,id=userId.current,epoch=generation.current;
+  if(!c||!id||modeRef.current!=='cloud')throw Error('로그인이 필요해요.');
+  if(directSaving.current||pending.current||sending.current)throw Error('이전 변경을 저장한 뒤 다시 시도해주세요.');
+  directSaving.current=true;requestSequence.current++;
+  try{const session=await c.auth.getSession(),token=session.data.session?.access_token;if(!token)throw Error('로그인이 필요해요.');
+   const response=await fetch('/api/comments/manage/',{method:'POST',headers:{'Content-Type':'application/json','X-L2-Request':'1',Authorization:`Bearer ${token}`},body:JSON.stringify({action:body===null?'delete':'edit',id:commentId,logId,expected,...(body!==null?{body}:{})}),signal:AbortSignal.timeout(15000)}),result=await response.json();
+   if(!response.ok)throw Error(result.error||'댓글을 저장하지 못했어요.');
+   if(!alive.current||id!==userId.current||epoch!==generation.current)return;
+   const next=apply(current.current||before!);show(next);try{localStorage.setItem(cacheKey(id),JSON.stringify(next));}catch{}
+  }finally{directSaving.current=false;if(alive.current&&id===userId.current&&epoch===generation.current)void refresh();}
+ },[commit,show,refresh]);
  const saveNickname=useCallback(async(value:string)=>{
   const before=current.current;if(!before)throw Error('계정을 불러온 뒤 다시 시도해주세요.');
   const name=normalizeNickname(value,before.nicknameConfigured?before.people.find(p=>p.id==='me')?.name:undefined);
@@ -140,5 +157,5 @@ export default function useUnifiedState(){
  const joinCode=useCallback(async(code:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 참여할 수 있어요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join_code',{p_code:code.trim().toUpperCase()});if(result.error)throw Error(cloudError(result.error));if(result.data?.error)throw Error(cloudError({message:result.data.error}));const id=result.data?.groupId;if(typeof id!=='string')throw Error('참여 결과를 확인하지 못했어요. 다시 시도해주세요.');await refresh();if(!current.current?.circles.some(c=>c.id===id&&c.members.includes('me')))throw Error('참여는 완료됐어요. 새로고침해 모임 목록을 불러와주세요.');return id;},[refresh]);
  const join=useCallback(async(token:string)=>{if(!client.current||modeRef.current!=='cloud')throw Error('로그인한 뒤 초대 링크를 다시 열어주세요.');if(pending.current)throw Error('저장 중인 변경을 먼저 반영해주세요.');const result=await client.current.rpc('l2u_join',{p_token:token});if(result.error)throw Error(cloudError(result.error));await refresh();return String(result.data);},[refresh]);
  const removeMember=useCallback((groupId:string,id:string,keepShares:boolean)=>{if(!current.current||modeRef.current!=='cloud')return false;return queue([{kind:'remove_member',groupId,userId:id==='me'?userId.current:id,keepShares}],current.current);},[queue]);
- return {state,commit,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
+ return {state,commit,manageComment,shareToGroups,recordsBusy,ensureFullRecords,enablePagedRecords,loadFeedPage,saveNickname,nicknameBusy,error,ready,identity,mode,cloudEnabled,syncStatus,retry,refresh,discardPending,authenticate,resetPassword,changePassword,enterDemo,logout,invite,inviteCode,joinCode,join,removeMember,clearError:()=>setError('')};
 }
