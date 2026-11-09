@@ -55,13 +55,14 @@ export function containsDong(feature:DongFeature,lat:number,lng:number):boolean{
   return outer==='edge'||outer==='inside'&&!rings.slice(1).some(ring=>ringHit([lng,lat],ring)!=='outside');
  });
 }
+const coverageIndex=new WeakMap<DongCollection,{features:DongFeature[];hits:Map<string,DongFeature|undefined>}>();
 export function countDongLogs(logs:LabLog[],collection:DongCollection):{dongs:DongCount[];unmatched:number}{
- const features=[...collection.features].sort((a,b)=>a.properties.code.localeCompare(b.properties.code));
+ let index=coverageIndex.get(collection);if(!index){index={features:[...collection.features].sort((a,b)=>a.properties.code.localeCompare(b.properties.code)),hits:new Map()};coverageIndex.set(collection,index);}const {features,hits}=index;
  const counts=new Map<string,DongCount>(),seen=new Set<string>();let unmatched=0;
  for(const log of logs){
   if(!log.place||seen.has(log.id))continue;
   seen.add(log.id);
-  const place=log.place,feature=features.find(f=>containsDong(f,place.lat,place.lng));
+  const place=log.place,point=place.lat+':'+place.lng;let feature:DongFeature|undefined;if(hits.has(point))feature=hits.get(point);else{feature=features.find(f=>containsDong(f,place.lat,place.lng));if(hits.size>=4096)hits.delete(hits.keys().next().value!);hits.set(point,feature);}
   if(!feature){unmatched++;continue;}
   const key=feature.properties.code,entry=counts.get(key)||{feature,count:0,level:1 as const,logIds:[]};
   entry.count++;entry.level=Math.min(4,entry.count) as DongCount['level'];entry.logIds.push(log.id);counts.set(key,entry);

@@ -31,3 +31,5 @@
 /* Leaflet and the empty-map invitation must never escape above app dialogs. */
 .un-map-panel{isolation:isolate}
 body:has([aria-modal="true"]) .un-map-empty-invitation{visibility:hidden;pointer-events:none}
+.un-map-record-status{position:absolute;z-index:450;top:12px;left:12px;max-width:calc(100% - 76px);padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font-size:12px;box-shadow:0 3px 12px #0001;pointer-events:none}.un-map-record-status button{pointer-events:auto;min-height:36px;padding:0 6px;color:var(--accent);text-decoration:underline}body:has([aria-modal="true"]) .un-map-record-status{visibility:hidden}
+.un-map-explorer.is-loading-records .scratch-caption,.un-map-explorer.is-loading-records .scratch-unmatched{display:none}

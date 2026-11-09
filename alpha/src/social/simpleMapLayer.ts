@@ -44,7 +44,7 @@ function paint(canvas:HTMLCanvasElement,tile:VectorTile,zoom:number,ratio:number
 async function render(coords:Leaflet.Coords,ratio:number,signal:AbortSignal){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=256*ratio;
  const request=new AbortController(),cancel=()=>request.abort();signal.addEventListener('abort',cancel,{once:true});
- const timeout=setTimeout(cancel,12000);
+ const timeout=setTimeout(cancel,2500);
  try{
   if(signal.aborted)throw new DOMException('Cancelled','AbortError');
   const response=await fetch(`${VECTOR}/${coords.z}/${coords.x}/${coords.y}.mvt`,{signal:request.signal});
@@ -54,7 +54,8 @@ async function render(coords:Leaflet.Coords,ratio:number,signal:AbortSignal){
   if(signal.aborted)throw error;
   await new Promise<void>((resolve,reject)=>{
    const image=new Image();image.crossOrigin='anonymous';const abort=()=>{clean();image.removeAttribute('src');reject(new DOMException('Cancelled','AbortError'));};
-   const clean=()=>{image.onload=null;image.onerror=null;signal.removeEventListener('abort',abort);};
+   const fallbackTimer=setTimeout(()=>{clean();image.removeAttribute('src');reject(new Error('Map fallback timed out'));},6000);
+   const clean=()=>{clearTimeout(fallbackTimer);image.onload=null;image.onerror=null;signal.removeEventListener('abort',abort);};
    image.onload=()=>{clean();canvas.getContext('2d')!.drawImage(image,0,0,canvas.width,canvas.height);canvas.dataset.source='raster-fallback';resolve();};
    image.onerror=()=>{clean();reject(new Error('Map tile unavailable'));};signal.addEventListener('abort',abort,{once:true});
    if(signal.aborted){abort();return;}image.src=`https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;

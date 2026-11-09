@@ -6,6 +6,7 @@ const shown=Retained({...props,active:true}),map=shown.props.children;assert.equ
 const hidden=Retained({...props,logs:[],scopeKey:'different'});assert.equal(hidden.props.hidden,true);assert.equal(hidden.props.inert,true);assert.deepEqual(hidden.props.children.props.logs,props.logs);assert.equal(hidden.props.children.props.active,false);
 const back=Retained({...props,active:true});assert.equal(back.type,shown.type);assert.equal(back.props.children.type,map.type);assert.equal(back.props.children.props.scopeKey,'mine');
 assert.equal(Retained({...props,active:true,loading:true}).props.children.type,'map-explorer');
-assert.equal(Retained({...props,active:true,loading:true,scopeKey:'another'}).type,'record-loading');
+const next=Retained({...props,active:true,loading:true,scopeKey:'another'});assert.equal(next.props.children.type,'map-explorer');assert.deepEqual(next.props.children.props.logs,[]);assert.equal(next.props.children.props.recordsLoading,true);assert.equal(next.props.children.props.scopeKey,'another');
+ref=undefined;const first=Retained({...props,active:true,loading:true});assert.equal(first.props.children.type,'map-explorer');assert.deepEqual(first.props.children.props.logs,[]);
 ref=undefined;assert.equal(Retained(props),null);delete globalThis.__mapRef;
 console.log(JSON.stringify({status:'passed',checks:['no map before first visit','hidden map is inert','feed/scopes cannot overwrite hidden snapshot','same map subtree on return','same-scope refresh keeps cached map','new scope does not expose old snapshot','fresh account instance has no retained map'],liveRequests:0}));

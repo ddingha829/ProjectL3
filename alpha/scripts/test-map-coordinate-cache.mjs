@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';import {build} from 'esbuild';
+const b=await build({entryPoints:['src/social/adminDong.ts'],bundle:true,platform:'node',format:'esm',write:false});const {countDongLogs}=await import('data:text/javascript;base64,'+Buffer.from(b.outputFiles[0].text).toString('base64'));
+const feature=code=>({type:'Feature',properties:{code,name:code,label:code},bbox:[0,0,2,2],geometry:{type:'Polygon',coordinates:[[[0,0],[2,0],[2,2],[0,2],[0,0]]]}});
+const a={type:'FeatureCollection',features:[feature('a')]},b2={type:'FeatureCollection',features:[feature('b')]};const logs=[{id:'1',place:{lat:1,lng:1}},{id:'2',place:{lat:1,lng:1}}];
+assert.equal(countDongLogs(logs,a).dongs[0].count,2);assert.equal(countDongLogs(logs.slice(0,1),a).dongs[0].count,1);assert.equal(countDongLogs(logs,b2).dongs[0].feature.properties.code,'b');assert.equal(countDongLogs([{id:'3',place:{lat:3,lng:3}}],a).unmatched,1);assert.equal(countDongLogs(logs,a).unmatched,0);console.log('PASS coordinate cache preserves duplicate-place counts, changing log sets, boundary identity and unmatched points');

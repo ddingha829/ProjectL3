@@ -38,7 +38,7 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
  const discoveryCallback=useRef(onDiscoveryConsumed);discoveryCallback.current=onDiscoveryConsumed;
  const [paintBounds,setPaintBounds]=useState<[number,number,number,number]|null>(null);
  const [tier,setTier]=useState<MapTier>('dong'),[regional,setRegional]=useState<Partial<Record<WideMapTier,DongCollection>>>({}),[regionError,setRegionError]=useState('');
- const userMoved=useRef(false),autoLocated=useRef(false);
+ const userMoved=useRef(false),autoLocated=useRef(false),waitingForFirstPlace=useRef(false);
  const reduceMotion=useMotionPreference();
  const focusedRef=useRef(focused);focusedRef.current=focused;
  const notificationFocusRef=useRef('');
@@ -53,10 +53,13 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
  const current=useRef({active,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs});current.current={active,logs,people,dark,onSelect,onPick,onDistrictSelect,onCoverageChange,onViewportChange,dongs:activeCoverage.dongs};
  useEffect(()=>{if(tier==='dong'||onPick||regional[tier])return;let gone=false;setRegionError('');void loadMapRegions(tier).then(data=>{if(!gone)setRegional(previous=>({...previous,[tier]:data}));}).catch(()=>{if(!gone)setRegionError('지역 경계를 불러오지 못했어요.');});return()=>{gone=true;};},[tier,onPick,regional,retry]);
  useEffect(()=>{
-  let gone=false;setBoundaries(null);setBoundaryError(false);
-  void loadDongBoundaries(current.current.logs).then(data=>{if(!gone)setBoundaries(data);}).catch(()=>{if(!gone)setBoundaryError(true);});
-  return()=>{gone=true;};
- },[geometry,scopeKey,retry]);
+  if(!active||!ready||!revealed)return;
+  let gone=false;setBoundaryError(false);
+  const load=()=>{void loadDongBoundaries(current.current.logs).then(data=>{if(!gone)setBoundaries(data);}).catch(()=>{if(!gone)setBoundaryError(true);});};
+  const idle=window.requestIdleCallback?.(load,{timeout:800});const timer=idle===undefined?setTimeout(load,80):undefined;
+  return()=>{gone=true;if(idle!==undefined)window.cancelIdleCallback(idle);if(timer!==undefined)clearTimeout(timer);};
+ },[active,ready,revealed,geometry,scopeKey,retry]);
+ useEffect(()=>{setBoundaries(null);},[scopeKey]);
  useEffect(()=>{if(boundaries)current.current.onCoverageChange?.(coverage.dongs);},[coverage,boundaries]);
  useEffect(()=>{
   if(!active||!ready||!revealed||onPick||!located.length||regional.district)return;let gone=false;
@@ -101,7 +104,7 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
    const first=(current.current.logs.find(l=>l.id===focusedLog&&l.place)||current.current.logs.find(l=>l.place))?.place;
    const nearby=currentPoint&&!compact&&!current.current.onPick&&!focusedLog?currentPoint:null;
    const m=L.map(host.current,{trackResize:false,dragging:true,zoomControl:false,scrollWheelZoom:!compact,zoomSnap:.25,minZoom:2,maxZoom:18,attributionControl:false}).setView(nearby?[nearby.lat,nearby.lng]:first?[first.lat,first.lng]:[37.55,126.99],compact?12.75:current.current.onPick||focusedLog?14.25:CITY_VIEW_ZOOM);
-   map.current=m;
+   waitingForFirstPlace.current=!first&&!nearby;map.current=m;
    userMoved.current=false;
    m.on('dragstart zoomstart',()=>{userMoved.current=true;});
    const gray=m.createPane('scratch-base');gray.style.zIndex='200';gray.classList.add('scratch-base-pane');
@@ -124,6 +127,7 @@ export default function ScratchMap({active=true,logs,people,dark,onSelect,onPick
  },[compact,scopeKey]);
  useEffect(()=>{
   const m=map.current,L=engine.current,layer=markers.current;if(!ready||!m||!L||!layer)return;layer.clearLayers();
+  if(waitingForFirstPlace.current&&located[0]?.place){waitingForFirstPlace.current=false;if(!userMoved.current&&!currentPoint)m.setView([located[0].place.lat,located[0].place.lng],CITY_VIEW_ZOOM,{animate:false});}
   const renderMarkers=()=>{layer.clearLayers();
   const groups:{logs:LabLog[];x:number;y:number}[]=[],cells=new Map<string,number>(),places=new Map<string,number>();
   for(const log of located){const p=log.place!,point=m.latLngToContainerPoint([p.lat,p.lng]),x=Math.floor(point.x/40),y=Math.floor(point.y/40),key=p.id||`${p.lat.toFixed(5)}:${p.lng.toFixed(5)}`;let index=places.get(key);
