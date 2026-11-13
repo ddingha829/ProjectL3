@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "npm run test:comments && npm run test:export && npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs && npm run test:mosaic && node scripts/test-work-summary.mjs && npm run test:kingdom && npm run test:map",
+    "test": "npm run test:comments && npm run test:export && npm run test:music && npm run test:bento && npm run test:surfaces && npm run test:swipe && npm run test:viewport && npm run test:feed-toolbar && node scripts/test-new-feed-cards.mjs && node scripts/test-feed-newness.mjs && npm run test:mosaic && node scripts/test-work-summary.mjs && npm run test:kingdom && npm run test:map && npm run test:pull-refresh",
     "dev": "next dev --webpack -H 127.0.0.1 -p 3014",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 3014",
@@ -24,7 +24,8 @@
     "test:comments": "node scripts/test-comment-scope.mjs && node scripts/test-comment-threads.mjs && node scripts/test-comment-management.mjs",
     "test:mosaic": "node scripts/test-mosaic-town.mjs",
     "test:kingdom": "node scripts/test-kingdom.mjs && node scripts/test-kingdom-schema.mjs && node scripts/test-kingdom-zoom.mjs",
-    "test:map": "node scripts/test-retained-map.mjs && node scripts/test-map-tile-pool.mjs && node scripts/test-simple-map-layer.mjs && node scripts/test-map-fallback.mjs && node scripts/test-map-coordinate-cache.mjs && node scripts/test-map-regions.mjs && node scripts/test-map-reveal-mask.mjs"
+    "test:map": "node scripts/test-retained-map.mjs && node scripts/test-map-tile-pool.mjs && node scripts/test-simple-map-layer.mjs && node scripts/test-map-fallback.mjs && node scripts/test-map-coordinate-cache.mjs && node scripts/test-map-regions.mjs && node scripts/test-map-reveal-mask.mjs",
+    "test:pull-refresh": "node scripts/test-pull-refresh.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

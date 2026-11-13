@@ -17,6 +17,7 @@ export default function useFeedPagination({enabled,remote,query,load,owner=''}:{
   finally{if(generation===epoch.current){lock.current=false;setLoading(false);}}
  },[]);
  useEffect(()=>{setActiveKey(key);epoch.current++;lock.current=false;if(!enabled){setLoading(false);return()=>{epoch.current++;};}if(lastQuery.current===queryKey&&settled.current){setLoading(false);return()=>{epoch.current++;};}lastQuery.current=queryKey;settled.current=false;cursor.current=undefined;setCount(FEED_PAGE_SIZE);setHasMore(true);setInitial(true);setError('');setLoading(remote);if(!remote){settled.current=true;setLoading(false);setInitial(false);return()=>{epoch.current++;};}const timer=setTimeout(()=>void request(true),query.query.trim()?300:0);return()=>{clearTimeout(timer);epoch.current++;};},[enabled,remote,key,request]);
+ const reload=useCallback(async()=>{if(lock.current)return;cursor.current=undefined;setCount(FEED_PAGE_SIZE);await request(true);},[request]);
  const more=useCallback(()=>void request(initial),[request,initial]);
  // Observe the mounted node itself: conditional/loading renders can replace it.
  // Failures stop automatic requests until an explicit retry.
@@ -30,5 +31,5 @@ export default function useFeedPagination({enabled,remote,query,load,owner=''}:{
   const scroll=root||window;scroll.addEventListener('scroll',schedule,{passive:true});window.addEventListener('resize',schedule);schedule();
   return()=>{disposed=true;cancelAnimationFrame(frame);scroll.removeEventListener('scroll',schedule);window.removeEventListener('resize',schedule);};
  },[sentinel,enabled,remote,loading,error,hasMore,initial,more,count]);
- return {count,loading:enabled&&remote&&(loading||activeKey!==key),error:activeKey===key?error:'',hasMore,more,sentinel:setSentinel,initial};
+ return {count,loading:enabled&&remote&&(loading||activeKey!==key),error:activeKey===key?error:'',hasMore,more,reload,sentinel:setSentinel,initial};
 }
