@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Camera,RotateCw,LoaderCircle,SlidersHorizontal,Grid2X2,Zap,Check} from 'lucide-react';
 import {cameraStill,knownLenses,type CameraLens} from './cameraQuality';
+import {preferNativePhoto,waitForCameraFrame,cameraCanvasIsEmpty} from './cameraFrame';
 import {recordCameraVideo} from './cameraVideo';
 
 type ZoomRange={min:number;max:number;step:number};
@@ -17,6 +18,9 @@ function cameraFeatures(track:MediaStreamTrack|undefined){
 }
 
 export default function CameraSurface({active,onCapture,onFallback,captureKind='photo',onVideo,onRecordingChange}:{active:boolean;onCapture:(photo:Blob)=>Promise<void>;onFallback:()=>void;captureKind?:'photo'|'video';onVideo?:(file:File)=>void;onRecordingChange?:(recording:boolean)=>void}){
+ const photoRequest=useRef<AbortController|null>(null);
+ useEffect(()=>()=>photoRequest.current?.abort(),[active]);
+ useEffect(()=>{const visible=()=>{photoRequest.current?.abort();recording.current?.abort();if(!document.hidden&&active)setAttempt(n=>n+1);};document.addEventListener('visibilitychange',visible);return()=>document.removeEventListener('visibilitychange',visible);},[active]);
  const recording=useRef<AbortController|null>(null),[recordingNow,setRecordingNow]=useState(false),[recordingTake,setRecordingTake]=useState(0);
  useEffect(()=>()=>{recording.current?.abort();},[active,captureKind]);
  const video=useRef<HTMLVideoElement>(null),stream=useRef<MediaStream|null>(null),captureLock=useRef(false);
@@ -101,9 +105,11 @@ export default function CameraSurface({active,onCapture,onFallback,captureKind='
  const nativeCapture=()=>{stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;device.current=null;if(video.current)video.current.srcObject=null;setStatus('unavailable');onFallback();};
  const capture=async()=>{
   if(captureLock.current||changing)return;
+  if(preferNativePhoto(navigator.userAgent)){nativeCapture();return;}
   const source=video.current;if(status!=='ready'||!source?.videoWidth||source.readyState<2){nativeCapture();return;}
-  captureLock.current=true;setCapturing(true);setError('');
+  captureLock.current=true;setCapturing(true);setError('');const controller=new AbortController();photoRequest.current=controller;
   try{
+   await waitForCameraFrame(source,controller.signal);
    const ratio=source.clientWidth/source.clientHeight||9/16;let sw:number,sh:number;
    const still=device.current?await cameraStill(device.current.track):null;
    const frame:CanvasImageSource=still||source;const frameWidth=still?.width||source.videoWidth,frameHeight=still?.height||source.videoHeight;sw=frameWidth;sh=sw/ratio;if(sh>frameHeight){sh=frameHeight;sw=sh*ratio;}
@@ -111,9 +117,11 @@ export default function CameraSurface({active,onCapture,onFallback,captureKind='
    const context=canvas.getContext('2d');if(!context){still?.close();throw Error('사진을 촬영하지 못했어요.');}
    if(mirrored){context.translate(canvas.width,0);context.scale(-1,1);}
    try{context.drawImage(frame,(frameWidth-sw)/2,(frameHeight-sh)/2,sw,sh,0,0,canvas.width,canvas.height);}finally{still?.close();}
+   if(controller.signal.aborted)return;
+   if(cameraCanvasIsEmpty(canvas))throw Error('카메라에서 빈 사진을 받았어요. 기본 카메라로 다시 촬영해주세요.');
    const photo=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('사진을 촬영하지 못했어요.')),'image/png'));
-   await onCapture(photo);
-  }catch(e){setError(e instanceof Error?e.message:'촬영하지 못했어요. 앨범에서 사진을 선택해주세요.');}finally{captureLock.current=false;setCapturing(false);}
+   if(controller.signal.aborted)return;await onCapture(photo);
+  }catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'촬영하지 못했어요. 기본 카메라로 다시 촬영해주세요.');}finally{if(photoRequest.current===controller)photoRequest.current=null;captureLock.current=false;setCapturing(false);}
  };
  const captureVideo=async()=>{
   if(captureLock.current||changing||!active)return;
@@ -133,7 +141,7 @@ export default function CameraSurface({active,onCapture,onFallback,captureKind='
    <div className="lab-camera-zoom" role="group" aria-label="카메라 배율 조절"><div>{presets.map(value=><button key={value} disabled={capturing||value<zoomMin||value>zoomMax} title={value<zoomMin||value>zoomMax?'이 기기 또는 브라우저에서 지원하지 않는 배율':undefined} aria-label={`배율 ${value}배`} aria-pressed={Math.abs(zoom-value)<.025} onClick={()=>changeZoom(value)}>{value}×</button>)}</div><output className="lab-camera-zoom-status" aria-label="현재 카메라 배율" aria-live="off">{zoom.toFixed(1)}×</output></div>
   </>}
   {active&&status!=='ready'&&<div className="lab-camera-placeholder">{status==='loading'?<><LoaderCircle className="lab-spin" size={30}/><p>카메라를 여는 중</p></>:<><Camera size={46} strokeWidth={1}/><p>{captureKind==='video'?'움직이는 2초를 남겨요':'사진으로 남기는 지금'}</p><button onClick={()=>setAttempt(value=>value+1)}>카메라 켜기</button><small>앨범을 고르거나 글만 남겨도 좋아요</small></>}</div>}
-  {error&&<p className="lab-camera-error" role="alert">{error}</p>}
+  {error&&<p className="lab-camera-error" role="alert">{error}{captureKind==='photo'&&<button type="button" onClick={nativeCapture}>기본 카메라로 촬영</button>}</p>}
   {recordingNow&&<div key={recordingTake} className="un-camera-recording" role="status"><span/><strong>촬영 중 · 2초 후 자동 종료</strong><i/></div>}
   <div className="lab-camera-capture"><button className={`lab-camera-shutter ${captureKind==='video'?'is-video':''}`} aria-label={captureKind==='video'?'2초 영상 촬영':'사진 촬영'} aria-busy={capturing||changing||status==='loading'} disabled={capturing||changing||status==='loading'||!active} onClick={()=>void (captureKind==='video'?captureVideo():capture())}>{capturing?<LoaderCircle className="lab-spin" size={24}/>:<span/>}</button><button className="lab-camera-flip" aria-label="전면 후면 카메라 전환" disabled={capturing||status==='loading'||!active} onClick={()=>{setSelection(null);setFacing(value=>value==='user'?'environment':'user');}}><RotateCw size={22}/></button></div>
  </div>;

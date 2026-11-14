@@ -48,3 +48,4 @@
 .lab-camera-grid{position:absolute;inset:0;z-index:1;pointer-events:none}.lab-camera-grid i{position:absolute;background:#ffffff5c}.lab-camera-grid i:nth-child(1),.lab-camera-grid i:nth-child(2){top:0;bottom:0;width:1px}.lab-camera-grid i:nth-child(1){left:33.333%}.lab-camera-grid i:nth-child(2){left:66.666%}.lab-camera-grid i:nth-child(3),.lab-camera-grid i:nth-child(4){left:0;right:0;height:1px}.lab-camera-grid i:nth-child(3){top:33.333%}.lab-camera-grid i:nth-child(4){top:66.666%}
 @media(max-height:550px){.lab-camera-zoom{bottom:78px;gap:0}.lab-camera-zoom button{height:27px;min-width:27px}}
 .lab-camera-quality-note{max-width:210px;margin:3px 8px 9px;color:#d4d0cc;font-size:10px;line-height:1.6}
+.lab-camera-error>button{display:block;min-height:44px;margin:6px auto 0;padding:0 12px;border:1px solid #ffffff66;border-radius:10px;color:#fff;background:#ffffff14;font-size:12px}
