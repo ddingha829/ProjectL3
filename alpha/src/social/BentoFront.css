@@ -92,3 +92,11 @@
 .ec-face.ec-bento:not([data-bento-kind=note]) .ec-bento-content>.ec-bento-credit{padding-bottom:1.4cqw}
 .ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]){--ec-credit-height:clamp(24px,9cqw,34px)}
 .ec-face.ec-bento[data-native-preview=true]:not([data-bento-kind=note]) .ec-bento-copy{gap:.45cqw;bottom:calc(var(--ec-credit-height) + 2.2cqw)}
+
+/* Linked videos are compact thumbnails, without category or rating badges. */
+.ec-face.ec-bento[data-bento-kind=youtube]{--ec-credit-height:clamp(16px,7cqw,24px)}
+.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-copy{left:5cqw;right:5cqw;bottom:calc(var(--ec-credit-height) + 1cqw)}
+.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-copy h2{font-size:clamp(11px,6.4cqw,22px);line-height:1.18;-webkit-line-clamp:2}
+.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-content>.ec-bento-credit{padding:0 5cqw 1.5cqw}
+.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-credit time,.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-author{font-size:clamp(8px,3.6cqw,12px)}
+.ec-face.ec-bento[data-bento-kind=youtube] .ec-bento-shade{background:linear-gradient(180deg,transparent 20%,#0c0d0f55 55%,#0c0d0fc9 100%)}

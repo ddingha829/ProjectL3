@@ -84,7 +84,7 @@ export function cloudOperations(before:UnifiedState,after:UnifiedState):CloudOpe
  for(const scope of scopes){
   const rows=(s:UnifiedState)=>scope==='mine'?s.mosaic.personalBoard:Object.fromEntries(Object.entries(s.mosaic.groupBoards[scope]||{}).map(([i,p])=>[i,p.logId]));
   const old=rows(before),next=rows(after),nextLogs=new Set(Object.values(next));
-  for(const id of Object.values(old))if(!nextLogs.has(id)&&before.logs.find(l=>l.id===id)?.authorId==='me')ops.push({kind:'unplace',id,groupId:scope==='mine'?null:scope});
+  for(const id of Object.values(old))if(!nextLogs.has(id)&&after.logs.some(l=>l.id===id)&&before.logs.find(l=>l.id===id)?.authorId==='me')ops.push({kind:'unplace',id,groupId:scope==='mine'?null:scope});
   for(const [slot,id]of Object.entries(next))if(old[Number(slot)]!==id&&after.logs.find(l=>l.id===id)?.authorId==='me')ops.push({kind:'place',id,groupId:scope==='mine'?null:scope,slot:Number(slot)});
  }
  return ops;

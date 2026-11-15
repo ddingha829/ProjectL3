@@ -82,3 +82,7 @@ html[data-lab-keyboard=open] .un-card-viewer:has(.un-comments :is(input,textarea
 @media(min-width:780px){.un-detail-dialog .un-card-viewer.is-expanded{grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:minmax(0,1fr)}}
 html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer.is-expanded:has(.un-comments :is(input,textarea):focus){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
 html[data-lab-keyboard=open] .un-detail-dialog .un-card-viewer:has(.un-comments :is(input,textarea):focus) .un-viewer-drawer{display:flex;flex:1;min-height:0;overflow:hidden}
+
+.un-youtube-open{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:8px 0;color:var(--fg);text-decoration:none;border:1px solid var(--line,#8884);border-radius:16px;font-size:13px;font-weight:700}
+
+.un-log-options-list>.un-log-delete-action{color:#c43d35;border-top:1px solid var(--line,#8884);margin-top:8px;padding-top:16px}
