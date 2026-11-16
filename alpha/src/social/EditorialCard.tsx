@@ -27,7 +27,7 @@ function CardSurfaceEdge({layout,height,square}:{layout:EditorialStyle['front']|
 
 export function EditorialFace({log,author,side,appearance,canvasHeight,autoplayVideo=false}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number;autoplayVideo?:boolean}){
  const s=appearance||styleOf(log),Icon=log.youtube?Play:icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.youtube?'':log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=log.youtube?[]:[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
- const needed=side==='back'&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
+ const needed=side==='back'&&!log.youtube&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
  const rating=log.rating?<span className="ec-rating" aria-label={`별점 ${log.rating}점`}><Star size={15} fill="currentColor" stroke="currentColor" strokeWidth={1} aria-hidden="true"/><span>{Number(log.rating).toFixed(1)}</span></span>:null;
@@ -40,6 +40,7 @@ export function EditorialFace({log,author,side,appearance,canvasHeight,autoplayV
  const edge=<CardSurfaceEdge layout={layout} height={logicalHeight} square={logicalHeight<=420}/>;
  const specsView=<div className="ec-specs">{specs.map(([label,value])=><div className="ec-spec ec-flow-block" key={label}><b>{s.back==='vinyl'?`TRACK ${label==='GOOD'?'01':label==='BAD'?'02':'03'} · `:''}{label}</b><p>{value}</p></div>)}</div>;
  if(side==='front')return <BentoFront log={log} author={author} canvasHeight={logicalHeight} autoplayVideo={autoplayVideo}/>;
+ if(log.youtube)return <div data-ec-face="back" data-ec-layout="youtube" data-ec-material="ready" className={`ec-face ec-back ec-youtube-back ${materialClass} ec-square`} style={variables}><div className="ec-back-scroll" data-ec-scroll role="region" aria-label="티끌 내용" tabIndex={0}><div className="ec-scroll-inner">{log.body&&<blockquote className="ec-quote ec-flow-block" data-ec-quote>{log.body}</blockquote>}</div></div></div>;
  return <div data-ec-face="back" data-ec-layout={s.back} data-ec-material={materialState} className={`ec-face ec-back ec-${s.back} ${materialClass} ${logicalHeight<=420?'ec-square':'ec-portrait'}`} style={variables}>
   {surface}
   {s.back==='doodle'&&<i className="ec-tape" aria-hidden="true"/>}

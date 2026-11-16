@@ -3,4 +3,4 @@
 .lab-work-search-field input:focus-visible,.lab-dialog .lab-work-search-field input:focus-visible{outline:none;box-shadow:none}
 .lab-work-search[data-work-search=music] .lab-media-choices>button>img,.lab-work-search[data-work-search=music] .lab-demo-book{aspect-ratio:1;object-fit:cover}.lab-work-album{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7}.lab-work-search-credit p{margin:6px 0 0}
 
-.lab-youtube-picker{display:grid;gap:14px}.lab-youtube-picker button{min-height:44px}.lab-youtube-preview{display:grid;gap:8px}.lab-youtube-preview img{width:100%;aspect-ratio:2/1;object-fit:cover;border-radius:16px}.lab-youtube-preview strong{font-size:15px;line-height:1.5}.lab-youtube-preview small{color:var(--muted)}
+.lab-youtube-picker{display:grid;gap:14px}.lab-youtube-picker button{min-height:44px}.lab-youtube-preview{display:grid;gap:8px}.lab-youtube-preview img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px}.lab-youtube-preview strong{font-size:15px;line-height:1.5}.lab-youtube-preview small{color:var(--muted)}

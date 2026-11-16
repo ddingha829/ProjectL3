@@ -179,3 +179,6 @@ html:not(.light) .ec-face>.ec-surface-edge{display:block}
 .ec-back .ec-stamp .ec-rating{font-size:30px}
 .ec-back.ec-square .ec-rating,.ec-back.ec-square .ec-stamp .ec-rating{font-size:26px}
 .ec-back .ec-rating-score,.ec-back .ec-news-meta .ec-rating-gold{color:var(--ec-text);text-shadow:none}
+
+/* A compact linked-video back dedicates its full surface to the personal note. */
+.ec-face.ec-youtube-back{padding:24px;gap:0}.ec-youtube-back .ec-scroll-inner{gap:0}.ec-youtube-back .ec-quote{font-size:20px;line-height:1.65;letter-spacing:-.02em}
