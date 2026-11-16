@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Check,Clock3,Lock,Plus,Users} from 'lucide-react';
 import AccessibleDialog from '@/components/AccessibleDialog';
-import {addsGroupShare,canAddGroupShare,groupShareDeadline,groupShareTimeLabel,SHARE_WINDOW_MESSAGE} from '@/lib/groupSharing';
+import {addsGroupShare,canAddGroupShare,groupShareDeadline,groupShareTimeLabel,SHARE_WINDOW_MESSAGE,GROUP_SHARE_WINDOW_LABEL} from '@/lib/groupSharing';
 import type {Circle} from '@/social/model';
 import {audienceIds,type UnifiedLog} from './store';
 import './ShareToGroupsSheet.css';
@@ -20,7 +20,7 @@ export default function ShareToGroupsSheet({log,circles,onSave,onClose}:{log:Uni
   setSaving(true);setError('');try{await onSave([...chosen]);if(mounted.current)onClose();}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'공유하지 못했어요. 다시 시도해주세요.');}finally{if(mounted.current)setSaving(false);}
  };
  return <AccessibleDialog open title="모임에 공유" onClose={onClose} closeLabel="모임 공유 닫기" scrollBody panelClassName="lab-dialog un-group-share-sheet">
-  <div className="un-group-share-intro"><span><Clock3 size={17} aria-hidden="true"/>{groupShareTimeLabel(log,now)}</span><p>처음 등록한 뒤 <strong>48시간</strong> 동안 다른 모임에도 공유할 수 있어요. 같은 원본이 연결되어 수정 내용도 함께 반영돼요.</p><small>{allowed?`${deadline}까지 추가 공유 가능`:'기존 모임의 공유는 유지되며 언제든 해제할 수 있어요.'}</small></div>
+  <div className="un-group-share-intro"><span><Clock3 size={17} aria-hidden="true"/>{groupShareTimeLabel(log,now)}</span><p>처음 등록한 뒤 <strong>{GROUP_SHARE_WINDOW_LABEL}</strong> 동안 다른 모임에도 공유할 수 있어요. 같은 원본이 연결되어 수정 내용도 함께 반영돼요.</p><small>{allowed?`${deadline}까지 추가 공유 가능`:'기존 모임의 공유는 유지되며 언제든 해제할 수 있어요.'}</small></div>
   <div className="un-always-private"><Lock size={17} aria-hidden="true"/><span>내 티끌<small>항상 보관돼요</small></span><Check size={17} aria-hidden="true"/></div>
   <div className="un-share-options">{options.map(c=>{const existing=current.includes(c.id),blocked=saving||!allowed&&!existing&&!chosen.includes(c.id);return <button type="button" key={c.id} aria-pressed={chosen.includes(c.id)} disabled={blocked} onClick={()=>{setChosen(ids=>ids.includes(c.id)?ids.filter(id=>id!==c.id):[...ids,c.id]);setError('');}}><Users size={18} aria-hidden="true"/><span>{c.name}<small>{existing?'이미 공유한 모임':!allowed?'추가 공유 기한 만료':`${c.members}명 · 추가 공유`}</small></span>{chosen.includes(c.id)?<Check size={17} aria-hidden="true"/>:<Plus size={17} aria-hidden="true"/>}</button>;})}</div>
   {!options.length&&<p className="un-subtle">먼저 상단의 모임 메뉴에서 모임에 참여하거나 만들어주세요.</p>}

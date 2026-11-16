@@ -25,7 +25,7 @@ try{
  alter table storage.objects enable row level security;grant all on storage.objects to authenticated;`);
  for(let i=0;i<users.length;i++)await db.query('insert into auth.users values($1,$2,$3)',[users[i],`share${i}@example.invalid`,'{}']);
  const dir=new URL('../supabase/migrations/',import.meta.url),files=(await fs.readdir(dir)).filter(f=>f.endsWith('.sql')).sort();
- for(const file of files.filter(f=>!f.includes('_010_')))await db.exec(await fs.readFile(new URL(file,dir),'utf8'));
+ for(const file of files.filter(f=>!f.includes('_010_')&&!f.includes('_018_')))await db.exec(await fs.readFile(new URL(file,dir),'utf8'));
  for(let i=0;i<users.length;i++){await actor(i);await rpc('l2u_snapshot');}
  await actor(0);for(const [n,group]of groups.entries())await apply([{kind:'group',id:group,name:'Group '+n,capacity:20,expected:0}]);
  await apply([write([],0,{...data,createdAt:Date.now()-90*86400000},legacy)]);
@@ -33,6 +33,7 @@ try{
  await db.exec(await fs.readFile(new URL(files.find(f=>f.includes('_010_')),dir),'utf8'));
  const backfill=(await db.query('select published_at from public.l2u_logs where id=$1',[legacy])).rows[0].published_at;
  ok(new Date(backfill).getTime()===new Date(original).getTime(),'legacy first-revision logs retain their original server insertion time');
+ await db.exec(await fs.readFile(new URL(files.find(f=>f.includes('_018_')),dir),'utf8'));
  await actor(0);await apply([write([],0)]);
  let snapshot=await rpc('l2u_snapshot'),log=snapshot.logs.find(l=>l.id===id);
  ok(Math.abs(log.serverPublishedAt-Date.now())<5000,'a future client record date cannot forge the server upload time');
@@ -43,14 +44,14 @@ try{
  const published=log.serverPublishedAt;
  await apply([write([groups[0]],2,{...data,body:'Edited',serverPublishedAt:Date.now()+999999999})]);
  snapshot=await rpc('l2u_snapshot');ok(snapshot.logs.find(l=>l.id===id).serverPublishedAt===published,'edits and a forged payload timestamp cannot renew the deadline');
- await age(id,'47 hours 59 minutes');await rpc('l2u_share_to_groups',[id,[groups[0],groups[1]],3,crypto.randomUUID()]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===id).circleIds.length===2,'additional groups are allowed before 48 hours');
- await age(id,'48 hours');await blocked(()=>rpc('l2u_share_to_groups',[id,groups,4,crypto.randomUUID()]),'the exact 48-hour boundary blocks new group shares');
+ await age(id,'6 days 23 hours 59 minutes');await rpc('l2u_share_to_groups',[id,[groups[0],groups[1]],3,crypto.randomUUID()]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===id).circleIds.length===2,'additional groups are allowed before seven days, including previously expired 48-hour cards');
+ await age(id,'7 days');await blocked(()=>rpc('l2u_share_to_groups',[id,groups,4,crypto.randomUUID()]),'the exact seven-day boundary blocks new group shares');
  snapshot=await rpc('l2u_snapshot');ok(snapshot.logs.find(l=>l.id===id).serverRevision===4&&snapshot.logs.find(l=>l.id===id).circleIds.length===2,'a forbidden share rolls back content, version and destinations atomically');
  await apply([write([groups[0],groups[1]],4,{...data,body:'Late content edit'})]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===id).body==='Late content edit','late content edits can keep existing destinations');
  await rpc('l2u_share_to_groups',[id,[groups[0]],5,crypto.randomUUID()]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===id).circleIds.length===1,'existing shares may be removed after expiry');
  await blocked(()=>rpc('l2u_share_to_groups',[id,[groups[0],groups[1]],6,crypto.randomUUID()]),'a removed destination cannot be added again after expiry');
  await db.exec('reset role');const before=(await db.query('select published_at from public.l2u_logs where id=$1',[id])).rows[0].published_at;await db.query('update public.l2u_logs set published_at=now() where id=$1',[id]);const after=(await db.query('select published_at from public.l2u_logs where id=$1',[id])).rows[0].published_at;ok(new Date(before).getTime()===new Date(after).getTime(),'the database publication timestamp is immutable on update');
- await actor(0);const retry=crypto.randomUUID();await rpc('l2u_share_to_groups',[legacy,[groups[0]],1,retry]);await age(legacy,'49 hours');await rpc('l2u_share_to_groups',[legacy,[groups[0]],1,retry]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===legacy).serverRevision===2,'a confirmed pre-deadline share can be retried idempotently after the deadline');
+ await actor(0);const retry=crypto.randomUUID();await rpc('l2u_share_to_groups',[legacy,[groups[0]],1,retry]);await age(legacy,'8 days');await rpc('l2u_share_to_groups',[legacy,[groups[0]],1,retry]);ok((await rpc('l2u_snapshot')).logs.find(l=>l.id===legacy).serverRevision===2,'a confirmed pre-deadline share can be retried idempotently after the deadline');
  await actor(1);let denied=false;try{await rpc('l2u_share_to_groups',[id,[groups[0]],6,crypto.randomUUID()]);}catch{denied=true;}ok(denied,'another author cannot reshare the original');
  console.log(JSON.stringify({status:'passed',checks:checks.length,names:checks,liveRequests:0}));
 }catch(e){console.log(JSON.stringify({status:'failed',message:e.message,code:e.code,checks}));process.exitCode=1;}finally{await db.close();}

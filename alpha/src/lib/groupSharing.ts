@@ -1,13 +1,18 @@
-export const GROUP_SHARE_WINDOW_MS=48*60*60*1000;
+// Temporary expansion; coordinate any rollback with the database trigger policy.
+export const GROUP_SHARE_WINDOW_DAYS=7;
+export const GROUP_SHARE_WINDOW_LABEL=`${GROUP_SHARE_WINDOW_DAYS}일`;
+export const GROUP_SHARE_WINDOW_MS=GROUP_SHARE_WINDOW_DAYS*24*60*60*1000;
 type PublishedLog={createdAt:number;serverPublishedAt?:number};
 export const groupShareDeadline=(log:PublishedLog)=>
  (Number.isFinite(log.serverPublishedAt)?log.serverPublishedAt!:log.createdAt)+GROUP_SHARE_WINDOW_MS;
 export const canAddGroupShare=(log:PublishedLog,now=Date.now())=>Number.isFinite(groupShareDeadline(log))&&now<groupShareDeadline(log);
 export function addsGroupShare(before:readonly string[],after:readonly string[]){return after.some(id=>!before.includes(id));}
-export const SHARE_WINDOW_MESSAGE='등록 후 48시간이 지나 새 모임에 공유할 수 없어요. 기존 공유는 유지되며 해제할 수 있어요.';
+export const SHARE_WINDOW_MESSAGE=`등록 후 ${GROUP_SHARE_WINDOW_LABEL}이 지나 새 모임에 공유할 수 없어요. 기존 공유는 유지되며 해제할 수 있어요.`;
 export function groupShareTimeLabel(log:PublishedLog,now=Date.now()){
  const left=groupShareDeadline(log)-now;
  if(!Number.isFinite(left)||left<=0)return '추가 공유 기한이 끝났어요';
  const minutes=Math.ceil(left/60000),hours=Math.floor(minutes/60);
+ const days=Math.floor(hours/24);
+ if(days)return `추가 공유 ${days}일${hours%24?' '+hours%24+'시간':''} 남음`;
  return hours?`추가 공유 ${hours}시간${minutes%60?' '+minutes%60+'분':''} 남음`:`추가 공유 ${minutes}분 남음`;
 }

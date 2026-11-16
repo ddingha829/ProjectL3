@@ -15,6 +15,7 @@ import {INTERACTION_SPRING,instantMotion} from '@/lib/surfaceMotion';
 import type {UnifiedLog} from './store';
 import {useCardBackSwipe} from './useCardBackSwipe';
 const CardImageActions=dynamic(()=>import('@/social/CardImageActions'),{loading:()=> <p role="status">공유 도구를 불러오고 있어요.</p>});
+import {GROUP_SHARE_WINDOW_LABEL} from '@/lib/groupSharing';
 import './CardViewer.css';
 import './LocationPreview.css';
 const LocationPreview=dynamic(()=>import('./LocationPreview'));
@@ -103,7 +104,7 @@ export default function CardViewer({log,author,authorColor,authorInitial,appeara
   </section>
   {locationOpen&&<LocationPreview place={log.place} label={log.locationLabel||log.place?.name||'기록한 장소'} onClose={()=>setLocationOpen(false)}/>}
   <AccessibleDialog open={videoOpen} title="움직이는 2초" closeLabel="영상 재생 닫기" onClose={()=>{videoRequest.current++;setVideoOpen(false);setVideoUrl('');}} panelClassName="lab-dialog un-video-picker">{videoError?<p className="lab-error" role="alert">{videoError}</p>:videoUrl?<video style={{filter:mediaFilter(log.photo)}} className="un-video-playback" src={videoUrl} poster={log.image} muted playsInline autoPlay controls preload="none"/>:<p role="status"><LoaderCircle size={18} className="lab-spin"/>영상을 불러오고 있어요</p>}<p className="un-video-note"><Film size={14}/>무음 2초 · 외부 공유는 정지 사진으로 보내요.</p></AccessibleDialog>
-  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 48시간 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={hasBentoFront(log)}/></AccessibleDialog>
+  <AccessibleDialog open={sharing} title="공유·이미지 저장" onClose={()=>setSharing(false)} panelClassName="lab-dialog un-export-dialog">{onShareToGroups&&<button type="button" className="un-share-to-groups" onClick={()=>{setSharing(false);onShareToGroups();}}><Users size={21} aria-hidden="true"/><span>모임에 공유<small>등록 후 {GROUP_SHARE_WINDOW_LABEL} 안에 다른 모임에도 나눌 수 있어요.</small></span><ArrowUpRight size={18} aria-hidden="true"/></button>}<CardImageActions key={log.id+JSON.stringify(appearance)} root={root} title={cardTitle(log)} hasPhoto={hasBentoFront(log)}/></AccessibleDialog>
   <AccessibleDialog open={optionsOpen} title="티끌 옵션" onClose={()=>setOptionsOpen(false)} panelClassName="lab-dialog un-log-options"><div className="un-log-options-list">{options?.(()=>setOptionsOpen(false))}</div></AccessibleDialog>
  </div>;
 }
