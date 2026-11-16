@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useId,useState} from 'react';
-import {Check,ChevronDown,KeyRound,Lock,Settings,Users} from 'lucide-react';
+import {Check,ChevronDown,KeyRound,Lock,Settings,Users,Bell} from 'lucide-react';
 import {AnimatePresence,LayoutGroup,motion} from 'motion/react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import type {Circle,Person} from '@/social/model';
@@ -18,6 +18,8 @@ export default function UnifiedHeader({
   onScope,
   onHome,
   onSettings,
+  onNotifications,
+  unreadCount=0,
   onGroups,
   pwa,
 }:{
@@ -27,6 +29,8 @@ export default function UnifiedHeader({
   onScope:(id:string)=>void;
   onHome:()=>void;
   onSettings:()=>void;
+  onNotifications?:()=>void;
+  unreadCount?:number;
   onGroups:()=>void;
   pwa:PwaState;
 }){
@@ -131,6 +135,7 @@ export default function UnifiedHeader({
       </CompactPopover>
       <div className="un-header-actions">
         <HeaderInstallControl pwa={pwa}/>
+        {onNotifications&&<motion.button type="button" className="un-header-action un-header-bell" aria-label={`알림 열기${unreadCount?` · 읽지 않은 알림 ${unreadCount}개`:``}`} aria-haspopup="dialog" whileTap={reduced?undefined:{scale:.9}} transition={reduced?instantMotion:INTERACTION_SPRING} onClick={onNotifications}><Bell aria-hidden="true" size={21} strokeWidth={1.65}/>{unreadCount>0&&<span className="un-header-unread" aria-hidden="true">{unreadCount>=99?'99+':unreadCount}</span>}</motion.button>}
         <motion.button
           type="button"
           className="un-header-action"

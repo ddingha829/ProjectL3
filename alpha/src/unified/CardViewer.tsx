@@ -22,11 +22,11 @@ const LocationPreview=dynamic(()=>import('./LocationPreview'));
 
 const TILT_SPRING={stiffness:280,damping:24,mass:0.6};
 
-type Props={log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;onShareToGroups?:()=>void;options?:(close:()=>void)=>ReactNode;children:ReactNode};
-export default function CardViewer({log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
+type Props={commentsInitiallyOpen?:boolean;log:UnifiedLog;author:string;authorColor?:string;authorInitial?:string;appearance:EditorialStyle;root:RefObject<HTMLDivElement|null>;onBack:()=>boolean;actions:ReactNode;place?:ReactNode;onShareToGroups?:()=>void;options?:(close:()=>void)=>ReactNode;children:ReactNode};
+export default function CardViewer({commentsInitiallyOpen=false,log,author,authorColor,authorInitial,appearance,root,onBack,actions,place,onShareToGroups,options,children}:Props){
  const [autoPaused,setAutoPaused]=useState(false),allowAutoplay=useVideoAutoplay();
  const [locationOpen,setLocationOpen]=useState(false);
- const [expanded,setExpanded]=useState(false),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),[draggingSheet,setDraggingSheet]=useState(false),[sheetOffset,setSheetOffset]=useState(0);
+ const [expanded,setExpanded]=useState(commentsInitiallyOpen),[sharing,setSharing]=useState(false),[optionsOpen,setOptionsOpen]=useState(false),[draggingSheet,setDraggingSheet]=useState(false),[sheetOffset,setSheetOffset]=useState(0);
  const gesture=useRef<{x:number;y:number;lastY:number;lastT:number}|null>(null),skipClick=useRef(false),tools=useRef<HTMLDivElement>(null),toolsId=useId();
  const [videoOpen,setVideoOpen]=useState(false),[videoUrl,setVideoUrl]=useState(''),[videoError,setVideoError]=useState(''),videoRequest=useRef(0);
  useEffect(()=>()=>{videoRequest.current++;},[]);

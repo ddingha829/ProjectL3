@@ -26,8 +26,8 @@ export default function BentoFront({log,author,native=false,canvasHeight,autopla
  return <div className={`ec-face ec-front ec-bento ${!image?'ec-bento-paper':''}`} data-ec-face="front" data-ec-layout="bento" data-native-preview={native?'true':undefined} data-bento-kind={kind} data-topic-ratio={BENTO_RATIO_LABELS[kind]} data-card-width="420" data-card-height={height} style={{'--ec-height':`${height}px`,...(native?{width:'100%',height:'auto',aspectRatio:String(BENTO_RATIOS[kind])}:{})} as CSSProperties}>
   <div className="ec-bento-content">
    {kind==='music'?<div className="ec-bento-album">{artwork}</div>:artwork}
-   {kind!=='youtube'&&<div className="ec-bento-top"><span className="ec-bento-category"><Icon aria-hidden="true"/>{labels[kind]}</span>{log.rating&&<span className="ec-bento-rating" aria-label={`별점 ${log.rating}점`}><Star aria-hidden="true" fill="currentColor"/>{log.rating}</span>}</div>}
-   <div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2>{excerpt&&<p className="ec-bento-excerpt">{excerpt}</p>}{meta&&<p className="ec-bento-meta"><span>{meta}</span></p>}{kind==='note'&&credit}</div>{kind!=='note'&&credit}
+   <div className="ec-bento-top"><span className="ec-bento-category"><Icon aria-hidden="true"/>{labels[kind]}</span>{kind!=='youtube'&&log.rating&&<span className="ec-bento-rating" aria-label={`별점 ${log.rating}점`}><Star aria-hidden="true" fill="currentColor"/>{log.rating}</span>}</div>
+   {kind!=='youtube'&&<div className="ec-bento-copy">{kind==='note'&&<Quote className="ec-bento-quote" aria-hidden="true"/>}<h2>{title}</h2>{excerpt&&<p className="ec-bento-excerpt">{excerpt}</p>}{meta&&<p className="ec-bento-meta"><span>{meta}</span></p>}{kind==='note'&&credit}</div>}{kind!=='note'&&credit}
   </div>
  </div>;
 }
