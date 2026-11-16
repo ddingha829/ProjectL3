@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
-import {BookOpen,Clapperboard,Utensils,Compass,Music2,Star} from 'lucide-react';
+import {BookOpen,Clapperboard,Utensils,Compass,Music2,Play,Star} from 'lucide-react';
 import type {LabLog} from './model';
 import {DEFAULT_EDITORIAL,normalizeEditorial,editorialColors,cardCorner,mixColor,type EditorialStyle} from './editorialStyle';
 import {photoMaterial,type PhotoMaterial} from './cardMaterial';
@@ -26,12 +26,12 @@ function CardSurfaceEdge({layout,height,square}:{layout:EditorialStyle['front']|
 }
 
 export function EditorialFace({log,author,side,appearance,canvasHeight,autoplayVideo=false}:{log:LabLog;author:string;side:'front'|'back';appearance?:EditorialStyle;canvasHeight?:number;autoplayVideo?:boolean}){
- const s=appearance||styleOf(log),Icon=icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
+ const s=appearance||styleOf(log),Icon=log.youtube?Play:icons[log.category]||Compass,date=dateOf(log.createdAt),title=cardTitle(log),place=log.youtube?'':log.locationLabel||log.place?.name||log.work?.creator||'',meta=[place,date].filter(Boolean).join(' · '),specs=log.youtube?[]:[['GOOD',log.good],['BAD',log.bad],['NOTE',log.note]].filter(row=>row[1]);
  const needed=side==='back'&&Boolean(log.image&&(s.finish==='acrylic'||s.ambientBleed)),[material,setMaterial]=useState<{source:string;value?:PhotoMaterial;failed?:boolean}|null>(null);
  useEffect(()=>{let active=true;if(needed)photoMaterial(log.image).then(value=>{if(active)setMaterial({source:log.image,value});}).catch(()=>{if(active)setMaterial({source:log.image,failed:true});});return()=>{active=false;};},[log.image,needed]);
  const prepared=material?.source===log.image?material:undefined,colors=prepared?.value?.colors||[s.accent,s.bg,s.bg,s.accent],layout=side==='front'?s.front:s.back;
  const rating=log.rating?<span className="ec-rating" aria-label={`별점 ${log.rating}점`}><Star size={15} fill="currentColor" stroke="currentColor" strokeWidth={1} aria-hidden="true"/><span>{Number(log.rating).toFixed(1)}</span></span>:null;
- const category=<span className="ec-category"><Icon size={13}/>{labels[log.category]}</span>;
+ const category=<span className="ec-category"><Icon size={13}/>{log.youtube?'유튜브':labels[log.category]}</span>;
  const logicalHeight=canvasHeight??cardCanvasHeight(log);
  const variables={...editorialColors(s),'--ec-height':`${logicalHeight}px`,'--ec-radius':`${cardCorner(layout)}px`,'--ec-material-light':mixColor(s.bg,'#ffffff',.75),'--ec-material-shadow':mixColor(s.bg,'#000000',.36),'--ec-bleed-1':colors[0],'--ec-bleed-2':colors[3]} as CSSProperties;
  const surface=<>{side==='back'&&(s.ambientBleed||s.finish==='acrylic')&&<div className={`ec-color-residue ${s.finish==='acrylic'?'ec-frosted':''}`} aria-hidden="true"/>}{s.finish==='satin'&&<div className="ec-satin-sheen" aria-hidden="true"/>}</>;

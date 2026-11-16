@@ -7,7 +7,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 await fs.mkdir('.test-data',{recursive:true});
 const file=path.resolve('.test-data/post-actions.mjs');
-await build({stdin:{contents:`export {initialUnified,parseUnified} from './src/unified/store';export {deleteOwnLog} from './src/unified/deleteOwnLog';export {cloudOperations} from './src/unified/cloudRepository';export {collectKingdom} from './src/unified/kingdom';export {bentoKind,bentoImage,bentoLayout} from './src/social/bentoLayout';export {default as BentoFront} from './src/social/BentoFront';`,resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:file,loader:{'.css':'empty'},packages:'external',logLevel:'silent'});
+await build({stdin:{contents:`export {recoverYouTubeLogs,legacyYouTubeId} from './src/unified/recoverYouTubeLogs';export {EditorialFace} from './src/social/EditorialCard';export {initialUnified,parseUnified} from './src/unified/store';export {deleteOwnLog} from './src/unified/deleteOwnLog';export {cloudOperations} from './src/unified/cloudRepository';export {collectKingdom} from './src/unified/kingdom';export {bentoKind,bentoImage,bentoLayout} from './src/social/bentoLayout';export {default as BentoFront} from './src/social/BentoFront';`,resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',outfile:file,loader:{'.css':'empty'},packages:'external',logLevel:'silent'});
 const m=await import(pathToFileURL(file));
 const state=m.initialUnified(),own=state.logs.find(l=>l.authorId==='me'),other=state.logs.find(l=>l.authorId!=='me');
 state.collections=[{id:'collection',name:'묶음',createdAt:1,logIds:[own.id,other.id]}];
@@ -28,3 +28,11 @@ const payload=m.cloudOperations({...linked,logs:[]},linked).find(op=>op.kind==='
 for(const youtube of [{...video,videoId:'bad/id'}, {...video,title:''}, {...video,channelTitle:12}])assert.equal(m.parseUnified(JSON.stringify({...linked,logs:[{...log,youtube}]})),null);
 assert.equal(m.parseUnified(JSON.stringify({...linked,logs:[{...log,work:state.logs.find(l=>l.work)?.work}]})),null,'A video attachment cannot become an XP-earning work');
 console.log('PASS own-post deletion permissions, reference cleanup, cloud transaction and YouTube persistence, 2:1 thumbnail, hidden badges and collection exclusion');
+
+const original={videoId:'oqs4WpYwFIM',title:'[따릉맨] 따릉이 안 타고, 난지캠핑장에서 오뎅탕에 캪틴큐ㅣ따릉맨 ep.14',channelTitle:'더면상'};
+const legacy={...own,work:undefined,video:undefined,youtube:undefined,category:'daily',image:'https://i.ytimg.com/vi/oqs4WpYwFIM/hqdefault.jpg',title:'내가 쓴 내용이 제목이 된 카드',body:'내가 쓴 내용은 그대로 남아야 해요'};
+let lookups=0;const repaired=await m.recoverYouTubeLogs([legacy,{...legacy,id:'second'},log],async id=>{lookups++;assert.equal(id,original.videoId);return original;});assert.equal(lookups,1);assert.equal(repaired[0].youtube.title,original.title);assert.equal(repaired[0].body,legacy.body);assert.equal(m.bentoKind(repaired[0]),'youtube');assert.equal(m.legacyYouTubeId({...legacy,image:'https://i.ytimg.com.evil.test/vi/oqs4WpYwFIM/hqdefault.jpg'}),null);assert.equal(m.legacyYouTubeId({...legacy,work:state.logs.find(l=>l.work).work}),null);
+const repairedFront=renderToStaticMarkup(React.createElement(m.BentoFront,{log:repaired[0],author:'준혁',native:true}));assert(repairedFront.includes('data-topic-ratio="2:1"'));assert(!repairedFront.includes('ec-bento-category'));
+const back=renderToStaticMarkup(React.createElement(m.EditorialFace,{log:{...repaired[0],good:'자동 GOOD를 보이지 않게',note:'자동 NOTE를 보이지 않게'},author:'준혁',side:'back'}));assert(back.includes(original.title));assert(back.includes(legacy.body));assert(back.includes('유튜브'));assert(!back.includes('>DAILY<'));assert(!back.includes('자동 GOOD'));assert(!back.includes('자동 NOTE'));
+assert.equal((await m.recoverYouTubeLogs([legacy],async()=>null))[0].youtube.videoId,original.videoId,'Metadata outage still preserves video geometry, badge suppression and link');
+console.log('PASS existing thumbnail-only cards recover original YouTube titles, keep user bodies, render 2:1 fronts and YouTube-only back headings');

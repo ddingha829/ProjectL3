@@ -27,7 +27,7 @@
     "test:map": "node scripts/test-retained-map.mjs && node scripts/test-map-tile-pool.mjs && node scripts/test-simple-map-layer.mjs && node scripts/test-map-fallback.mjs && node scripts/test-map-coordinate-cache.mjs && node scripts/test-map-regions.mjs && node scripts/test-map-reveal-mask.mjs",
     "test:pull-refresh": "node scripts/test-pull-refresh.mjs",
     "test:camera": "node scripts/test-camera-frame.mjs && node scripts/test-camera-video.mjs",
-    "test:posts": "node scripts/test-post-actions.mjs"
+    "test:posts": "node scripts/test-post-actions.mjs && node scripts/test-composer-youtube.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",
