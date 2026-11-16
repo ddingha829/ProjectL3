@@ -14,6 +14,9 @@ export async function deliverPushJobs(authorId:string|null=null){
  for(let batch=0;batch<2;batch++){
   const result=await db.rpc('l2u_push_claim',{p_limit:20,p_author:authorId});if(result.error)throw Error('NOTIFICATION_QUEUE_UNAVAILABLE');
   const jobs=(result.data||[]) as Job[];lastBatch=jobs.length;claimed+=jobs.length;if(!jobs.length)break;
+  try{const owners=[...new Set(jobs.map(job=>job.payload.ownerId).filter((id):id is string=>typeof id==='string'))];
+   if(owners.length){const badges=await db.rpc('l2u_activity_badge_counts',{p_users:owners});if(!badges.error&&badges.data?.counts&&Number.isFinite(badges.data.updatedAt))for(const job of jobs){const count=badges.data.counts[String(job.payload.ownerId)];if(Number.isSafeInteger(count)&&count>=0)job.payload={...job.payload,badgeCount:count,badgeUpdatedAt:badges.data.updatedAt};}}
+  }catch{/* A badge lookup failure must not interrupt an otherwise valid push. */}
   for(let offset=0;offset<jobs.length;offset+=5)await Promise.all(jobs.slice(offset,offset+5).map(async job=>{
    const ttl=pushTtl(job.payload);let delivered=ttl===0,gone=!validPushSubscription(job.subscription);
    if(!gone&&ttl>0)try{await webpush.sendNotification(job.subscription,JSON.stringify(job.payload),{TTL:ttl,urgency:'normal',timeout:4500,vapidDetails:{subject:'https://project-l3-nine.vercel.app',publicKey:env.WEB_PUSH_PUBLIC_KEY!,privateKey:env.WEB_PUSH_PRIVATE_KEY!}});delivered=true;sent++;}

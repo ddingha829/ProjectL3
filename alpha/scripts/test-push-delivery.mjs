@@ -8,16 +8,16 @@ const bundled=await build({entryPoints:['src/server/pushDelivery.ts'],bundle:tru
  b.onLoad({filter:/.*/,namespace:'mock'},({path})=>({contents:{empty:'',db:'export const notificationAdmin=()=>globalThis.__delivery.db;',settings:'export const settings=()=>globalThis.__delivery.env;',transport:'export default {sendNotification:(...args)=>globalThis.__delivery.send(...args)};'}[path]}));
 }}]});
 const {deliverPushJobs}=await import('data:text/javascript;base64,'+Buffer.from(bundled.outputFiles[0].text).toString('base64'));
-const job=(id,patch={})=>({id,token:'lease-'+id,subscription:{endpoint:'https://push.apple.com/'+id.padEnd(40,'x'),keys:{auth:'A'.repeat(22),p256dh:'A'.repeat(87)}},payload:{kind:'new-log',title:'PRIVATE CARD TITLE'},...patch});
+const job=(id,patch={})=>({id,token:'lease-'+id,subscription:{endpoint:'https://push.apple.com/'+id.padEnd(40,'x'),keys:{auth:'A'.repeat(22),p256dh:'A'.repeat(87)}},payload:{ownerId:'12345678-1234-4234-8234-123456789000',kind:'new-log',title:'PRIVATE CARD TITLE'},...patch});
 let batches=[],calls=[],sends=[],errors=new Map();
-globalThis.__delivery={env:{WEB_PUSH_PUBLIC_KEY:'public',WEB_PUSH_PRIVATE_KEY:'private'},db:{rpc:async(name,args)=>{calls.push({name,args});if(name==='l2u_push_claim')return {data:batches.shift()||[]};return {error:null};}},send:async(subscription,...rest)=>{sends.push({subscription,rest});if(errors.has(subscription.endpoint))throw errors.get(subscription.endpoint);}};
+globalThis.__delivery={env:{WEB_PUSH_PUBLIC_KEY:'public',WEB_PUSH_PRIVATE_KEY:'private'},db:{rpc:async(name,args)=>{calls.push({name,args});if(name==='l2u_activity_badge_counts')return {data:{counts:{'12345678-1234-4234-8234-123456789000':7},updatedAt:100}};if(name==='l2u_push_claim')return {data:batches.shift()||[]};return {error:null};}},send:async(subscription,...rest)=>{sends.push({subscription,rest});if(errors.has(subscription.endpoint))throw errors.get(subscription.endpoint);}};
 const reset=()=>{batches=[];calls=[];sends=[];errors=new Map();};
 try{
  batches=[[job('ok'),job('retry'),job('gone')]];
  errors.set(job('retry').subscription.endpoint,{statusCode:503,body:'PRIVATE ENDPOINT DETAIL'});errors.set(job('gone').subscription.endpoint,{statusCode:410});
  let result=await deliverPushJobs('author');
  assert.deepEqual(result,{sent:1,claimed:3,failed:1,gone:1,expired:0,failures:{http_503:1,http_410:1}});
- assert.equal(calls[0].args.p_author,'author');
+ assert.equal(calls[0].args.p_author,'author');assert.equal(JSON.parse(sends[0].rest[0]).badgeCount,7);assert.equal(JSON.parse(sends[0].rest[0]).badgeUpdatedAt,100);assert.equal(calls.filter(c=>c.name==='l2u_activity_badge_counts').length,1,'one badge lookup serves the whole delivery batch');
  const finish=id=>calls.find(c=>c.name==='l2u_push_finish'&&c.args.p_job===id).args;
  assert.equal(finish('ok').p_sent,true);assert.equal(finish('retry').p_sent,false);assert.equal(finish('retry').p_gone,false);assert.equal(finish('gone').p_gone,true);
  assert.equal(JSON.stringify(result).includes('PRIVATE'),false);

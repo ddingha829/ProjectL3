@@ -18,19 +18,37 @@ function notificationAddress(value){
   return '/?view='+u.searchParams.get('view')+'&scope='+scope+(u.searchParams.get('view')==='map'?'&focus=':'&log=')+log;
  }catch{return '/';}
 }
-// Only an account identifier is persisted here; no coordinates, photos or logs.
-function notificationOwner(value){return new Promise(resolve=>{
+// Only account and badge metadata is persisted here; no coordinates, photos or logs.
+function notificationOwner(value,key='owner'){return new Promise(resolve=>{
  const request=indexedDB.open('l2-notification-device',1);
  request.onupgradeneeded=()=>request.result.createObjectStore('settings');request.onerror=()=>resolve(null);
- request.onsuccess=()=>{const db=request.result,tx=db.transaction('settings',value===undefined?'readonly':'readwrite'),store=tx.objectStore('settings'),item=value===undefined?store.get('owner'):store.put(value,'owner');
+ request.onsuccess=()=>{const db=request.result,tx=db.transaction('settings',value===undefined?'readonly':'readwrite'),store=tx.objectStore('settings'),item=value===undefined?store.get(key):store.put(value,key);
   item.onsuccess=()=>{if(value===undefined)resolve(item.result||null);};tx.oncomplete=()=>{db.close();if(value!==undefined)resolve(value);};tx.onerror=()=>{db.close();resolve(null);};
  };
 });}
+let appBadgeQueue=Promise.resolve();
+function queueBadge(task){appBadgeQueue=appBadgeQueue.catch(()=>{}).then(task);return appBadgeQueue;}
+async function clearIconBadge(){
+ await notificationOwner(null,'badge');
+ try{if(self.navigator?.clearAppBadge)await self.navigator.clearAppBadge();else if(self.navigator?.setAppBadge)await self.navigator.setAppBadge(0);}catch{}
+}
+function updateIconBadge(ownerId,count,updatedAt){
+ if(!self.navigator?.setAppBadge||typeof ownerId!=='string'||!Number.isSafeInteger(count)||count<0||!Number.isFinite(updatedAt))return Promise.resolve();
+ return queueBadge(async()=>{
+  if(await notificationOwner()!==ownerId)return;
+  const prior=await notificationOwner(undefined,'badge');
+  if(prior?.ownerId===ownerId&&prior.updatedAt>updatedAt)return;
+  await notificationOwner({ownerId,count,updatedAt},'badge');
+  try{if(count===0&&self.navigator.clearAppBadge)await self.navigator.clearAppBadge();else await self.navigator.setAppBadge(count);}catch{}
+ });
+}
 self.addEventListener('message',event=>{
+ if(event.data?.type==='L2_APP_BADGE'){event.waitUntil(updateIconBadge(event.data.ownerId,event.data.count,event.data.updatedAt));return;}
  if(event.data?.type!=='L2_NOTIFICATION_ACCOUNT')return;
- event.waitUntil((async()=>{const next=typeof event.data.ownerId==='string'?event.data.ownerId:null,previous=await notificationOwner();await notificationOwner(next);
+ event.waitUntil(queueBadge(async()=>{const next=typeof event.data.ownerId==='string'?event.data.ownerId:null,previous=await notificationOwner();await notificationOwner(next);
   if(previous&&previous!==next){const notes=await self.registration.getNotifications();notes.forEach(note=>note.close());}
- })());
+  if(previous!==next||!next)await clearIconBadge();
+ }));
 });
 self.addEventListener('push',event=>{
  event.waitUntil((async()=>{let payload;try{payload=event.data?.json();}catch{return;}
@@ -41,6 +59,7 @@ self.addEventListener('push',event=>{
    body:String(payload.body||'모임의 새 티끌을 확인해보세요.').slice(0,160),icon:'/brand/ticgle-icon-a-192.png',badge:'/brand/ticgle-icon-a-192.png',
    tag:'l2-'+(['comment','likes','reminder'].includes(payload.kind)?payload.kind:'log')+'-'+String(payload.id||''),data:{url,ownerId:payload.ownerId,kind:['comment','likes','reminder'].includes(payload.kind)?payload.kind:'new-log'},
   });
+  await updateIconBadge(payload.ownerId,payload.badgeCount,payload.badgeUpdatedAt);
  })());
 });
 self.addEventListener('notificationclick',event=>{

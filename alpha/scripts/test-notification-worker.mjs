@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const events=new Map(),stored=new Map(),shown=[],opened=[],messages=[];let focused=0,windows=[];
 const indexedDB={open(){const request={};queueMicrotask(()=>{request.result={close(){},transaction(){const tx={objectStore(){return {get(key){const item={};queueMicrotask(()=>{item.result=stored.get(key);item.onsuccess?.();queueMicrotask(()=>tx.oncomplete?.());});return item;},put(value,key){const item={};queueMicrotask(()=>{stored.set(key,value);item.onsuccess?.();queueMicrotask(()=>tx.oncomplete?.());});return item;}}}};return tx;}};request.onsuccess();});return request;}};
-const self={location:{origin:'https://app.test'},addEventListener:(name,fn)=>events.set(name,fn),registration:{showNotification:async(title,options)=>shown.push({title,...options}),getNotifications:async()=>shown.map(note=>({close:()=>note.closed=true}))},clients:{matchAll:async()=>windows,openWindow:async url=>opened.push(url)}};
+const badgeUpdates=[];const self={navigator:{setAppBadge:async count=>badgeUpdates.push(count),clearAppBadge:async()=>badgeUpdates.push(0)},location:{origin:'https://app.test'},addEventListener:(name,fn)=>events.set(name,fn),registration:{showNotification:async(title,options)=>shown.push({title,...options}),getNotifications:async()=>shown.map(note=>({close:()=>note.closed=true}))},clients:{matchAll:async()=>windows,openWindow:async url=>opened.push(url)}};
 vm.runInNewContext(await fs.readFile('public/sw.js','utf8'),{self,indexedDB,URL,console,caches:{},fetch:()=>{throw Error('Unexpected real network');}});
 async function emit(name,data){let pending;events.get(name)({...data,waitUntil(value){pending=value;}});await pending;}
 const user='12345678-1234-4234-8234-123456789000',log='12345678-1234-4234-8234-123456789001',group='12345678-1234-4234-8234-123456789002',url=`/?view=map&scope=${group}&focus=${log}`;
@@ -43,3 +43,14 @@ assert.equal(messages.at(-1).url,'/?compose=1','running app receives compose act
 windows=[];await emit('notificationclick',{notification:{close(){},data:{url:'/?compose=1',ownerId:user}}});
 assert.equal(opened.at(-1),'/?compose=1','closed app launches with compose action');
 console.log('Reminder worker: expiry, stable retry tag and cold/warm compose navigation passed.');
+
+await emit('push',{data:{json:()=>({...payload,badgeCount:5,badgeUpdatedAt:100})}});assert.equal(badgeUpdates.at(-1),5,'background push applies the server unread count');
+await emit('message',{data:{type:'L2_APP_BADGE',ownerId:user,count:0,updatedAt:200}});assert.equal(badgeUpdates.at(-1),0,'opening the inbox clears the icon');
+await emit('push',{data:{json:()=>({...payload,badgeCount:4,badgeUpdatedAt:150})}});assert.equal(badgeUpdates.at(-1),0,'a delayed push cannot resurrect a badge already cleared by reading');
+await emit('message',{data:{type:'L2_APP_BADGE',ownerId:'other',count:99,updatedAt:300}});assert.equal(badgeUpdates.at(-1),0,'another account cannot update this icon');
+await emit('push',{data:{json:()=>({...payload,badgeCount:-1,badgeUpdatedAt:300})}});assert.equal(badgeUpdates.at(-1),0,'malformed badge count is ignored without breaking visible notifications');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:null}});assert.equal(badgeUpdates.at(-1),0);assert.equal(stored.get('badge'),null,'logout removes persisted badge state');
+await emit('message',{data:{type:'L2_NOTIFICATION_ACCOUNT',ownerId:user}});await emit('push',{data:{json:()=>({...payload,badgeCount:2,badgeUpdatedAt:10})}});assert.equal(badgeUpdates.at(-1),2,'a new account session is not locked by an old timestamp');
+self.navigator.setAppBadge=async()=>{throw Error('Badge permission denied')};const displayed=shown.length;await emit('push',{data:{json:()=>({...payload,badgeCount:3,badgeUpdatedAt:20})}});assert.equal(shown.length,displayed+1,'denied badge permission never suppresses the push banner');
+delete self.navigator;await emit('push',{data:{json:()=>({...payload,badgeCount:4,badgeUpdatedAt:30})}});assert.equal(shown.length,displayed+2,'unsupported platforms continue showing normal notifications');
+console.log('App badges: background counts, foreground clearing, delayed-push suppression, account isolation and unsupported/denied fallback passed.');

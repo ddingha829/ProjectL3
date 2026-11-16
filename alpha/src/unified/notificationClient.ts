@@ -1,5 +1,6 @@
 'use client';
 import {configureCloud} from './cloudRepository';
+import {clearAppBadge} from './appBadge';
 export async function notificationRequest(path:string,body?:unknown){
  const client=await configureCloud(),session=await client?.auth.getSession(),token=session?.data.session?.access_token;
  if(!token)throw Error('로그인한 뒤 알림을 설정해주세요.');
@@ -7,6 +8,7 @@ export async function notificationRequest(path:string,body?:unknown){
  const value=await response.json();if(!response.ok)throw Error(value.error||'알림 연결을 확인해주세요.');return value;
 }
 export async function disconnectNotificationDevice(){
+ await clearAppBadge();
  if(!('serviceWorker' in navigator))return;
  const registration=await navigator.serviceWorker.getRegistration('/');if(!registration)return;
  registration.active?.postMessage({type:'L2_NOTIFICATION_ACCOUNT',ownerId:null});

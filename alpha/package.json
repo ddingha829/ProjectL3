@@ -28,7 +28,7 @@
     "test:pull-refresh": "node scripts/test-pull-refresh.mjs",
     "test:camera": "node scripts/test-camera-frame.mjs && node scripts/test-camera-video.mjs",
     "test:posts": "node scripts/test-post-actions.mjs && node scripts/test-composer-youtube.mjs",
-    "test:inbox": "node scripts/test-activity-inbox-schema.mjs && node scripts/test-activity-inbox-hook.mjs"
+    "test:inbox": "node scripts/test-activity-inbox-schema.mjs && node scripts/test-activity-inbox-hook.mjs && node scripts/test-app-badge.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "^1.5.0",

@@ -43,7 +43,11 @@ try{
  await actor(2);await apply([{kind:'comment',id:reply,logId:logs[0],groupId:group,parentId:root,body:'A 답글'}]);
  await actor(3);await apply([{kind:'comment',id:secret,logId:logs[0],groupId:other,body:'B 비공개 댓글'}]);
  await actor(1);let inbox=await rpc('l2u_activity_inbox',[false]);assert(inbox.items.some(i=>i.kind==='post'&&i.groupId===group),'group members receive new posts');assert(inbox.items.some(i=>i.kind==='reply'&&i.commentId===reply),'parent author receives replies on another person’s post');assert(!inbox.items.some(i=>i.commentId===root||i.groupId===other),'self events and another group’s comments are excluded');assert(inbox.unreadCount===2,'post and direct reply are unread');
+ assert(Number.isFinite(inbox.badgeUpdatedAt),'inbox exposes an authoritative server badge timestamp');
+ await db.exec('reset role;set role service_role');const unreadBadges=await rpc('l2u_activity_badge_counts',[[ids[0],ids[1],ids[1]]]);assert(unreadBadges.counts[ids[1]]===2&&Number.isFinite(unreadBadges.updatedAt),'batched push counts match the inbox and deduplicate recipient IDs');
+ await actor(1);let forbidden=false;try{await rpc('l2u_activity_badge_counts',[[ids[0]]]);}catch{forbidden=true;}assert(forbidden,'browser clients cannot read another account’s badge count');
  await rpc('l2u_activity_inbox',[true]);assert((await rpc('l2u_activity_inbox',[false])).unreadCount===0,'opening inbox persists the read cursor across devices');
+ await db.exec('reset role;set role service_role');assert((await rpc('l2u_activity_badge_counts',[[ids[1]]])).counts[ids[1]]===0,'reading the inbox clears the next background badge count');
  await actor(0);inbox=await rpc('l2u_activity_inbox',[false]);assert(inbox.items.filter(i=>i.kind==='comment').length===3,'post owner receives comments and replies once without own-post alerts');
  await admin();const recipients=(await db.query("select user_id from l2u_private.push_jobs where comment_id=$1",[reply])).rows.map(r=>r.user_id);assert(recipients.length===2&&recipients.includes(ids[0])&&recipients.includes(ids[1]),'one reply queues both post owner and parent author, once each');
  await db.exec('set role service_role');const jobs=await rpc('l2u_push_claim',[20,ids[2]]);assert(jobs.some(j=>j.payload.ownerId===ids[1]&&j.payload.title.includes('답글')),'reply push is claimable for parent author');
