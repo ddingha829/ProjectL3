@@ -74,6 +74,7 @@ try{
  await pg.query('select public.l2u_apply($1,$2)',[replyOps,replyOperation]);await pg.query('select public.l2u_apply($1,$2)',[replyOps,replyOperation]);
  await op([{kind:'comment',id:nestedReplyId,logId:ids[1],parentId:replyId,body:'reply to reply'}]);
  const thread=(await snapshot()).logs.find(l=>l.id===ids[1]).comments;
+ const storedTime=Number((await pg.query('select extract(epoch from created_at)*1000 as time from public.l2u_comments where id=$1',[commentId])).rows[0].time);assert(Number.isFinite(thread.find(c=>c.id===commentId).createdAt)&&Math.abs(thread.find(c=>c.id===commentId).createdAt-storedTime)<.001,'comment snapshot exposes the original server creation timestamp');assert(Number.isFinite(thread.find(c=>c.id===replyId).createdAt),'reply timestamps survive snapshots');
  assert(thread.filter(c=>c.id===replyId).length===1&&thread.find(c=>c.id===replyId).parentId===commentId,'reply parent survives snapshot and retries remain idempotent');
  assert(thread.find(c=>c.id===nestedReplyId).parentId===replyId,'reply to reply preserves its exact target');
  assert((await pg.query('select parent_id from public.l2u_comments where id=$1',[replyId])).rows[0].parent_id===commentId,'paged comment reads include reply metadata under existing RLS');
