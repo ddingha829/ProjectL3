@@ -1,6 +1,6 @@
 'use client';
 import {useCallback,useId,useState} from 'react';
-import {Check,ChevronDown,KeyRound,Lock,Settings,Users,Bell} from 'lucide-react';
+import {Check,ChevronDown,KeyRound,Settings,Bell} from 'lucide-react';
 import {AnimatePresence,LayoutGroup,motion} from 'motion/react';
 import {useMotionPreference} from '@/lib/useMotionPreference';
 import type {Circle,Person} from '@/social/model';
@@ -37,8 +37,7 @@ export default function UnifiedHeader({
   const [scopeOpen,setScopeOpen]=useState(false);
   const reduced=useMotionPreference(),scopeGroupId=useId();
   const scopeChanged=useCallback((value:boolean)=>setScopeOpen(value),[]);
-  const badge=(c:Circle)=><span className="un-group-emblem" aria-hidden="true">{Array.from(c.name.trim())[0]||'•'}<i/></span>;
-  const selectedCircle=circles.find(c=>c.id===scope),ScopeIcon=selectedCircle?Users:Lock;
+  const selectedCircle=circles.find(c=>c.id===scope);
 
   return (
     <header className="un-header un-header-v2 un-header-centered" data-install-visible={pwa.ready&&!pwa.isStandalone}>
@@ -69,7 +68,6 @@ export default function UnifiedHeader({
                 exit={reduced?undefined:{opacity:0,y:-5,filter:'blur(3px)'}}
                 transition={reduced?instantMotion:INTERACTION_SPRING}
               >
-                {selectedCircle?badge(selectedCircle):<ScopeIcon size={14} className="un-scope-type" aria-hidden="true"/>}
                 <span className="un-scope-name">{selectedCircle?.name||'내 티끌'}</span>
               </motion.span>
             </AnimatePresence>
@@ -97,7 +95,6 @@ export default function UnifiedHeader({
               onClick={()=>{onScope('mine');close();}}
             >
               {scope==='mine'&&<motion.span layoutId={reduced?undefined:"un-surface-scope-pill"} className="un-surface-scope-active-bg" transition={reduced?instantMotion:INTERACTION_SPRING} aria-hidden="true"/>}
-              <Lock size={15} aria-hidden="true"/>
               <span className="un-scope-option-name">내 티끌</span>
               <span className="un-scope-check" aria-hidden="true">{scope==='mine'&&<Check aria-hidden="true" size={14}/>}</span>
             </motion.button>
@@ -113,7 +110,6 @@ export default function UnifiedHeader({
                 onClick={()=>{onScope(c.id);close();}}
               >
                 {scope===c.id&&<motion.span layoutId={reduced?undefined:"un-surface-scope-pill"} className="un-surface-scope-active-bg" transition={reduced?instantMotion:INTERACTION_SPRING} aria-hidden="true"/>}
-                {badge(c)}
                 <span className="un-scope-option-name"><strong>{c.name}</strong><span className="un-group-avatars" aria-hidden="true">{c.members.slice(0,3).map(id=>{const person=people.find(p=>p.id===id);return <i key={id} style={{background:person?.color||'var(--accent)'}} title={person?.name}>{person?.initial||'•'}</i>;})}</span></span>
                 <small className="un-scope-member-count">{c.members.length}명</small>
                 <span className="un-scope-check" aria-hidden="true">{scope===c.id&&<Check aria-hidden="true" size={14}/>}</span>
